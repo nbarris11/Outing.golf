@@ -240,10 +240,12 @@ export function normalizeLiteApiPrebookResponse(response: Record<string, unknown
 
   return {
     prebookId: firstString(response.prebookId, response.id)!,
+    offerId: firstString(response.offerId, response.offer_id),
     priceTotal: price.total ? Math.round(price.total) : null,
     currency: price.currency ?? null,
     cancellationSummary: normalizeCancellationSummary(response),
     roomDetails: firstString(response.roomName, response.roomTypeName, response.description),
+    refundable: typeof response.refundable === "boolean" ? response.refundable : normalizeRefundable(response),
     expiresAt,
     rawResponse: response
   };

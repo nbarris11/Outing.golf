@@ -85,7 +85,14 @@ export async function prebookLiteApiOffer(input: { offerId: string }): Promise<L
     }
   });
 
-  return normalizeLiteApiPrebookResponse(rawResponse);
+  // LiteAPI wraps prebook responses in {"data": {...}}
+  const envelope = rawResponse as Record<string, unknown>;
+  const data =
+    envelope.data && typeof envelope.data === "object" && !Array.isArray(envelope.data)
+      ? (envelope.data as Record<string, unknown>)
+      : envelope;
+
+  return normalizeLiteApiPrebookResponse(data);
 }
 
 export async function bookLiteApiOffer(input: {
@@ -102,7 +109,10 @@ export async function bookLiteApiOffer(input: {
     lastName: string;
   }>;
   payment: Record<string, unknown>;
+  sandbox?: boolean;
 }): Promise<LiteApiBookingResult> {
+  const payment = input.sandbox ? { method: "STRIPE_TEST" } : input.payment;
+
   const rawResponse = await liteApiFetchJson<Record<string, unknown>>("/rates/book", {
     method: "POST",
     baseUrl: env.LITEAPI_BOOK_BASE_URL,
@@ -111,9 +121,16 @@ export async function bookLiteApiOffer(input: {
       clientReference: input.clientReference,
       holder: input.holder,
       guests: input.guests,
-      payment: input.payment
+      payment
     }
   });
 
-  return normalizeLiteApiBookingResponse(rawResponse);
+  // LiteAPI wraps book responses in {"data": {...}}
+  const envelope = rawResponse as Record<string, unknown>;
+  const data =
+    envelope.data && typeof envelope.data === "object" && !Array.isArray(envelope.data)
+      ? (envelope.data as Record<string, unknown>)
+      : envelope;
+
+  return normalizeLiteApiBookingResponse(data);
 }

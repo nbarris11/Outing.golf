@@ -391,6 +391,9 @@ export async function createLodgingPrebook(input: LodgingPrebookInput) {
     throw new Error("Only organizers can create a prebook");
   }
 
+  // Generate clientReference at prebook time so it can be passed through to booking
+  const clientReference = `outing-${input.outingId}-${randomUUID()}`;
+
   try {
     const prebook = await prebookLiteApiOffer({ offerId: input.offerId });
     const supabase = await createSupabaseServerClient();
@@ -404,11 +407,13 @@ export async function createLodgingPrebook(input: LodgingPrebookInput) {
       price_total: prebook.priceTotal,
       currency: prebook.currency,
       expires_at: prebook.expiresAt,
+      client_reference: clientReference,
+      lodging_option_id: input.lodgingOptionId ?? null,
       response_json: prebook.rawResponse,
       created_by: profile.id
     });
 
-    return prebook;
+    return { ...prebook, clientReference };
   } catch (error) {
     await recordLodgingApiError({
       outingId: input.outingId,
@@ -431,7 +436,21 @@ export async function createLodgingBooking(input: LodgingBookInput) {
     throw new Error("Only organizers can confirm a booking");
   }
 
-  const clientReference = input.clientReference ?? `outing-${input.outingId}-${randomUUID()}`;
+  // Look up the prebook row to get the clientReference generated at prebook time,
+  // and to enforce the expiry before charging the guest.
+  const supabaseForLookup = await createSupabaseServerClient();
+  const { data: prebookRow } = await supabaseForLookup
+    ?.from("lodging_prebooks")
+    .select("expires_at, client_reference, status")
+    .eq("prebook_id", input.prebookId)
+    .maybeSingle() ?? { data: null };
+
+  if (prebookRow?.expires_at && new Date(prebookRow.expires_at) <= new Date()) {
+    throw new Error("This prebook has expired. Please search again and select a new rate.");
+  }
+
+  const clientReference = prebookRow?.client_reference ?? input.clientReference ?? `outing-${input.outingId}-${randomUUID()}`;
+  const isSandbox = Boolean(process.env.LITEAPI_API_KEY?.startsWith("sand_"));
 
   try {
     const booking = await bookLiteApiOffer({
@@ -439,7 +458,8 @@ export async function createLodgingBooking(input: LodgingBookInput) {
       clientReference,
       holder: input.holder,
       guests: input.guests,
-      payment: input.payment
+      payment: input.payment,
+      sandbox: isSandbox
     });
     const supabase = await createSupabaseServerClient();
 

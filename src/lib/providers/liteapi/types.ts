@@ -47,7 +47,8 @@ export type LiteApiSearchInput = LodgingSearchInput;
 
 export const lodgingPrebookInputSchema = z.object({
   outingId: z.string().uuid(),
-  offerId: z.string().trim().min(1)
+  offerId: z.string().trim().min(1),
+  lodgingOptionId: z.string().uuid().optional()
 });
 
 export type LodgingPrebookInput = z.infer<typeof lodgingPrebookInputSchema>;
@@ -96,10 +97,12 @@ export interface LiteApiSearchResponse {
 
 export interface LiteApiPrebookResult {
   prebookId: string;
+  offerId: string | null;
   priceTotal: number | null;
   currency: string | null;
   cancellationSummary: string | null;
   roomDetails: string | null;
+  refundable: boolean | null;
   expiresAt: string | null;
   rawResponse: Record<string, unknown>;
 }
