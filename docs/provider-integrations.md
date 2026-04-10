@@ -39,9 +39,11 @@ Official integration credentials:
 - `GOLFNOW_API_KEY`
 - `GOLFNOW_API_BASE_URL`
 
-## Planned official integrations
+## Live and planned integrations
 
 ### Google Places / Maps
+
+Status: implemented for destination search and golf course search
 
 Use for:
 
@@ -49,17 +51,18 @@ Use for:
 - golf course discovery
 - place metadata and geo context
 
-Plug-in points:
+Current implementation:
 
-- Add a concrete destination adapter that implements `DestinationSearchProvider`
-- Add a concrete golf adapter that implements `GolfCourseProvider`
-- Register both in [`src/modules/providers/registry.ts`](/Users/barris/Desktop/Golf Trip App/src/modules/providers/registry.ts)
-- Keep payload mapping inside the adapter so the rest of the app still receives `DestinationOption[]` and `GolfCourseOption[]`
+- Destination search uses Google Places Text Search and maps results into `DestinationOption[]`
+- Golf search uses Nearby Search when destination coordinates exist, then falls back to Text Search
+- Adapter registration lives in [`src/modules/providers/registry.ts`](/Users/barris/Desktop/Golf Trip App/src/modules/providers/registry.ts)
+- Payload mapping stays inside [`src/modules/providers/google-places.ts`](/Users/barris/Desktop/Golf Trip App/src/modules/providers/google-places.ts) so React and scoring logic still consume normalized records
 
 Notes:
 
 - Keep any Google-specific place IDs inside adapter-local mapping or future provider metadata columns
 - Do not leak raw Google payloads into React components or scoring logic
+- Rates and travel time are still estimated because Google Places does not provide full golf-trip pricing inventory
 
 ### Expedia Rapid
 

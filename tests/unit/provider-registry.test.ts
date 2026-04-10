@@ -18,6 +18,7 @@ describe("provider registry", () => {
 
     expect(definitions.destinationSearch.some((item) => item.id === "google_places")).toBe(true);
     expect(definitions.golfCourse.some((item) => item.id === "google_places")).toBe(true);
+    expect(definitions.lodging.some((item) => item.id === "liteapi")).toBe(true);
     expect(definitions.lodging.some((item) => item.id === "expedia_rapid")).toBe(true);
     expect(definitions.teeTime.some((item) => item.id === "golfnow")).toBe(true);
     expect(definitions.vacationRental.some((item) => item.id === "vrbo_compatible")).toBe(true);

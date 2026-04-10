@@ -1,4 +1,5 @@
 import { AuthCard } from "@/components/auth/auth-card";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { FieldLabel, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -8,9 +9,10 @@ import { isDemoMode } from "@/lib/env";
 export default async function SignInPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const params = await searchParams;
+  const next = params.next?.startsWith("/") ? params.next : "/dashboard";
 
   const formAction = isDemoMode ? "/api/demo/auth/sign-in" : signInAction;
 
@@ -21,7 +23,18 @@ export default async function SignInPage({
         subtitle="Jump back into the outing, check votes, and keep the group moving."
         helper={{ text: "Need an account?", label: "Create one", href: "/sign-up" }}
       >
+        {!isDemoMode ? (
+          <>
+            <GoogleAuthButton label="Continue with Google" next={next} />
+            <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-charcoal/34">
+              <span className="h-px flex-1 bg-charcoal/10" />
+              <span>Email instead</span>
+              <span className="h-px flex-1 bg-charcoal/10" />
+            </div>
+          </>
+        ) : null}
         <form action={formAction} method={isDemoMode ? "post" : undefined} className="space-y-4">
+          <input type="hidden" name="next" value={next} />
           <div>
             <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input id="email" name="email" type="email" placeholder="host@outing.golf" required />

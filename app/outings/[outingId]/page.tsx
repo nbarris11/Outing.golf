@@ -13,7 +13,6 @@ import {
   submitPreferencesAction
 } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
-import { getDemoState } from "@/lib/demo/store";
 import { currency, formatLongDateLabel, percent } from "@/lib/utils";
 import { getOutingDetail } from "@/modules/outings/service";
 import type { PreferenceSubmission, Profile, RecommendationScore } from "@/types/domain";
@@ -161,7 +160,7 @@ export default async function OutingDetailPage({
     );
   }
 
-  const { profiles } = await getDemoState();
+  const profiles = detail.profiles;
   const bestDate = detail.recommendation.bestDates[0];
   const defaults = preferenceDefaults(detail.currentPreference);
   const dateSuggestion = detail.outing.preferredDateWindows

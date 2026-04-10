@@ -8,7 +8,7 @@ import type {
 
 export type DestinationProviderId = "mock" | "google_places";
 export type GolfCourseProviderId = "mock" | "google_places";
-export type LodgingProviderId = "mock" | "expedia_rapid";
+export type LodgingProviderId = "mock" | "expedia_rapid" | "liteapi";
 export type TeeTimeProviderId = "mock" | "golfnow";
 export type VacationRentalProviderId = "mock" | "vrbo_compatible";
 export type ProviderAvailability = "implemented" | "planned";

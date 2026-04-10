@@ -16,6 +16,11 @@ import type {
   VacationRentalProviderId
 } from "./interfaces";
 import {
+  googlePlacesDestinationProvider,
+  googlePlacesGolfProvider
+} from "./google-places";
+import { liteApiLodgingProvider } from "./liteapi";
+import {
   mockDestinationProvider,
   mockGolfProvider,
   mockLodgingProvider,
@@ -23,48 +28,28 @@ import {
   mockVacationRentalProvider
 } from "./mock-providers";
 
-const plannedDestinationDefinitions: Record<
+const isBuildTimePrerender = process.env.NEXT_PHASE === "phase-production-build";
+const enableGooglePlacesProviders = Boolean(env.GOOGLE_MAPS_API_KEY) && !isBuildTimePrerender;
+
+const implementedDestinationDefinitions: Record<
   Exclude<DestinationProviderId, "mock">,
-  ProviderDefinition<Exclude<DestinationProviderId, "mock">>
+  ProviderDefinition<DestinationProviderId>
 > = {
-  google_places: {
-    id: "google_places",
-    key: "google-places-destination",
-    label: "Google Places destination search",
-    availability: "planned",
-    env: ["GOOGLE_MAPS_API_KEY"],
-    notes: "Use Google Places / Maps to expand destination discovery, drive and flight context, and geo-aware search prompts.",
-    integrationTouchpoints: [
-      "src/modules/providers/registry.ts",
-      "src/modules/providers/inventory-service.ts",
-      "docs/provider-integrations.md"
-    ]
-  }
+  google_places: googlePlacesDestinationProvider.definition
 };
 
-const plannedGolfDefinitions: Record<
+const implementedGolfDefinitions: Record<
   Exclude<GolfCourseProviderId, "mock">,
-  ProviderDefinition<Exclude<GolfCourseProviderId, "mock">>
+  ProviderDefinition<GolfCourseProviderId>
 > = {
-  google_places: {
-    id: "google_places",
-    key: "google-places-golf",
-    label: "Google Places golf course search",
-    availability: "planned",
-    env: ["GOOGLE_MAPS_API_KEY"],
-    notes: "Use Google Places to discover official golf course records, coordinates, and place metadata before ranking.",
-    integrationTouchpoints: [
-      "src/modules/providers/registry.ts",
-      "src/modules/providers/inventory-service.ts",
-      "docs/provider-integrations.md"
-    ]
-  }
+  google_places: googlePlacesGolfProvider.definition
 };
 
 const plannedLodgingDefinitions: Record<
   Exclude<LodgingProviderId, "mock">,
   ProviderDefinition<Exclude<LodgingProviderId, "mock">>
 > = {
+  liteapi: liteApiLodgingProvider.definition as ProviderDefinition<"liteapi">,
   expedia_rapid: {
     id: "expedia_rapid",
     key: "expedia-rapid-lodging",
@@ -119,15 +104,18 @@ const plannedVacationRentalDefinitions: Record<
 };
 
 const destinationProviders: Partial<Record<DestinationProviderId, DestinationSearchProvider>> = {
-  mock: mockDestinationProvider
+  mock: mockDestinationProvider,
+  ...(enableGooglePlacesProviders ? { google_places: googlePlacesDestinationProvider } : {})
 };
 
 const golfProviders: Partial<Record<GolfCourseProviderId, GolfCourseProvider>> = {
-  mock: mockGolfProvider
+  mock: mockGolfProvider,
+  ...(enableGooglePlacesProviders ? { google_places: googlePlacesGolfProvider } : {})
 };
 
 const lodgingProviders: Partial<Record<LodgingProviderId, LodgingProvider>> = {
-  mock: mockLodgingProvider
+  mock: mockLodgingProvider,
+  ...(env.LITEAPI_API_KEY ? { liteapi: liteApiLodgingProvider } : {})
 };
 
 const teeTimeProviders: Partial<Record<TeeTimeProviderId, TeeTimeProvider>> = {
@@ -142,7 +130,7 @@ function resolveImplementedProvider<Provider extends { definition: { label: stri
   configuredId: ProviderId,
   providers: Partial<Record<ProviderId, Provider>>,
   fallback: Provider,
-  plannedDefinitions: Partial<Record<ProviderId, ProviderDefinition<ProviderId>>>
+  configuredDefinitions: Partial<Record<ProviderId, ProviderDefinition<ProviderId>>>
 ) {
   const configured = providers[configuredId];
 
@@ -150,13 +138,13 @@ function resolveImplementedProvider<Provider extends { definition: { label: stri
     return configured;
   }
 
-  const planned = plannedDefinitions[configuredId];
+  const definition = configuredDefinitions[configuredId];
 
-  if (planned) {
-    logInfo("Planned provider requested, falling back to mock adapter", {
-      requestedProvider: planned.label,
+  if (definition) {
+    logInfo("Configured provider unavailable, falling back to mock adapter", {
+      requestedProvider: definition.label,
       fallbackProvider: fallback.definition.label,
-      requiredEnv: planned.env
+      requiredEnv: definition.env
     });
   }
 
@@ -169,13 +157,13 @@ export function getInventoryProviders(): InventoryProviderBundle {
       env.OUTING_DESTINATION_PROVIDER,
       destinationProviders,
       mockDestinationProvider,
-      plannedDestinationDefinitions
+      implementedDestinationDefinitions
     ),
     golfCourse: resolveImplementedProvider(
       env.OUTING_GOLF_COURSE_PROVIDER,
       golfProviders,
       mockGolfProvider,
-      plannedGolfDefinitions
+      implementedGolfDefinitions
     ),
     lodging: resolveImplementedProvider(
       env.OUTING_LODGING_PROVIDER,
@@ -200,8 +188,8 @@ export function getInventoryProviders(): InventoryProviderBundle {
 
 export function getProviderDefinitions() {
   return {
-    destinationSearch: [mockDestinationProvider.definition, ...Object.values(plannedDestinationDefinitions)],
-    golfCourse: [mockGolfProvider.definition, ...Object.values(plannedGolfDefinitions)],
+    destinationSearch: [mockDestinationProvider.definition, ...Object.values(implementedDestinationDefinitions)],
+    golfCourse: [mockGolfProvider.definition, ...Object.values(implementedGolfDefinitions)],
     lodging: [mockLodgingProvider.definition, ...Object.values(plannedLodgingDefinitions)],
     teeTime: [mockTeeTimeProvider.definition, ...Object.values(plannedTeeTimeDefinitions)],
     vacationRental: [

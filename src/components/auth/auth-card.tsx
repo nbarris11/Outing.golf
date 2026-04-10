@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
+import { isDemoMode } from "@/lib/env";
 
 export function AuthCard({
   title,
@@ -19,14 +20,16 @@ export function AuthCard({
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Access Outing.golf</p>
         <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">{title}</h1>
         <p className="mt-5 text-lg leading-8 text-charcoal/68">{subtitle}</p>
-        <div className="mt-8 rounded-[28px] bg-forest-900 p-6 text-cream">
-          <p className="text-sm text-cream/70">Demo accounts</p>
-          <div className="mt-4 space-y-3 text-sm leading-6 text-cream/78">
-            <p>`host@outing.golf` for organizer flow</p>
-            <p>`friend@outing.golf` for invitee flow</p>
-            <p>`admin@outing.golf` for admin dashboard</p>
+        {isDemoMode ? (
+          <div className="mt-8 rounded-[28px] bg-forest-900 p-6 text-cream">
+            <p className="text-sm text-cream/70">Demo accounts</p>
+            <div className="mt-4 space-y-3 text-sm leading-6 text-cream/78">
+              <p>`host@outing.golf` for organizer flow</p>
+              <p>`friend@outing.golf` for invitee flow</p>
+              <p>`admin@outing.golf` for admin dashboard</p>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
       <Card className="mx-auto w-full max-w-xl p-8">
         {children}

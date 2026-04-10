@@ -75,12 +75,18 @@ Set these environment variables in each environment:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (optional newer Supabase public key format)
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
 - `OUTING_DESTINATION_PROVIDER`
 - `OUTING_GOLF_COURSE_PROVIDER`
 - `OUTING_LODGING_PROVIDER`
 - `OUTING_TEE_TIME_PROVIDER`
 - `OUTING_VACATION_RENTAL_PROVIDER`
+- `LITEAPI_BASE_URL`
+- `LITEAPI_BOOK_BASE_URL`
+- `LITEAPI_API_KEY`
 
 If Supabase env vars are missing, the app falls back to demo mode automatically.
 
@@ -97,6 +103,39 @@ Recommended workflow:
 3. Run `supabase/seed.sql` for base feature flags and content blocks.
 4. Add real auth users and corresponding `profiles` rows.
 5. Enable Realtime on `chat_messages`.
+
+### Google sign-in
+
+The app now includes a Google sign-in button on the auth screens when demo mode is off and Supabase is configured.
+
+To finish setup outside the codebase:
+
+1. In Google Cloud, create a Web OAuth client.
+2. Add your site origin under Authorized JavaScript origins.
+3. Add your Supabase Google callback URL under Authorized redirect URIs.
+4. In Supabase Auth, enable the Google provider and paste in the Google client ID and client secret.
+5. Add your app callback URL to the Supabase redirect allow list:
+   - `http://127.0.0.1:3000/auth/callback` for local
+   - your production `/auth/callback` URL for live
+
+The app callback route lives at [`app/auth/callback/route.ts`](/Users/barris/Desktop/Golf Trip App/app/auth/callback/route.ts).
+
+### Invite emails
+
+Invite sending uses Resend in live mode.
+
+Required envs:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `RESEND_REPLY_TO_EMAIL` (optional)
+
+Recommended setup:
+
+1. Create a Resend account.
+2. Verify a sending domain.
+3. Set `RESEND_FROM_EMAIL` to a verified sender like `invites@yourdomain.com`.
+4. Add the env vars in Vercel production.
 
 ## Security model
 
@@ -136,7 +175,8 @@ Primary touchpoints:
 
 Planned adapters:
 
-- Google Places / Maps
+- Google Places / Maps for destination and golf search
+- liteAPI for lodging search, prebook, and booking
 - Expedia Rapid
 - Vrbo-compatible lodging integration
 - GolfNow or similar tee-time providers
@@ -146,12 +186,15 @@ Provider envs:
 
 - `OUTING_DESTINATION_PROVIDER`: `mock` or `google_places`
 - `OUTING_GOLF_COURSE_PROVIDER`: `mock` or `google_places`
-- `OUTING_LODGING_PROVIDER`: `mock` or `expedia_rapid`
+- `OUTING_LODGING_PROVIDER`: `mock`, `liteapi`, or `expedia_rapid`
 - `OUTING_TEE_TIME_PROVIDER`: `mock` or `golfnow`
 - `OUTING_VACATION_RENTAL_PROVIDER`: `mock` or `vrbo_compatible`
 - `OUTING_PROVIDER_REQUEST_TIMEOUT_MS`: shared timeout budget for provider requests
 - `GOOGLE_MAPS_API_KEY`
 - `GOOGLE_PLACES_SEARCH_RADIUS_METERS`
+- `LITEAPI_BASE_URL`
+- `LITEAPI_BOOK_BASE_URL`
+- `LITEAPI_API_KEY`
 - `EXPEDIA_RAPID_API_KEY`
 - `EXPEDIA_RAPID_API_HOST`
 - `VRBO_API_KEY`
@@ -160,6 +203,53 @@ Provider envs:
 - `GOLFNOW_API_BASE_URL`
 
 Detailed integration notes live in [docs/provider-integrations.md](/Users/barris/Desktop/Golf Trip App/docs/provider-integrations.md).
+
+## liteAPI lodging integration
+
+All liteAPI calls are server-side only. The browser talks only to internal Next.js routes such as:
+
+- `/api/lodging/search`
+- `/api/lodging/prebook`
+- `/api/lodging/book`
+
+Required envs:
+
+- `LITEAPI_BASE_URL`
+- `LITEAPI_BOOK_BASE_URL`
+- `LITEAPI_API_KEY`
+
+Sandbox defaults:
+
+- search and rates: `https://api.liteapi.travel/v3.0`
+- prebook and booking: `https://book.liteapi.travel/v3.0`
+
+How search works:
+
+1. The compare page posts normalized input to `/api/lodging/search`.
+2. The route validates input and checks outing access.
+3. The server calls liteAPI `/hotels/rates`.
+4. The response is normalized into a UI-safe lodging shape.
+5. Organizers can save a result into `lodging_options` and mark a top pick.
+
+How prebook works:
+
+1. The server receives an `offerId`.
+2. It calls liteAPI `/rates/prebook`.
+3. It stores the prebook in `lodging_prebooks`.
+4. The route returns only the fields the UI needs for a safe review step.
+
+How booking works:
+
+1. The server receives a `prebookId`, guest details, and payment payload.
+2. It calls liteAPI `/rates/book`.
+3. It stores the booking result in `lodging_bookings`.
+4. This is currently built for sandbox-first testing and is not exposed in the public UI yet.
+
+Development fallback:
+
+- If liteAPI fails or returns no results, the app can fall back to mock lodging data only in development.
+- That fallback is controlled by the `lodging_mock_fallback` feature flag.
+- Production never falls back to mock lodging silently.
 
 ## QA and staging notes
 

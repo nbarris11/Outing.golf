@@ -115,12 +115,94 @@ export interface LodgingOption {
   providerKey: string;
   name: string;
   nightlyRate: number;
+  priceTotal?: number | null;
+  currency?: string | null;
   lodgingType: LodgingType;
   sleeps: number;
+  roomName?: string | null;
+  boardType?: string | null;
+  cancellationSummary?: string | null;
+  refundable?: boolean | null;
+  hotelAddress?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  starRating?: number | null;
+  reviewScore?: number | null;
+  thumbnailUrl?: string | null;
+  amenities?: string[];
+  checkIn?: string | null;
+  checkOut?: string | null;
+  guestCount?: number | null;
+  offerId?: string | null;
+  hotelId?: string | null;
+  topPick?: boolean;
   summary: string;
   tags: string[];
   featured: boolean;
   hidden: boolean;
+}
+
+export interface LodgingSearchResult {
+  provider: "liteapi";
+  hotelId: string;
+  hotelName: string;
+  roomName: string;
+  boardType: string | null;
+  priceTotal: number;
+  currency: string;
+  nightlyRate: number;
+  cancellationSummary: string | null;
+  refundable: boolean;
+  hotelAddress: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  starRating: number | null;
+  reviewScore: number | null;
+  thumbnailUrl: string | null;
+  amenities: string[];
+  checkIn: string;
+  checkOut: string;
+  guestCount: number;
+  offerId: string;
+  destinationOptionId?: string | null;
+  lodgingType?: LodgingType;
+  rawProviderData?: Record<string, unknown> | null;
+}
+
+export interface LodgingPrebook {
+  id: string;
+  outingId: string;
+  provider: string;
+  offerId: string;
+  prebookId: string;
+  status: string;
+  priceTotal: number | null;
+  currency: string | null;
+  expiresAt: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface LodgingBooking {
+  id: string;
+  outingId: string;
+  provider: string;
+  prebookId: string;
+  providerBookingId: string | null;
+  providerConfirmationCode: string | null;
+  status: string;
+  totalPrice: number | null;
+  currency: string | null;
+  guestEmail: string | null;
+  clientReference: string | null;
+  createdBy: string;
+  createdAt: string;
 }
 
 export interface Vote {
@@ -161,6 +243,49 @@ export interface ContentBlock {
   ctaLabel?: string | null;
   ctaHref?: string | null;
   updatedAt: string;
+}
+
+export interface SiteProfileSettings {
+  legalBusinessName: string;
+  heroBadge: string;
+  launchStatusLabel: string;
+  supportEmail: string;
+  footerTagline: string;
+}
+
+export interface LandingStepSetting {
+  step: string;
+  title: string;
+  body: string;
+}
+
+export interface LandingCardSetting {
+  title: string;
+  body: string;
+}
+
+export interface LandingFaqSetting {
+  question: string;
+  answer: string;
+}
+
+export interface LandingPageSettings {
+  painPointsTitle: string;
+  painPointsBody: string;
+  painPoints: string[];
+  stepsTitle: string;
+  steps: LandingStepSetting[];
+  outcomesTitle: string;
+  outcomes: LandingCardSetting[];
+  socialProofTitle: string;
+  socialProofBody: string;
+  socialProofItems: string[];
+  faqs: LandingFaqSetting[];
+  finalCtaEyebrow: string;
+  finalCtaTitle: string;
+  finalCtaBody: string;
+  finalCtaLabel: string;
+  finalCtaHref: string;
 }
 
 export interface ActivityLogEntry {

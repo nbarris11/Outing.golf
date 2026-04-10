@@ -6,19 +6,26 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_ENV_LABEL: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
+  RESEND_REPLY_TO_EMAIL: z.string().optional(),
   VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
   VERCEL_URL: z.string().optional(),
   VERCEL_BRANCH_URL: z.string().optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   OUTING_DESTINATION_PROVIDER: z.enum(["mock", "google_places"]).default("mock"),
   OUTING_GOLF_COURSE_PROVIDER: z.enum(["mock", "google_places"]).default("mock"),
-  OUTING_LODGING_PROVIDER: z.enum(["mock", "expedia_rapid"]).default("mock"),
+  OUTING_LODGING_PROVIDER: z.enum(["mock", "expedia_rapid", "liteapi"]).default("mock"),
   OUTING_TEE_TIME_PROVIDER: z.enum(["mock", "golfnow"]).default("mock"),
   OUTING_VACATION_RENTAL_PROVIDER: z.enum(["mock", "vrbo_compatible"]).default("mock"),
   OUTING_PROVIDER_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
   GOOGLE_PLACES_SEARCH_RADIUS_METERS: z.coerce.number().int().positive().optional(),
+  LITEAPI_BASE_URL: z.string().url().default("https://api.liteapi.travel/v3.0"),
+  LITEAPI_BOOK_BASE_URL: z.string().url().default("https://book.liteapi.travel/v3.0"),
+  LITEAPI_API_KEY: z.string().optional(),
   EXPEDIA_RAPID_API_KEY: z.string().optional(),
   EXPEDIA_RAPID_API_HOST: z.string().optional(),
   VRBO_API_KEY: z.string().optional(),
@@ -28,7 +35,23 @@ const envSchema = z.object({
   NEXT_PUBLIC_ENABLE_DEMO: z
     .string()
     .optional()
-    .transform((value) => value !== "false")
+    .transform((value) => value !== "false"),
+  SITE_ACCESS_ENABLED: z
+    .string()
+    .optional()
+    .transform((value) => value === "true"),
+  SITE_ACCESS_PASSWORD: z.string().optional(),
+  ADMIN_EMAILS: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value
+        ? value
+            .split(",")
+            .map((item) => item.trim().toLowerCase())
+            .filter(Boolean)
+        : []
+    )
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -39,10 +62,16 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 
+export const supabasePublicKey =
+  env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
 export const isSupabaseConfigured =
-  Boolean(env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  Boolean(env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(supabasePublicKey);
 
 export const isDemoMode = env.NEXT_PUBLIC_ENABLE_DEMO || !isSupabaseConfigured;
+export const isSiteAccessEnabled = env.SITE_ACCESS_ENABLED;
+export const siteAccessPassword = env.SITE_ACCESS_PASSWORD;
+export const adminEmails = env.ADMIN_EMAILS;
 
 function normalizeDeploymentUrl(value?: string) {
   if (!value) {

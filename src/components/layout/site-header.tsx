@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/lib/actions/auth";
 import { getCurrentProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
+import { isAdmin } from "@/modules/outings/permissions";
 
 export async function SiteHeader({ minimal = false }: { minimal?: boolean }) {
   const profile = await getCurrentProfile();
@@ -17,7 +18,7 @@ export async function SiteHeader({ minimal = false }: { minimal?: boolean }) {
           <nav className="hidden items-center gap-6 text-sm text-charcoal/70 md:flex">
             <Link href="/how-it-works">How it works</Link>
             <Link href="/dashboard">Dashboard</Link>
-            <Link href="/admin">Admin</Link>
+            {isAdmin(profile) ? <Link href="/admin">Admin</Link> : null}
           </nav>
         ) : null}
         <div className="flex items-center gap-3">

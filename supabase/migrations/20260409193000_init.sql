@@ -10,6 +10,18 @@ create type public.golf_intensity as enum ('light', 'balanced', 'golf_first');
 create type public.lodging_type as enum ('hotel', 'resort', 'house', 'mixed');
 create type public.vote_entity_type as enum ('destination', 'golf_course', 'lodging');
 
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  email text not null unique,
+  full_name text not null,
+  avatar_url text,
+  home_airport text,
+  handicap text,
+  app_role public.app_role not null default 'member',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -24,18 +36,6 @@ as $$
       and app_role = 'admin'
   );
 $$;
-
-create table if not exists public.profiles (
-  id uuid primary key references auth.users (id) on delete cascade,
-  email text not null unique,
-  full_name text not null,
-  avatar_url text,
-  home_airport text,
-  handicap text,
-  app_role public.app_role not null default 'member',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
 
 create table if not exists public.outings (
   id uuid primary key default gen_random_uuid(),

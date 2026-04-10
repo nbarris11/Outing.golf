@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { env, isSupabaseConfigured } from "@/lib/env";
+import { env, isSupabaseConfigured, supabasePublicKey } from "@/lib/env";
 
 export async function createSupabaseServerClient() {
   if (!isSupabaseConfigured) {
@@ -10,7 +10,7 @@ export async function createSupabaseServerClient() {
 
   const cookieStore = await cookies();
 
-  return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL!, supabasePublicKey!, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -23,7 +23,12 @@ export async function createSupabaseServerClient() {
         }>
       ) {
         cookieEntries.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
+          try {
+            cookieStore.set(name, value, options);
+          } catch {
+            // Server Components can read cookies but cannot mutate them during render.
+            // Ignore write attempts here so public pages can safely use the shared client.
+          }
         });
       }
     }

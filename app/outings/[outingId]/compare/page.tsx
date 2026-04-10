@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
+import { LodgingSearchPanel } from "@/components/outings/lodging-search-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requireProfile } from "@/lib/auth";
 import { currency } from "@/lib/utils";
+import { isAdmin } from "@/modules/outings/permissions";
 import { getOutingDetail } from "@/modules/outings/service";
 
 export default async function ComparePage({
@@ -20,6 +22,12 @@ export default async function ComparePage({
   if (!detail) {
     notFound();
   }
+
+  const defaultWindow = detail.outing.preferredDateWindows[0];
+  const favoriteLodgingIds = detail.favorites
+    .filter((item) => item.entityType === "lodging")
+    .map((item) => item.entityId);
+  const canManageLodging = detail.outing.organizerId === profile.id || isAdmin(profile);
 
   return (
     <PageShell>
@@ -44,6 +52,17 @@ export default async function ComparePage({
           </div>
         ) : (
           <div className="mt-8 space-y-6">
+            <LodgingSearchPanel
+              outingId={detail.outing.id}
+              destination={detail.outing.destinationLabel}
+              defaultCheckIn={defaultWindow?.start ?? new Date().toISOString().slice(0, 10)}
+              defaultCheckOut={defaultWindow?.end ?? new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10)}
+              defaultGuests={detail.outing.numberOfPlayers}
+              isOrganizer={canManageLodging}
+              savedOptions={detail.lodging}
+              favoriteOptionIds={favoriteLodgingIds}
+            />
+
             <div className="grid gap-6 lg:grid-cols-3">
               {[
                 {
@@ -175,15 +194,26 @@ export default async function ComparePage({
                       <div key={stay.id} className="rounded-[24px] bg-cream p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="font-medium">{stay.name}</p>
-                            <p className="text-sm capitalize text-charcoal/60">{stay.lodgingType}</p>
+                          <p className="font-medium">{stay.name}</p>
+                            <p className="text-sm capitalize text-charcoal/60">
+                              {stay.lodgingType}
+                              {stay.topPick ? " · top pick" : ""}
+                            </p>
                           </div>
                           <p className="text-sm font-medium text-forest-900">{score?.score ?? 0} fit</p>
                         </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                          <p className="text-sm text-charcoal/68">{currency(stay.nightlyRate)} / night</p>
+                          <p className="text-sm text-charcoal/68">
+                            {stay.priceTotal ? `${currency(stay.priceTotal)} total` : `${currency(stay.nightlyRate)} / night`}
+                          </p>
                           <p className="text-sm text-charcoal/68">Sleeps {stay.sleeps}</p>
-                          <p className="text-sm text-charcoal/68">{stay.tags[0] ?? "Flexible stay"}</p>
+                          <p className="text-sm text-charcoal/68">
+                            {stay.refundable === null || stay.refundable === undefined
+                              ? stay.tags[0] ?? "Flexible stay"
+                              : stay.refundable
+                                ? "Refundable"
+                                : "Non-refundable"}
+                          </p>
                         </div>
                         <p className="mt-3 text-sm leading-6 text-charcoal/64">{stay.summary}</p>
                       </div>

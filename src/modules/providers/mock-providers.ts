@@ -343,6 +343,84 @@ const lodgingCatalog: Record<string, Array<Omit<LodgingOption, "id" | "outingId"
   ]
 };
 
+function genericCourseCatalog(destination: DestinationOption) {
+  return [
+    {
+      name: `${destination.name} Golf Club`,
+      locationLabel: `${destination.name}, ${destination.region}`,
+      averageGreensFee: Math.max(95, destination.averageRoundCost - 10),
+      qualityScore: 84,
+      rideFriendly: true,
+      walkingFriendly: true,
+      summary: `Reliable public golf near ${destination.name} that keeps the planning flow moving even before a live course feed is fully mapped.`,
+      tags: ["public", "group-friendly", "balanced"],
+      featured: true,
+      hidden: false
+    },
+    {
+      name: `${destination.name} Resort Course`,
+      locationLabel: `${destination.name}, ${destination.region}`,
+      averageGreensFee: destination.averageRoundCost + 20,
+      qualityScore: 89,
+      rideFriendly: true,
+      walkingFriendly: false,
+      summary: `A higher-polish option near ${destination.name} if the group wants one more premium round on the itinerary.`,
+      tags: ["premium", "destination", "cart-friendly"],
+      featured: false,
+      hidden: false
+    },
+    {
+      name: `${destination.name} Municipal Links`,
+      locationLabel: `${destination.name}, ${destination.region}`,
+      averageGreensFee: Math.max(75, destination.averageRoundCost - 30),
+      qualityScore: 80,
+      rideFriendly: true,
+      walkingFriendly: true,
+      summary: `A budget-relief round that gives the group flexibility without forcing a full reset on the trip plan.`,
+      tags: ["value", "walkable", "easy-logistics"],
+      featured: false,
+      hidden: false
+    }
+  ] satisfies Array<
+    Omit<GolfCourseOption, "id" | "outingId" | "destinationOptionId" | "providerKey">
+  >;
+}
+
+function genericLodgingCatalog(destination: DestinationOption, guests: number) {
+  return [
+    {
+      name: `${destination.name} Group House`,
+      nightlyRate: Math.max(220, destination.averageNightlyRate + 20),
+      lodgingType: "house" as const,
+      sleeps: Math.max(guests, 8),
+      summary: `Shared common space and enough beds to keep the group together near ${destination.name}.`,
+      tags: ["group house", "shared-space", "easy logistics"],
+      featured: true,
+      hidden: false
+    },
+    {
+      name: `${destination.name} Stay & Suites`,
+      nightlyRate: Math.max(180, destination.averageNightlyRate - 25),
+      lodgingType: "hotel" as const,
+      sleeps: Math.max(guests, 4),
+      summary: `Straightforward hotel option if the group wants simpler arrivals, departures, and room-by-room flexibility.`,
+      tags: ["hotel", "simple", "central"],
+      featured: false,
+      hidden: false
+    },
+    {
+      name: `${destination.name} Resort`,
+      nightlyRate: Math.max(260, destination.averageNightlyRate + 55),
+      lodgingType: "resort" as const,
+      sleeps: Math.max(guests, 4),
+      summary: `A more polished stay if the group wants amenities and a stronger destination-trip feel.`,
+      tags: ["resort", "amenities", "premium"],
+      featured: false,
+      hidden: false
+    }
+  ] satisfies Array<Omit<LodgingOption, "id" | "outingId" | "destinationOptionId" | "providerKey">>;
+}
+
 function baseDestinations(outing: Outing): DestinationOption[] {
   return destinationCatalog.map((destination, index) => ({
     id: generateId("destination"),
@@ -390,7 +468,7 @@ export const mockGolfProvider: GolfCourseProvider = {
   },
   async searchCourses({ outing, destinations }) {
     return destinations.flatMap((destination) =>
-      (courseCatalog[destination.name] ?? []).map((course) => ({
+      (courseCatalog[destination.name] ?? genericCourseCatalog(destination)).map((course) => ({
         id: generateId("course"),
         outingId: outing.id,
         destinationOptionId: destination.id,
@@ -418,7 +496,7 @@ export const mockLodgingProvider: LodgingProvider = {
   },
   async searchLodging({ outing, destinations, preferredType }) {
     return destinations.flatMap((destination) =>
-      (lodgingCatalog[destination.name] ?? []).map((stay) => ({
+      (lodgingCatalog[destination.name] ?? genericLodgingCatalog(destination, outing.numberOfPlayers)).map((stay) => ({
         id: generateId("lodging"),
         outingId: outing.id,
         destinationOptionId: destination.id,
@@ -482,7 +560,7 @@ export const mockVacationRentalProvider: VacationRentalProvider = {
   },
   async searchVacationRentals({ destinations, guests }) {
     return destinations.flatMap((destination) =>
-      (lodgingCatalog[destination.name] ?? [])
+      (lodgingCatalog[destination.name] ?? genericLodgingCatalog(destination, guests))
         .filter((stay) => stay.lodgingType === "house" || stay.lodgingType === "mixed")
         .map((stay, index) => ({
           id: generateId("rental"),

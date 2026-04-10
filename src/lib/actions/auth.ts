@@ -12,7 +12,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  let destination = "/dashboard";
+  const next = String(formData.get("next") ?? "").trim();
+  let destination = next.startsWith("/") ? next : "/dashboard";
 
   if (!email) {
     redirect("/sign-in?error=Missing%20email");
@@ -57,7 +58,8 @@ export async function signUpAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("fullName") ?? "").trim();
-  let destination = "/dashboard";
+  const next = String(formData.get("next") ?? "").trim();
+  let destination = next.startsWith("/") ? next : "/dashboard";
 
   if (!email || !fullName) {
     redirect("/sign-up?error=Missing%20required%20fields");
