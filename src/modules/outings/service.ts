@@ -222,12 +222,15 @@ function mapProfileRow(row: Record<string, any>): Profile {
 }
 
 async function getLiveOutings(profileId: string) {
-  const supabase = await createSupabaseServerClient();
+  const adminClient = createSupabaseAdminClient();
+  const supabase = adminClient ?? (await createSupabaseServerClient());
 
   if (!supabase) {
     return [];
   }
 
+  // Use admin client to bypass RLS — access is scoped to the user's own outings
+  // and memberships in application code, same pattern as getOutingDetail.
   const [{ data: organizerOutings }, { data: memberships }] = await Promise.all([
     supabase
       .from("outings")

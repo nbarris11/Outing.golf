@@ -127,7 +127,9 @@ function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerI
 }
 
 async function seedLiveInventory(outing: Outing) {
-  const supabase = await createSupabaseServerClient();
+  // Use admin client — the inventory tables only have SELECT policies, so inserts
+  // from a regular session client are blocked by RLS and silently return nothing.
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
 
   if (!supabase) {
     return;
@@ -442,6 +444,10 @@ export async function inviteMemberAction(formData: FormData) {
         : `/outings/${parsed.data.outingId}?error=Invite%20saved,%20but%20email%20is%20not%20configured%20yet`
     );
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     logError("Failed to invite member", error, {
       outingId: parsed.data.outingId,
       email: parsed.data.email
