@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-forest-950: #10231b;
+  --color-forest-900: #143a2c;
+  --color-forest-800: #245240;
+  --color-forest-600: #4d6f5d;
+  --color-forest-500: #6f8b7f;
+  --color-cream: #f7f4ee;
+  --color-sand: #e8dcc4;
+  --color-sand-strong: #d9c8a7;
+  --color-charcoal: #212423;
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-cormorant);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-charcoal);
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(20, 58, 44, 0.16);
+}
