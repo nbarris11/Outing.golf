@@ -399,13 +399,18 @@ export async function getDashboardData(profileId: string) {
 
 export async function getOutingDetail(outingId: string, profileId: string) {
   if (!isDemoMode) {
+    // Use admin client to bypass RLS for the initial lookup, then enforce
+    // access control in application code. This avoids RLS auth.uid() issues
+    // that can occur in server component rendering contexts.
+    const adminClient = createSupabaseAdminClient();
     const supabase = await createSupabaseServerClient();
+    const queryClient = adminClient ?? supabase;
 
-    if (!supabase) {
+    if (!queryClient) {
       return null;
     }
 
-    const { data: outingRow } = await supabase
+    const { data: outingRow } = await queryClient
       .from("outings")
       .select("id,name,organizer_id,destination_type,destination_label,preferred_date_windows,budget_target,trip_style,number_of_players,golf_intensity,lodging_preference,notes,status,organizer_weighting,created_at")
       .eq("id", outingId)
@@ -417,13 +422,14 @@ export async function getOutingDetail(outingId: string, profileId: string) {
 
     const outing = mapOutingRow(outingRow);
 
-    const { data: memberRows } = await supabase
+    const { data: memberRows } = await queryClient
       .from("outing_members")
       .select("id,outing_id,profile_id,role,joined_at")
       .eq("outing_id", outingId);
 
     const members = (memberRows ?? []).map(mapOutingMemberRow);
 
+    // Enforce access in application code instead of relying on RLS
     if (outing.organizerId !== profileId && !canAccessOuting(profileId, members, outingId)) {
       return null;
     }
@@ -438,14 +444,14 @@ export async function getOutingDetail(outingId: string, profileId: string) {
       favoritesResult,
       messagesResult
     ] = await Promise.all([
-      supabase.from("invites").select("id,outing_id,email,invited_by,status,token,created_at").eq("outing_id", outingId),
-      supabase.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,updated_at").eq("outing_id", outingId),
-      supabase.from("destination_options").select("id,outing_id,provider_key,name,region,drive_hours,flight_hours,average_nightly_rate,average_round_cost,tags,summary,featured,hidden").eq("outing_id", outingId),
-      supabase.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden").eq("outing_id", outingId),
-      supabase.from("lodging_options").select(lodgingSelectFields).eq("outing_id", outingId),
-      supabase.from("votes").select("id,outing_id,profile_id,entity_type,entity_id,weight").eq("outing_id", outingId),
-      supabase.from("favorites").select("id,outing_id,profile_id,entity_type,entity_id").eq("outing_id", outingId),
-      supabase.from("chat_messages").select("id,outing_id,profile_id,message,created_at").eq("outing_id", outingId).order("created_at", { ascending: true })
+      queryClient.from("invites").select("id,outing_id,email,invited_by,status,token,created_at").eq("outing_id", outingId),
+      queryClient.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,updated_at").eq("outing_id", outingId),
+      queryClient.from("destination_options").select("id,outing_id,provider_key,name,region,drive_hours,flight_hours,average_nightly_rate,average_round_cost,tags,summary,featured,hidden").eq("outing_id", outingId),
+      queryClient.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden").eq("outing_id", outingId),
+      queryClient.from("lodging_options").select(lodgingSelectFields).eq("outing_id", outingId),
+      queryClient.from("votes").select("id,outing_id,profile_id,entity_type,entity_id,weight").eq("outing_id", outingId),
+      queryClient.from("favorites").select("id,outing_id,profile_id,entity_type,entity_id").eq("outing_id", outingId),
+      queryClient.from("chat_messages").select("id,outing_id,profile_id,message,created_at").eq("outing_id", outingId).order("created_at", { ascending: true })
     ]);
 
     const preferences = (preferencesResult.data ?? []).map(mapPreferenceRow);
