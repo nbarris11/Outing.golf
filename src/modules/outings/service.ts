@@ -492,7 +492,6 @@ export async function getOutingDetail(outingId: string, profileId: string) {
           ? "Confirm the front-running date and use compare to settle the final shortlist."
           : "Open another date window or add more availability from the group.";
 
-    const adminClient = createSupabaseAdminClient();
     const profileIds = Array.from(new Set([...members.map((item) => item.profileId), ...messages.map((item) => item.profileId)]));
     const profiles =
       adminClient && profileIds.length
