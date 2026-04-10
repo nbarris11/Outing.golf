@@ -24,6 +24,7 @@ This scaffold is intentionally built in two modes:
 - `/sign-in`
 - `/sign-up`
 - `/dashboard`
+- `/qa`
 - `/outings/new`
 - `/outings/[outingId]`
 - `/outings/[outingId]/compare`
@@ -167,6 +168,7 @@ Detailed integration notes live in [docs/provider-integrations.md](/Users/barris
 - Connect production env vars to the production Supabase project.
 - Keep `NEXT_PUBLIC_ENABLE_DEMO=false` in QA and production once Supabase is active.
 - Use seeded content blocks and feature flags to sanity-check admin publishing before launch.
+- Use `/qa` as the reviewer-facing preview screen for environment status, smoke-test links, and release checks.
 - Detailed QA and staging instructions live in [docs/qa-staging.md](/Users/barris/Desktop/Golf Trip App/docs/qa-staging.md).
 
 ## Vercel deployment notes

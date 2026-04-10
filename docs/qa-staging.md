@@ -19,10 +19,22 @@ Recommended mapping:
 ## Required environment variables
 
 - `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_APP_ENV_LABEL` optional friendly label for the current environment
 - `NEXT_PUBLIC_ENABLE_DEMO`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+
+## Vercel-provided environment touchpoints
+
+The app uses these Vercel-provided values when available to power the preview banner and `/qa` screen:
+
+- `VERCEL_ENV`
+- `VERCEL_URL`
+- `VERCEL_BRANCH_URL`
+- `VERCEL_PROJECT_PRODUCTION_URL`
+
+These are informational only. You do not need to set them manually when deploying on Vercel.
 
 ## Local QA checklist
 
@@ -40,7 +52,8 @@ Recommended mapping:
 3. Run [`supabase/seed.sql`](/Users/barris/Desktop/Golf Trip App/supabase/seed.sql)
 4. Add QA env vars in Vercel Preview environment
 5. Deploy the preview branch
-6. Verify:
+6. Open `/qa`
+7. Verify:
    - landing page
    - sign up / sign in
    - create outing
