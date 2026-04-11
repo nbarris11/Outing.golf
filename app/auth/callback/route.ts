@@ -47,7 +47,9 @@ export async function GET(request: NextRequest) {
       },
       setAll(cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options ?? {});
+          // Always force path:'/' so session cookies are sent on every route,
+          // not just /auth/* (the default when no path is specified).
+          response.cookies.set(name, value, { path: "/", ...(options ?? {}) });
         });
       }
     }

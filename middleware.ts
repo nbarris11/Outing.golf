@@ -24,7 +24,8 @@ export async function middleware(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
+          // Always force path:'/' so refreshed session cookies are sent on every route.
+          supabaseResponse.cookies.set(name, value, { path: "/", ...(options ?? {}) })
         );
       }
     }
