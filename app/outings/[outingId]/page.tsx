@@ -1,6 +1,7 @@
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { EmptyState } from "@/components/common/empty-state";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
+import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -356,6 +357,33 @@ export default async function OutingDetailPage({
               )}
             </Card>
 
+            {/* Combined cost estimate */}
+            {detail.insights.topCourse && detail.insights.topLodging ? (() => {
+              const golfPerPerson = detail.insights.topCourse.averageGreensFee * roundsPerPlayer;
+              const lodgingTotal = detail.insights.topLodging.priceTotal ?? detail.insights.topLodging.nightlyRate * nights;
+              const lodgingPerPerson = Math.round(lodgingTotal / players);
+              const totalPerPerson = golfPerPerson + lodgingPerPerson;
+              return (
+                <Card className="bg-forest-950 text-cream">
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.24em] text-cream/50">Estimated total</p>
+                      <p className="mt-2 font-serif text-4xl font-semibold tracking-[-0.05em]">
+                        {currency(totalPerPerson)}<span className="ml-2 text-xl font-normal text-cream/60">/person</span>
+                      </p>
+                      <p className="mt-2 text-sm text-cream/60">
+                        Based on top-ranked golf + lodging options · {nights} nights · {roundsPerPlayer} rounds
+                      </p>
+                    </div>
+                    <div className="space-y-1 text-sm text-cream/70">
+                      <p>{currency(golfPerPerson)} golf ({roundsPerPlayer}× rounds)</p>
+                      <p>{currency(lodgingPerPerson)} lodging ({nights} nights ÷ {players})</p>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })() : null}
+
             <Card id="people">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -577,16 +605,11 @@ export default async function OutingDetailPage({
                 </div>
 
                 <div className="rounded-[24px] bg-cream p-4">
-                  <FieldLabel htmlFor="availableDates">Available dates</FieldLabel>
-                  <Input
-                    id="availableDates"
-                    name="availableDates"
-                    defaultValue={defaults.availableDates}
-                    placeholder="2026-05-10, 2026-05-11, 2026-05-12"
+                  <FieldLabel htmlFor="availableDates">Which dates work for you?</FieldLabel>
+                  <DateAvailabilityPicker
+                    windows={detail.outing.preferredDateWindows}
+                    defaultSelected={detail.currentPreference?.availableDates ?? []}
                   />
-                  <p className="mt-2 text-xs text-charcoal/50">
-                    Start with the dates that work best for you. Suggested from the organizer: {dateSuggestion}
-                  </p>
                 </div>
 
                 <div className="rounded-[24px] bg-cream p-4">
@@ -647,6 +670,34 @@ export default async function OutingDetailPage({
                 <SubmitButton label="Save preferences" pendingLabel="Saving..." />
               </form>
             </Card>
+
+            {detail.destinations.length > 0 || detail.golfCourses.length > 0 ? (
+              <Card className="border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)]">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-emerald-800/70">Trip status</p>
+                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
+                      {detail.insights.respondedCount >= 2
+                        ? "Your group is aligned — ready to lock it in"
+                        : "Getting close — compare options and lock the dates"}
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-charcoal/66">
+                      {detail.insights.respondedCount >= 2
+                        ? `${detail.insights.respondedCount} members have submitted preferences. Head to the compare view to finalize the hotel and tee times.`
+                        : "Once the group finishes submitting preferences, the best-fit options will rise to the top automatically."}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-stretch">
+                    <Button href={`/outings/${detail.outing.id}/compare`}>
+                      Compare &amp; finalize options
+                    </Button>
+                    <p className="text-center text-xs text-charcoal/50 lg:text-left">
+                      Direct booking coming soon
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ) : null}
 
             <ChatPanel
               messages={detail.messages}

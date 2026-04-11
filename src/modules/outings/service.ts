@@ -528,6 +528,18 @@ export async function getOutingDetail(outingId: string, profileId: string) {
           ).data?.map(mapProfileRow) ?? []
         : [];
 
+    // Sort by recommendation score so the highest-fit options appear first
+    const sortedGolfCourses = [...golfCourses].sort((a, b) => {
+      const aScore = recommendation.golfScores.find((s) => s.id === a.id)?.score ?? 0;
+      const bScore = recommendation.golfScores.find((s) => s.id === b.id)?.score ?? 0;
+      return bScore - aScore;
+    });
+    const sortedLodging = [...lodging].sort((a, b) => {
+      const aScore = recommendation.lodgingScores.find((s) => s.id === a.id)?.score ?? 0;
+      const bScore = recommendation.lodgingScores.find((s) => s.id === b.id)?.score ?? 0;
+      return bScore - aScore;
+    });
+
     return {
       outing,
       members,
@@ -535,8 +547,8 @@ export async function getOutingDetail(outingId: string, profileId: string) {
       invites,
       preferences,
       destinations,
-      golfCourses,
-      lodging,
+      golfCourses: sortedGolfCourses,
+      lodging: sortedLodging,
       votes,
       favorites,
       messages,

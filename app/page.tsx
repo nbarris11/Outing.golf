@@ -34,6 +34,12 @@ export default async function LandingPage() {
                 See How It Works
               </Button>
             </div>
+            <p className="mt-4 text-sm text-charcoal/60">
+              Already have an account?{" "}
+              <a href="/sign-in" className="font-medium text-forest-900 underline-offset-2 hover:underline">
+                Sign in
+              </a>
+            </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
                 "Collect budgets and dates fast",

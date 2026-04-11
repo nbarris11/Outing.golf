@@ -55,9 +55,10 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to save lodging option" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error
+        ? error.message
+        : (error as Record<string, unknown>)?.message?.toString?.() ?? "Failed to save lodging option";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -51,7 +51,7 @@ export function LodgingSearchPanel({
   const [usedFallback, setUsedFallback] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isMutating, setIsMutating] = useState<string | null>(null);
+  const [mutatingKey, setMutatingKey] = useState<string | null>(null);
 
   const savedOfferIds = useMemo(
     () => new Set(savedOptions.map((item) => item.offerId).filter((item): item is string => Boolean(item))),
@@ -138,20 +138,16 @@ export function LodgingSearchPanel({
 
   async function mutateOption(
     url: string,
-    body?: Record<string, unknown>,
-    loadingLabel?: string
+    key: string,
+    body?: Record<string, unknown>
   ) {
-    setIsMutating(loadingLabel ?? url);
+    setMutatingKey(key);
     setError(null);
 
     try {
       const response = await fetch(url, {
         method: "POST",
-        headers: body
-          ? {
-              "Content-Type": "application/json"
-            }
-          : undefined,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
         body: body ? JSON.stringify(body) : undefined
       });
       const payload = await response.json();
@@ -164,7 +160,7 @@ export function LodgingSearchPanel({
     } catch (mutationError) {
       setError(mutationError instanceof Error ? mutationError.message : "Update failed");
     } finally {
-      setIsMutating(null);
+      setMutatingKey(null);
     }
   }
 
@@ -221,13 +217,10 @@ export function LodgingSearchPanel({
             </label>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4">
             <Button onClick={runSearch} disabled={isPending}>
               {isPending ? "Searching..." : "Search lodging"}
             </Button>
-            <span className="self-center text-sm text-charcoal/55">
-              Results stay server-side. The browser only gets the normalized fields the UI needs.
-            </span>
           </div>
         </div>
 
@@ -299,8 +292,8 @@ export function LodgingSearchPanel({
       ) : null}
 
       {results.length === 0 ? (
-        <div className="mt-5 rounded-[28px] border border-dashed border-charcoal/12 bg-cream px-5 py-6 text-sm text-charcoal/60">
-          Run a lodging search to see live options here. If liteAPI is unavailable and the dev fallback flag is on, you will still get mock results while testing locally.
+        <div className="mt-4 rounded-2xl border border-dashed border-charcoal/12 px-5 py-4 text-sm text-charcoal/55">
+          Run a search above to see live hotel options.
         </div>
       ) : (
         <div className="mt-5 grid gap-4 xl:grid-cols-2">
@@ -360,11 +353,11 @@ export function LodgingSearchPanel({
                     {isOrganizer ? (
                       <Button
                         onClick={() =>
-                          mutateOption(`/api/outings/${outingId}/lodging-options`, { option: result }, "save")
+                          mutateOption(`/api/outings/${outingId}/lodging-options`, `${result.offerId}:save`, { option: result })
                         }
-                        disabled={isMutating !== null || isSaved}
+                        disabled={mutatingKey === `${result.offerId}:save` || isSaved}
                       >
-                        {isSaved ? "Saved to outing" : isMutating === "save" ? "Saving..." : "Save option"}
+                        {isSaved ? "Saved to outing" : mutatingKey === `${result.offerId}:save` ? "Saving..." : "Save option"}
                       </Button>
                     ) : null}
 
@@ -375,11 +368,10 @@ export function LodgingSearchPanel({
                           onClick={() =>
                             mutateOption(
                               `/api/outings/${outingId}/lodging-options/${savedOption.id}/favorite`,
-                              undefined,
-                              "favorite"
+                              `${result.offerId}:favorite`
                             )
                           }
-                          disabled={isMutating !== null}
+                          disabled={mutatingKey !== null}
                         >
                           {isFavorited ? "Unfavorite" : "Favorite"}
                         </Button>
@@ -389,11 +381,10 @@ export function LodgingSearchPanel({
                             onClick={() =>
                               mutateOption(
                                 `/api/outings/${outingId}/lodging-options/${savedOption.id}/top-pick`,
-                                undefined,
-                                "top-pick"
+                                `${result.offerId}:top-pick`
                               )
                             }
-                            disabled={isMutating !== null}
+                            disabled={mutatingKey !== null}
                           >
                             {savedOption.topPick ? "Top pick" : "Make top pick"}
                           </Button>

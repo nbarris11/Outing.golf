@@ -765,10 +765,15 @@ export async function submitPreferencesAction(formData: FormData) {
     outingId: formData.get("outingId"),
     budgetMin: formData.get("budgetMin"),
     budgetMax: formData.get("budgetMax"),
-    availableDates: String(formData.get("availableDates") ?? "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
+    availableDates: (() => {
+      // Support both checkbox-style (multiple values) and legacy comma-separated
+      const all = formData.getAll("availableDates").map(String).filter(Boolean);
+      if (all.length > 0) return all;
+      return String(formData.get("availableDates") ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    })(),
     destinationVotes: String(formData.get("destinationVotes") ?? "")
       .split(",")
       .map((item) => item.trim())
