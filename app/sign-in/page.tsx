@@ -21,7 +21,7 @@ export default async function SignInPage({
       <AuthCard
         title="Sign in"
         subtitle="Jump back into the outing, check votes, and keep the group moving."
-        helper={{ text: "Need an account?", label: "Create one", href: "/sign-up" }}
+        helper={{ text: "Need an account?", label: "Create one", href: `/sign-up?next=${encodeURIComponent(next)}` }}
       >
         {!isDemoMode ? (
           <>

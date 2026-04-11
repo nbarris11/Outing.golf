@@ -21,7 +21,7 @@ export default async function SignUpPage({
       <AuthCard
         title="Create your account"
         subtitle="Start an outing, invite the group, and get the plan out of your texts."
-        helper={{ text: "Already have an account?", label: "Sign in", href: "/sign-in" }}
+        helper={{ text: "Already have an account?", label: "Sign in", href: `/sign-in?next=${encodeURIComponent(next)}` }}
       >
         {!isDemoMode ? (
           <>

@@ -13,12 +13,18 @@ import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { deleteOutingAction } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
 import { currency, formatLongDateLabel } from "@/lib/utils";
 import { getDashboardData } from "@/modules/outings/service";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
   const profile = await requireProfile();
+  const notices = await searchParams;
   const outings = await getDashboardData(profile.id);
   const averageConfidence =
     outings.length > 0
@@ -74,6 +80,13 @@ export default async function DashboardPage() {
             </Card>
           </Link>
         </div>
+
+        {notices.success ? (
+          <p className="mt-6 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notices.success}</p>
+        ) : null}
+        {notices.error ? (
+          <p className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{notices.error}</p>
+        ) : null}
 
         {outings.length === 0 ? (
           <div className="mt-8">
@@ -266,6 +279,18 @@ export default async function DashboardPage() {
                       Compare options
                     </Button>
                   </div>
+                  {outing.organizerId === profile.id ? (
+                    <form action={deleteOutingAction} className="mt-3">
+                      <input type="hidden" name="outingId" value={outing.id} />
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        className="w-full border border-red-400/25 text-red-100 hover:bg-red-500/10"
+                      >
+                        Delete outing
+                      </Button>
+                    </form>
+                  ) : null}
                   <div className="mt-4 flex items-center gap-2 text-sm text-cream/62">
                     <ArrowRight className="h-4 w-4" />
                     {insights.nextAction}

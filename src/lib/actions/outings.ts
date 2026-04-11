@@ -16,6 +16,7 @@ import {
 import { deploymentUrl, isDemoMode } from "@/lib/env";
 import { isInviteEmailConfigured, sendInviteEmail } from "@/lib/email/invite-email";
 import { logError } from "@/lib/logger";
+import { getOutingShareLink } from "@/lib/outing-share-links";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canManageOuting, isAdmin } from "@/modules/outings/permissions";
@@ -118,6 +119,7 @@ function buildOutingRedirect(
     created?: boolean;
     inviteEmail?: string;
     inviteLink?: string;
+    shareLink?: string;
   }
 ) {
   const params = new URLSearchParams();
@@ -136,6 +138,10 @@ function buildOutingRedirect(
 
   if (options?.inviteLink) {
     params.set("inviteLink", options.inviteLink);
+  }
+
+  if (options?.shareLink) {
+    params.set("shareLink", options.shareLink);
   }
 
   const query = params.toString();
@@ -371,6 +377,7 @@ export async function createOutingAction(formData: FormData) {
       });
 
       await upsertDemoPreference(profile.id, outing.id, buildOrganizerPreferenceSeed(parsed.data));
+      const shareLink = await getOutingShareLink(outing.id, profile.id);
 
       if (parsed.data.initialInviteEmail) {
         const invite = await createDemoInvite(outing.id, parsed.data.initialInviteEmail, profile.id);
@@ -378,12 +385,14 @@ export async function createOutingAction(formData: FormData) {
           success: "Outing created and first invite is ready",
           created: true,
           inviteEmail: parsed.data.initialInviteEmail,
-          inviteLink: buildInviteLink(invite.token)
+          inviteLink: buildInviteLink(invite.token),
+          shareLink: shareLink ?? undefined
         });
       } else {
         destination = buildOutingRedirect(outing.id, {
           success: "Outing created",
-          created: true
+          created: true,
+          shareLink: shareLink ?? undefined
         });
       }
     } else {
@@ -455,6 +464,7 @@ export async function createOutingAction(formData: FormData) {
         ...outing,
         createdAt: new Date().toISOString()
       });
+      const shareLink = await getOutingShareLink(outing.id, profile.id);
 
       let message = "Outing created";
       let inviteEmail: string | undefined;
@@ -480,7 +490,8 @@ export async function createOutingAction(formData: FormData) {
         success: message,
         created: true,
         inviteEmail,
-        inviteLink
+        inviteLink,
+        shareLink: shareLink ?? undefined
       });
     }
   } catch (error) {
@@ -519,7 +530,7 @@ export async function inviteMemberAction(formData: FormData) {
       );
     }
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
 
     if (!supabase) {
       redirect(`/outings/${parsed.data.outingId}?error=Supabase%20not%20configured`);
@@ -553,7 +564,8 @@ export async function inviteMemberAction(formData: FormData) {
           ? "Invite email sent"
           : "Invite saved. The link is ready even though email delivery is not configured yet",
         inviteEmail: parsed.data.email,
-        inviteLink: buildInviteLink(inviteResult.token)
+        inviteLink: buildInviteLink(inviteResult.token),
+        shareLink: (await getOutingShareLink(parsed.data.outingId, profile.id)) ?? undefined
       })
     );
   } catch (error) {
@@ -703,4 +715,42 @@ export async function acceptInviteAction(formData: FormData) {
   await adminClient!.from("invites").update({ status: "accepted" }).eq("id", invite.id);
 
   redirect(`/outings/${invite.outing_id}?success=You%20joined%20the%20outing`);
+}
+
+export async function deleteOutingAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+
+  if (!outingId) {
+    redirect("/dashboard?error=Outing%20not%20found");
+  }
+
+  if (isDemoMode) {
+    const { deleteDemoOuting } = await import("@/lib/demo/store");
+    await deleteDemoOuting(outingId, profile.id);
+    redirect("/dashboard?success=Outing%20deleted");
+  }
+
+  const adminClient = createSupabaseAdminClient();
+
+  if (!adminClient) {
+    redirect("/dashboard?error=Supabase%20not%20configured");
+  }
+
+  const { data: outing } = await adminClient!
+    .from("outings")
+    .select("id,organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing) {
+    redirect("/dashboard?error=Outing%20not%20found");
+  }
+
+  if (!isAdmin(profile) && outing.organizer_id !== profile.id) {
+    redirect("/dashboard?error=Only%20the%20organizer%20can%20delete%20this%20outing");
+  }
+
+  await adminClient!.from("outings").delete().eq("id", outingId);
+  redirect("/dashboard?success=Outing%20deleted");
 }

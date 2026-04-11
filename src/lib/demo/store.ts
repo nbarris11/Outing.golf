@@ -357,6 +357,50 @@ export async function createDemoInvite(outingId: string, email: string, invitedB
   return invite;
 }
 
+export async function deleteDemoOuting(outingId: string, profileId: string) {
+  const state = await readState();
+  const outing = state.outings.find((item) => item.id === outingId);
+
+  if (!outing || outing.organizerId !== profileId) {
+    return false;
+  }
+
+  state.outings = state.outings.filter((item) => item.id !== outingId);
+  state.outingMembers = state.outingMembers.filter((item) => item.outingId !== outingId);
+  state.invites = state.invites.filter((item) => item.outingId !== outingId);
+  state.preferenceSubmissions = state.preferenceSubmissions.filter((item) => item.outingId !== outingId);
+  state.destinationOptions = state.destinationOptions.filter((item) => item.outingId !== outingId);
+  state.golfCourseOptions = state.golfCourseOptions.filter((item) => item.outingId !== outingId);
+  state.lodgingOptions = state.lodgingOptions.filter((item) => item.outingId !== outingId);
+  state.votes = state.votes.filter((item) => item.outingId !== outingId);
+  state.favorites = state.favorites.filter((item) => item.outingId !== outingId);
+  state.chatMessages = state.chatMessages.filter((item) => item.outingId !== outingId);
+
+  await writeState(state);
+  return true;
+}
+
+export async function joinDemoOuting(outingId: string, profileId: string) {
+  const state = await readState();
+  const existing = state.outingMembers.find((item) => item.outingId === outingId && item.profileId === profileId);
+
+  if (existing) {
+    return existing;
+  }
+
+  const next: OutingMember = {
+    id: generateId("member"),
+    outingId,
+    profileId,
+    role: "participant",
+    joinedAt: new Date().toISOString()
+  };
+
+  state.outingMembers.unshift(next);
+  await writeState(state);
+  return next;
+}
+
 export async function upsertDemoPreference(
   profileId: string,
   outingId: string,

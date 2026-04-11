@@ -237,9 +237,9 @@ export async function saveLodgingOption(input: {
     throw new Error("Only organizers can save lodging options");
   }
 
-  const supabase = await createSupabaseServerClient();
+  const writeClient = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
 
-  if (!supabase) {
+  if (!writeClient) {
     throw new Error("Supabase is not configured");
   }
 
@@ -295,7 +295,7 @@ export async function saveLodgingOption(input: {
     featured: false
   };
 
-  const { data, error } = await supabase
+  const { data, error } = await writeClient
     .from("lodging_options")
     .upsert(row, { onConflict: "outing_id,offer_id" })
     .select("id")
@@ -305,7 +305,7 @@ export async function saveLodgingOption(input: {
     throw error ?? new Error("Failed to save lodging option");
   }
 
-  await supabase.from("saved_lodging_options").upsert({
+  await writeClient.from("saved_lodging_options").upsert({
     outing_id: input.outingId,
     lodging_option_id: data.id,
     created_by: profile.id
@@ -368,14 +368,14 @@ export async function markLodgingTopPick(input: {
     throw new Error("Only organizers can set the top pick");
   }
 
-  const supabase = await createSupabaseServerClient();
+  const writeClient = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
 
-  if (!supabase) {
+  if (!writeClient) {
     throw new Error("Supabase is not configured");
   }
 
-  await supabase.from("lodging_options").update({ top_pick: false }).eq("outing_id", input.outingId);
-  await supabase.from("lodging_options").update({ top_pick: true, featured: true }).eq("id", input.optionId);
+  await writeClient.from("lodging_options").update({ top_pick: false }).eq("outing_id", input.outingId);
+  await writeClient.from("lodging_options").update({ top_pick: true, featured: true }).eq("id", input.optionId);
 
   return { topPick: true };
 }

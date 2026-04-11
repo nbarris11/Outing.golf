@@ -13,7 +13,7 @@ import {
   submitPreferencesAction
 } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
-import { deploymentUrl } from "@/lib/env";
+import { getOutingShareLink } from "@/lib/outing-share-links";
 import { currency, formatLongDateLabel, percent } from "@/lib/utils";
 import { getOutingDetail } from "@/modules/outings/service";
 import type { PreferenceSubmission, Profile } from "@/types/domain";
@@ -103,7 +103,7 @@ export default async function OutingDetailPage({
   searchParams
 }: {
   params: Promise<{ outingId: string }>;
-  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string }>;
 }) {
   const profile = await requireProfile();
   const { outingId } = await params;
@@ -138,9 +138,10 @@ export default async function OutingDetailPage({
     .flatMap((window) => [window.start, window.end])
     .join(", ");
   const progressTarget = detail.insights.respondedCount + detail.insights.pendingCount;
-  const latestInvite = [...detail.invites].sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
-  const latestInviteLink = latestInvite ? `${deploymentUrl}/invite/${latestInvite.token}` : null;
-  const surfacedInviteLink = notices.inviteLink || latestInviteLink;
+  const isOrganizer = detail.outing.organizerId === profile.id;
+  const shareLink = isOrganizer
+    ? notices.shareLink ?? (await getOutingShareLink(detail.outing.id, detail.outing.organizerId)) ?? null
+    : null;
   const confidenceReady = detail.insights.respondedCount > 0;
   const confidenceStatus = confidenceReady ? confidenceLabel(detail.insights.confidence) : "Waiting for group input";
 
@@ -204,15 +205,15 @@ export default async function OutingDetailPage({
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                {notices.inviteLink ? <CopyLinkButton link={notices.inviteLink} className="w-full sm:w-auto" /> : null}
+                {shareLink ? <CopyLinkButton link={shareLink} className="w-full sm:w-auto" label="Copy share link" copiedLabel="Share link copied" /> : null}
                 <Button href="#people" className="w-full sm:w-auto">
-                  {notices.inviteLink ? "Invite more golfers" : "Add your first invite"}
+                  {shareLink ? "Invite more golfers" : "Add your first invite"}
                 </Button>
               </div>
             </div>
-            {notices.inviteLink ? (
+            {shareLink ? (
               <p className="mt-4 text-xs text-charcoal/56">
-                This invite link is tied to {notices.inviteEmail}. If you want a link for someone else, send them their own invite.
+                Share this link in a text or email and anyone who opens it can join this exact outing.
               </p>
             ) : null}
           </Card>
@@ -225,7 +226,7 @@ export default async function OutingDetailPage({
                   <p className="mt-1 text-xs text-emerald-900/70">Invite created for {notices.inviteEmail}</p>
                 ) : null}
               </div>
-              {notices.inviteLink ? <CopyLinkButton link={notices.inviteLink} className="w-full sm:w-auto" /> : null}
+              {shareLink ? <CopyLinkButton link={shareLink} className="w-full sm:w-auto" label="Copy share link" copiedLabel="Share link copied" /> : null}
             </div>
           </Card>
         ) : null}
@@ -499,12 +500,12 @@ export default async function OutingDetailPage({
                       />
                     </div>
                     <p className="mt-3 text-sm leading-6 text-cream/60">
-                      Each invite creates a copyable link for that specific email, so you can still drop it into a text thread after you send it.
+                      Email works when you know exactly who to invite. The share link is the fastest way to drop this outing into the group chat.
                     </p>
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                       <SubmitButton label="Send invite" pendingLabel="Sending..." className="w-full sm:w-auto" />
-                      {surfacedInviteLink ? (
-                        <CopyLinkButton link={surfacedInviteLink} className="w-full sm:w-auto" />
+                      {shareLink ? (
+                        <CopyLinkButton link={shareLink} className="w-full sm:w-auto" label="Copy share link" copiedLabel="Share link copied" />
                       ) : null}
                     </div>
                   </form>
