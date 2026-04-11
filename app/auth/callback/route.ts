@@ -53,11 +53,18 @@ export async function GET(request: NextRequest) {
     }
   });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     return NextResponse.redirect(
-      `${origin}/sign-in?error=${encodeURIComponent(error.message)}`
+      `${origin}/sign-in?error=${encodeURIComponent("Sign-in failed: " + error.message)}`
+    );
+  }
+
+  // Verify a session was actually returned — if not, surface it clearly
+  if (!data?.session) {
+    return NextResponse.redirect(
+      `${origin}/sign-in?error=${encodeURIComponent("Sign-in completed but no session was created. Please try again.")}`
     );
   }
 
