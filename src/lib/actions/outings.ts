@@ -727,17 +727,24 @@ export async function deleteOutingAction(formData: FormData) {
 
   if (isDemoMode) {
     const { deleteDemoOuting } = await import("@/lib/demo/store");
-    await deleteDemoOuting(outingId, profile.id);
+    const deleted = await deleteDemoOuting(outingId, profile.id);
+
+    if (!deleted) {
+      redirect("/dashboard?error=Unable%20to%20delete%20outing");
+    }
+
     redirect("/dashboard?success=Outing%20deleted");
   }
 
   const adminClient = createSupabaseAdminClient();
+  const supabase = await createSupabaseServerClient();
+  const readClient = adminClient ?? supabase;
 
-  if (!adminClient) {
+  if (!readClient) {
     redirect("/dashboard?error=Supabase%20not%20configured");
   }
 
-  const { data: outing } = await adminClient!
+  const { data: outing } = await readClient!
     .from("outings")
     .select("id,organizer_id")
     .eq("id", outingId)
@@ -751,6 +758,16 @@ export async function deleteOutingAction(formData: FormData) {
     redirect("/dashboard?error=Only%20the%20organizer%20can%20delete%20this%20outing");
   }
 
-  await adminClient!.from("outings").delete().eq("id", outingId);
+  const deleteClient = adminClient ?? supabase;
+  const { error } = await deleteClient!.from("outings").delete().eq("id", outingId);
+
+  if (error) {
+    logError("Failed to delete outing", error, {
+      outingId,
+      profileId: profile.id
+    });
+    redirect("/dashboard?error=Unable%20to%20delete%20outing");
+  }
+
   redirect("/dashboard?success=Outing%20deleted");
 }
