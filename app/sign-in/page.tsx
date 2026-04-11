@@ -5,6 +5,7 @@ import { FieldLabel, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { signInAction } from "@/lib/actions/auth";
 import { isDemoMode } from "@/lib/env";
+import { logInfo } from "@/lib/logger";
 
 export default async function SignInPage({
   searchParams
@@ -13,6 +14,14 @@ export default async function SignInPage({
 }) {
   const params = await searchParams;
   const next = params.next?.startsWith("/") ? params.next : "/dashboard";
+
+  if (params.error || params.notice) {
+    logInfo("Sign-in page loaded with auth state", {
+      error: params.error ?? null,
+      notice: params.notice ?? null,
+      next
+    });
+  }
 
   const formAction = isDemoMode ? "/api/demo/auth/sign-in" : signInAction;
 
