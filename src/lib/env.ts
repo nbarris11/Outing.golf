@@ -98,3 +98,5 @@ export const deploymentUrl =
 
 export const productionAppUrl =
   normalizeDeploymentUrl(env.VERCEL_PROJECT_PRODUCTION_URL) ?? env.NEXT_PUBLIC_APP_URL;
+
+export const publicAppUrl = isProductionEnvironment ? productionAppUrl : deploymentUrl;

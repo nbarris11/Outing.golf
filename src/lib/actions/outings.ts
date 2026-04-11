@@ -13,7 +13,7 @@ import {
   createDemoOuting,
   upsertDemoPreference
 } from "@/lib/demo/store";
-import { deploymentUrl, isDemoMode } from "@/lib/env";
+import { isDemoMode, publicAppUrl } from "@/lib/env";
 import { isInviteEmailConfigured, sendInviteEmail } from "@/lib/email/invite-email";
 import { logError } from "@/lib/logger";
 import { getOutingShareLink } from "@/lib/outing-share-links";
@@ -109,7 +109,7 @@ function buildOrganizerPreferenceSeed(input: z.infer<typeof createOutingSchema>)
 }
 
 function buildInviteLink(token: string) {
-  return `${deploymentUrl}/invite/${token}`;
+  return `${publicAppUrl}/invite/${token}`;
 }
 
 function buildOutingRedirect(

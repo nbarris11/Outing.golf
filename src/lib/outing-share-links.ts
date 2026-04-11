@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { deploymentUrl, isDemoMode } from "@/lib/env";
+import { isDemoMode, publicAppUrl } from "@/lib/env";
 import { logError } from "@/lib/logger";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -15,7 +15,7 @@ export function buildShareLinkPath(token: string) {
 }
 
 export function buildAbsoluteShareLink(token: string) {
-  return `${deploymentUrl}${buildShareLinkPath(token)}`;
+  return `${publicAppUrl}${buildShareLinkPath(token)}`;
 }
 
 export async function createOrGetOutingShareToken(outingId: string, createdBy: string) {

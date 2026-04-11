@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-import { deploymentUrl, env } from "@/lib/env";
+import { env, publicAppUrl } from "@/lib/env";
 import { logInfo } from "@/lib/logger";
 
 function getResendClient() {
@@ -28,7 +28,7 @@ export async function sendInviteEmail(input: {
   }
 
   const subject = `${input.organizerName} invited you to join ${input.outingName} on Outing.golf`;
-  const previewLink = input.inviteLink.startsWith("http") ? input.inviteLink : `${deploymentUrl}${input.inviteLink}`;
+  const previewLink = input.inviteLink.startsWith("http") ? input.inviteLink : `${publicAppUrl}${input.inviteLink}`;
   const text = [
     `${input.organizerName} invited you to join ${input.outingName} on Outing.golf.`,
     "",
