@@ -22,6 +22,7 @@ export function BudgetSlider({
   className?: string;
 }) {
   const [value, setValue] = useState(defaultValue);
+  const [flexible, setFlexible] = useState(true);
 
   return (
     <div className={cn("rounded-[24px] bg-cream p-4", className)}>
@@ -32,9 +33,19 @@ export function BudgetSlider({
             {currency(value)}
           </p>
         </div>
-        <div className="rounded-full bg-white px-3 py-1 text-xs text-charcoal/62 ring-1 ring-charcoal/8">
-          Flexible later
-        </div>
+        <button
+          type="button"
+          onClick={() => setFlexible((f) => !f)}
+          className={cn(
+            "rounded-full px-3 py-1 text-xs ring-1 transition",
+            flexible
+              ? "bg-white text-charcoal/62 ring-charcoal/8 hover:ring-charcoal/20"
+              : "bg-forest-900 text-cream ring-transparent"
+          )}
+        >
+          {flexible ? "Flexible later" : "Budget fixed"}
+        </button>
+        <input type="hidden" name="budgetFlexible" value={flexible ? "true" : "false"} />
       </div>
       <input
         id={id}

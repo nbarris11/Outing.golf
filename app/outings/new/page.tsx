@@ -1,5 +1,7 @@
 import { PageShell } from "@/components/layout/page-shell";
 import { DestinationPicker } from "@/components/outings/destination-picker";
+import { DateWindowsPicker } from "@/components/outings/date-windows-picker";
+import { GroupSizeInput } from "@/components/outings/group-size-input";
 import { Card } from "@/components/ui/card";
 import { BudgetSlider } from "@/components/ui/budget-slider";
 import { FieldLabel, Input, Select, Textarea } from "@/components/ui/field";
@@ -52,18 +54,7 @@ export default async function NewOutingPage({
 
                 <DestinationPicker />
 
-                <div className="max-w-sm">
-                    <FieldLabel htmlFor="groupSize">Group size</FieldLabel>
-                    <Input
-                      id="groupSize"
-                      name="numberOfPlayers"
-                      type="number"
-                      min="2"
-                      max="24"
-                      defaultValue="8"
-                      required
-                    />
-                </div>
+                <GroupSizeInput />
               </section>
 
               <section className="space-y-5">
@@ -82,19 +73,7 @@ export default async function NewOutingPage({
                   <BudgetSlider id="budgetTarget" name="budgetTarget" defaultValue={1200} />
                 </div>
 
-                <div className="rounded-[28px] bg-cream p-5">
-                  <p className="mb-4 text-sm font-medium text-charcoal">Date range</p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel htmlFor="dateStart">Date start</FieldLabel>
-                      <Input id="dateStart" name="dateStart" type="date" required />
-                    </div>
-                    <div>
-                      <FieldLabel htmlFor="dateEnd">Date end</FieldLabel>
-                      <Input id="dateEnd" name="dateEnd" type="date" required />
-                    </div>
-                  </div>
-                </div>
+                <DateWindowsPicker />
 
                 <RadioCardGroup
                   name="tripVibe"

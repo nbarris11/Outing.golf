@@ -41,8 +41,11 @@ const createOutingSchema = z
   golfIntensity: z.enum(["light", "balanced", "golf_first"]).optional(),
   lodgingPreference: z.enum(["hotel", "resort", "house", "mixed"]).default("mixed"),
   notes: z.string().optional(),
-  dateStart: z.string().min(1),
-  dateEnd: z.string().min(1),
+  // Single window (legacy / fallback)
+  dateStart: z.string().optional(),
+  dateEnd: z.string().optional(),
+  // Multi-window support: dateStart_0 / dateEnd_0, dateStart_1 / dateEnd_1, …
+  dateWindowCount: z.coerce.number().min(1).max(4).optional(),
   organizerWeighting: z.coerce.number().min(1).max(10).default(7),
   initialInviteEmail: z
     .string()
@@ -53,10 +56,7 @@ const createOutingSchema = z
     })
     .transform((value) => value || undefined)
 })
-  .refine((data) => data.dateEnd >= data.dateStart, {
-    message: "End date must be after start date",
-    path: ["dateEnd"]
-  });
+  ;
 
 const inviteSchema = z.object({
   outingId: z.string().min(1),
@@ -97,13 +97,21 @@ function buildBudgetRange(target: number) {
   };
 }
 
-function buildOrganizerPreferenceSeed(input: z.infer<typeof createOutingSchema>) {
+function buildOrganizerPreferenceSeed(
+  input: z.infer<typeof createOutingSchema>,
+  dateWindows?: { start: string; end: string }[]
+) {
   const budgetRange = buildBudgetRange(input.budgetTarget);
+
+  // Collect all date strings from the multi-window picker, falling back to legacy single pair
+  const availableDates: string[] = dateWindows
+    ? dateWindows.flatMap((w) => [w.start, w.end]).filter(Boolean)
+    : [input.dateStart, input.dateEnd].filter((d): d is string => Boolean(d));
 
   return {
     budgetMin: budgetRange.budgetMin,
     budgetMax: budgetRange.budgetMax,
-    availableDates: [input.dateStart, input.dateEnd],
+    availableDates,
     destinationVotes: [],
     lodgingPreferences: input.lodgingPreference === "mixed" ? [] : [input.lodgingPreference],
     courseQualityPreference:
@@ -168,7 +176,35 @@ function buildOutingRedirect(
   return query ? `/outings/${outingId}?${query}` : `/outings/${outingId}`;
 }
 
-function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerId: string): Omit<Outing, "createdAt"> {
+function parseDateWindows(
+  formData: FormData,
+  parsed: z.infer<typeof createOutingSchema>
+): { start: string; end: string }[] {
+  const count = Math.min(parsed.dateWindowCount ?? 1, 4);
+  const windows: { start: string; end: string }[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const start = String(formData.get(`dateStart_${i}`) ?? "").trim();
+    const end = String(formData.get(`dateEnd_${i}`) ?? "").trim();
+    if (start && end) {
+      windows.push({ start, end });
+    }
+  }
+
+  // Fall back to legacy single-window fields
+  if (windows.length === 0 && parsed.dateStart && parsed.dateEnd) {
+    windows.push({ start: parsed.dateStart, end: parsed.dateEnd });
+  }
+
+  // Absolute fallback so the outing always has at least one window
+  if (windows.length === 0) {
+    windows.push({ start: new Date().toISOString().slice(0, 10), end: new Date().toISOString().slice(0, 10) });
+  }
+
+  return windows;
+}
+
+function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerId: string, dateWindows?: { start: string; end: string }[]): Omit<Outing, "createdAt"> {
   const vibeDefaults = {
     casual: {
       tripStyle: "value" as const,
@@ -193,12 +229,9 @@ function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerI
     organizerId,
     destinationType: input.destinationType,
     destinationLabel: input.destinationLabel,
-    preferredDateWindows: [
-      {
-        start: input.dateStart,
-        end: input.dateEnd
-      }
-    ],
+    preferredDateWindows: dateWindows ?? (input.dateStart && input.dateEnd
+      ? [{ start: input.dateStart, end: input.dateEnd }]
+      : [{ start: new Date().toISOString().slice(0, 10), end: new Date().toISOString().slice(0, 10) }]),
     budgetTarget: input.budgetTarget,
     tripStyle: input.tripStyle ?? vibeDefaults.tripStyle,
     numberOfPlayers: input.numberOfPlayers,
@@ -377,8 +410,9 @@ export async function createOutingAction(formData: FormData) {
     golfIntensity: formData.get("golfIntensity") ?? undefined,
     lodgingPreference: formData.get("lodgingPreference") ?? undefined,
     notes: formData.get("notes") ?? undefined,
-    dateStart: formData.get("dateStart"),
-    dateEnd: formData.get("dateEnd"),
+    dateStart: formData.get("dateStart") ?? undefined,
+    dateEnd: formData.get("dateEnd") ?? undefined,
+    dateWindowCount: formData.get("dateWindowCount") ?? undefined,
     organizerWeighting: formData.get("organizerWeighting") ?? undefined,
     initialInviteEmail: formData.get("initialInviteEmail") ?? undefined
   });
@@ -387,9 +421,11 @@ export async function createOutingAction(formData: FormData) {
     redirect("/outings/new?error=Please%20complete%20all%20required%20fields");
   }
 
+  const dateWindows = parseDateWindows(formData, parsed.data);
+
   try {
     if (isDemoMode) {
-      const outingDraft = buildOutingRecord(parsed.data, profile.id);
+      const outingDraft = buildOutingRecord(parsed.data, profile.id, dateWindows);
       const outing = await createDemoOuting({
         name: outingDraft.name,
         organizerId: outingDraft.organizerId,
@@ -405,7 +441,7 @@ export async function createOutingAction(formData: FormData) {
         organizerWeighting: outingDraft.organizerWeighting
       });
 
-      await upsertDemoPreference(profile.id, outing.id, buildOrganizerPreferenceSeed(parsed.data));
+      await upsertDemoPreference(profile.id, outing.id, buildOrganizerPreferenceSeed(parsed.data, dateWindows));
       const shareLink = await getOutingShareLink(outing.id, profile.id);
 
       if (parsed.data.initialInviteEmail) {
@@ -431,7 +467,7 @@ export async function createOutingAction(formData: FormData) {
         redirect("/outings/new?error=Supabase%20not%20configured");
       }
 
-      const outing = buildOutingRecord(parsed.data, profile.id);
+      const outing = buildOutingRecord(parsed.data, profile.id, dateWindows);
       const { error: outingError } = await adminClient!.from("outings").insert({
         id: outing.id,
         organizer_id: outing.organizerId,
@@ -464,7 +500,7 @@ export async function createOutingAction(formData: FormData) {
         throw memberError;
       }
 
-      const organizerPreference = buildOrganizerPreferenceSeed(parsed.data);
+      const organizerPreference = buildOrganizerPreferenceSeed(parsed.data, dateWindows);
       const { error: organizerPreferenceError } = await adminClient!.from("preference_submissions").upsert(
         {
           id: randomUUID(),
@@ -834,14 +870,26 @@ export async function sendChatMessageAction(formData: FormData) {
     redirect(`/outings/${parsed.data.outingId}`);
   }
 
-  const supabase = await createSupabaseServerClient();
-  await supabase?.from("chat_messages").insert({
+  // Use admin client so RLS auth.uid() checks don't block server-action inserts
+  const adminClient = createSupabaseAdminClient();
+  const supabase = adminClient ?? (await createSupabaseServerClient());
+
+  const { error: chatError } = await supabase!.from("chat_messages").insert({
     id: randomUUID(),
     outing_id: parsed.data.outingId,
     profile_id: profile.id,
     message: parsed.data.message
   });
 
+  if (chatError) {
+    logError("Failed to send chat message", chatError, {
+      outingId: parsed.data.outingId,
+      profileId: profile.id
+    });
+    redirect(`/outings/${parsed.data.outingId}?error=Message%20could%20not%20be%20sent`);
+  }
+
+  revalidatePath(`/outings/${parsed.data.outingId}`);
   redirect(`/outings/${parsed.data.outingId}`);
 }
 
