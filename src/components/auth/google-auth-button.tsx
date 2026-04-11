@@ -1,9 +1,5 @@
-"use client";
-
-import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { startGoogleSignInAction } from "@/lib/actions/auth";
 
 function GoogleIcon() {
   return (
@@ -35,56 +31,13 @@ export function GoogleAuthButton({
   label: string;
   next?: string;
 }) {
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleClick() {
-    const supabase = createSupabaseBrowserClient();
-
-    if (!supabase) {
-      setError("Supabase is not configured yet.");
-      return;
-    }
-
-    setPending(true);
-    setError(null);
-
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { data, error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo
-      }
-    });
-
-    if (signInError) {
-      setError(signInError.message);
-      setPending(false);
-      return;
-    }
-
-    if (data.url) {
-      window.location.assign(data.url);
-      return;
-    }
-
-    setError("Google sign-in could not start.");
-    setPending(false);
-  }
-
   return (
-    <div className="space-y-3">
-      <Button
-        type="button"
-        variant="secondary"
-        className="w-full gap-2"
-        onClick={handleClick}
-        disabled={pending}
-      >
+    <form action={startGoogleSignInAction}>
+      <input type="hidden" name="next" value={next} />
+      <Button type="submit" variant="secondary" className="w-full gap-2">
         <GoogleIcon />
-        {pending ? "Opening Google..." : label}
+        {label}
       </Button>
-      {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
-    </div>
+    </form>
   );
 }

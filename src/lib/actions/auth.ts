@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
@@ -120,4 +121,49 @@ export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
   await supabase?.auth.signOut();
   redirect("/");
+}
+
+export async function startGoogleSignInAction(formData: FormData) {
+  const next = String(formData.get("next") ?? "").trim();
+  const destination = next.startsWith("/") ? next : "/dashboard";
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    if (!supabase) {
+      redirect("/sign-in?error=Supabase%20not%20configured");
+    }
+
+    const headerStore = await headers();
+    const forwardedHost = headerStore.get("x-forwarded-host");
+    const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
+    const origin =
+      headerStore.get("origin") ??
+      (forwardedHost ? `${forwardedProto}://${forwardedHost}` : null) ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      "http://127.0.0.1:3000";
+
+    const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(destination)}`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo
+      }
+    });
+
+    if (error || !data?.url) {
+      redirect(
+        `/sign-in?error=${encodeURIComponent(error?.message ?? "Google sign-in could not start")}`
+      );
+    }
+
+    redirect(data.url);
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    logError("Google sign in failed", error, { destination });
+    redirect("/sign-in?error=Unable%20to%20start%20Google%20sign-in");
+  }
 }
