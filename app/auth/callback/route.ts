@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { CookieOptions } from "@supabase/ssr";
 
-import { logError } from "@/lib/logger";
+import { logError, logInfo } from "@/lib/logger";
 import { withSupabaseCookieOverrides } from "@/lib/supabase/cookie-options";
 
 export async function GET(request: NextRequest) {
@@ -46,6 +46,13 @@ export async function GET(request: NextRequest) {
   const redirectBase = !isLocalEnv && requestHost ? `https://${requestHost}` : origin;
   const successUrl = `${redirectBase}${next}`;
 
+  logInfo("Google callback received", {
+    host: requestHost,
+    hasCode: Boolean(code),
+    providerError: providerError ?? null,
+    next
+  });
+
   // Create the redirect response first — cookies must be attached to THIS response
   // so the browser receives them along with the redirect. Using cookies() from
   // next/headers and returning a separate NextResponse drops the session.
@@ -86,6 +93,12 @@ export async function GET(request: NextRequest) {
       `${origin}/sign-in?error=${encodeURIComponent("Sign-in completed but no session was created. Please try again.")}`
     );
   }
+
+  logInfo("Google callback session created", {
+    host: requestHost,
+    next,
+    userId: data.session.user.id
+  });
 
   return response;
 }
