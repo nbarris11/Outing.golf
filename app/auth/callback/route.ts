@@ -2,13 +2,23 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { CookieOptions } from "@supabase/ssr";
 
+import { logError } from "@/lib/logger";
+import { withSupabaseCookieOverrides } from "@/lib/supabase/cookie-options";
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const providerError = searchParams.get("error_description") ?? searchParams.get("error");
   let next = searchParams.get("next") ?? "/dashboard";
 
   if (!next.startsWith("/")) {
     next = "/dashboard";
+  }
+
+  if (providerError && !code) {
+    return NextResponse.redirect(
+      `${origin}/sign-in?error=${encodeURIComponent("Google sign-in failed: " + providerError)}`
+    );
   }
 
   if (!code) {
@@ -31,8 +41,9 @@ export async function GET(request: NextRequest) {
   // Determine the destination URL before creating the response so we can
   // attach the session cookies directly onto the redirect response.
   const forwardedHost = request.headers.get("x-forwarded-host");
+  const requestHost = forwardedHost ?? request.headers.get("host");
   const isLocalEnv = process.env.NODE_ENV === "development";
-  const redirectBase = !isLocalEnv && forwardedHost ? `https://${forwardedHost}` : origin;
+  const redirectBase = !isLocalEnv && requestHost ? `https://${requestHost}` : origin;
   const successUrl = `${redirectBase}${next}`;
 
   // Create the redirect response first — cookies must be attached to THIS response
@@ -47,9 +58,7 @@ export async function GET(request: NextRequest) {
       },
       setAll(cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          // Always force path:'/' so session cookies are sent on every route,
-          // not just /auth/* (the default when no path is specified).
-          response.cookies.set(name, value, { path: "/", ...(options ?? {}) });
+          response.cookies.set(name, value, withSupabaseCookieOverrides(options, requestHost));
         });
       }
     }
@@ -58,6 +67,10 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    logError("Google callback exchange failed", error, {
+      host: requestHost,
+      next
+    });
     return NextResponse.redirect(
       `${origin}/sign-in?error=${encodeURIComponent("Sign-in failed: " + error.message)}`
     );
@@ -65,6 +78,10 @@ export async function GET(request: NextRequest) {
 
   // Verify a session was actually returned — if not, surface it clearly
   if (!data?.session) {
+    logError("Google callback completed without a session", "No session returned", {
+      host: requestHost,
+      next
+    });
     return NextResponse.redirect(
       `${origin}/sign-in?error=${encodeURIComponent("Sign-in completed but no session was created. Please try again.")}`
     );

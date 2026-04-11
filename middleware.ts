@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { CookieOptions } from "@supabase/ssr";
 
+import { withSupabaseCookieOverrides } from "@/lib/supabase/cookie-options";
+
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey =
@@ -14,6 +16,7 @@ export async function middleware(request: NextRequest) {
   }
 
   let supabaseResponse = NextResponse.next({ request });
+  const requestHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
@@ -24,8 +27,7 @@ export async function middleware(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          // Always force path:'/' so refreshed session cookies are sent on every route.
-          supabaseResponse.cookies.set(name, value, { path: "/", ...(options ?? {}) })
+          supabaseResponse.cookies.set(name, value, withSupabaseCookieOverrides(options, requestHost))
         );
       }
     }

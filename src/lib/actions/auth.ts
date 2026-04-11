@@ -136,10 +136,11 @@ export async function startGoogleSignInAction(formData: FormData) {
 
     const headerStore = await headers();
     const forwardedHost = headerStore.get("x-forwarded-host");
+    const requestHost = forwardedHost ?? headerStore.get("host");
     const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
     const origin =
+      (requestHost ? `${forwardedProto}://${requestHost}` : null) ??
       headerStore.get("origin") ??
-      (forwardedHost ? `${forwardedProto}://${forwardedHost}` : null) ??
       process.env.NEXT_PUBLIC_APP_URL ??
       "http://127.0.0.1:3000";
 
