@@ -45,11 +45,9 @@ export async function SiteHeader({ minimal = false }: { minimal?: boolean }) {
             </>
           ) : (
             <>
-              {!minimal ? (
-                <Link href="/sign-in" className="hidden text-sm text-charcoal/70 sm:inline-flex">
-                  Sign in
-                </Link>
-              ) : null}
+              <Link href="/sign-in" className="hidden text-sm text-charcoal/70 sm:inline-flex hover:text-charcoal">
+                Sign in
+              </Link>
               <Button href="/sign-up">Start Planning Free</Button>
             </>
           )}

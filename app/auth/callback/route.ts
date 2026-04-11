@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import type { CookieOptions } from "@supabase/ssr";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   let next = searchParams.get("next") ?? "/dashboard";
@@ -12,33 +12,54 @@ export async function GET(request: Request) {
   }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/sign-in?error=${encodeURIComponent("Missing Google auth code")}`);
+    return NextResponse.redirect(
+      `${origin}/sign-in?error=${encodeURIComponent("Missing Google auth code")}`
+    );
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabase) {
+  if (!supabaseUrl || !supabaseKey) {
     return NextResponse.redirect(
       `${origin}/sign-in?error=${encodeURIComponent("Supabase is not configured")}`
     );
   }
 
+  // Determine the destination URL before creating the response so we can
+  // attach the session cookies directly onto the redirect response.
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const isLocalEnv = process.env.NODE_ENV === "development";
+  const redirectBase = !isLocalEnv && forwardedHost ? `https://${forwardedHost}` : origin;
+  const successUrl = `${redirectBase}${next}`;
+
+  // Create the redirect response first — cookies must be attached to THIS response
+  // so the browser receives them along with the redirect. Using cookies() from
+  // next/headers and returning a separate NextResponse drops the session.
+  const response = NextResponse.redirect(successUrl);
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options ?? {});
+        });
+      }
+    }
+  });
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(`${origin}/sign-in?error=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(
+      `${origin}/sign-in?error=${encodeURIComponent(error.message)}`
+    );
   }
 
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const isLocalEnv = process.env.NODE_ENV === "development";
-
-  if (isLocalEnv) {
-    return NextResponse.redirect(`${origin}${next}`);
-  }
-
-  if (forwardedHost) {
-    return NextResponse.redirect(`https://${forwardedHost}${next}`);
-  }
-
-  return NextResponse.redirect(`${origin}${next}`);
+  return response;
 }
