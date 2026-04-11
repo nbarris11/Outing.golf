@@ -346,9 +346,19 @@ export default async function OutingDetailPage({
                             <p className="mt-1 text-xs text-charcoal/48">{currency(course.averageGreensFee)} × {roundsPerPlayer} rounds</p>
                           </div>
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-4 text-sm text-charcoal/64">
-                          <span>Quality {course.qualityScore}/100</span>
-                          <span>{course.walkingFriendly ? "Walking-friendly" : "Riding-first"}</span>
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex flex-wrap gap-4 text-sm text-charcoal/64">
+                            <span>Quality {course.qualityScore}/100</span>
+                            <span>{course.walkingFriendly ? "Walking-friendly" : "Riding-first"}</span>
+                          </div>
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(course.name + " golf course " + course.locationLabel)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-forest-900 underline-offset-2 hover:underline"
+                          >
+                            Search course →
+                          </a>
                         </div>
                       </div>
                     );
@@ -425,11 +435,21 @@ export default async function OutingDetailPage({
                             <p className="mt-1 text-xs text-charcoal/48">{currency(stay.nightlyRate)}/night × {nights} nights ÷ {players}</p>
                           </div>
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-4 text-sm text-charcoal/64">
-                          {stay.refundable !== null && stay.refundable !== undefined && (
-                            <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
-                          )}
-                          {stay.city && <span>{stay.city}{stay.state ? `, ${stay.state}` : ""}</span>}
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex flex-wrap gap-4 text-sm text-charcoal/64">
+                            {stay.refundable !== null && stay.refundable !== undefined && (
+                              <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
+                            )}
+                            {stay.city && <span>{stay.city}{stay.state ? `, ${stay.state}` : ""}</span>}
+                          </div>
+                          <a
+                            href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-forest-900 underline-offset-2 hover:underline"
+                          >
+                            View on Maps →
+                          </a>
                         </div>
                       </div>
                     );

@@ -349,7 +349,17 @@ export function LodgingSearchPanel({
                     </div>
                   ) : null}
 
-                  <div className="mt-5 flex flex-wrap gap-3">
+                  <div className="mt-4 flex flex-wrap items-center gap-4">
+                    <a
+                      href={`https://maps.google.com/maps/search/${encodeURIComponent(result.hotelName + (result.city ? " " + result.city : "") + (result.state ? " " + result.state : ""))}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-forest-900 underline-offset-2 hover:underline"
+                    >
+                      View on Maps →
+                    </a>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3">
                     {isOrganizer ? (
                       <Button
                         onClick={() =>
