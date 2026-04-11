@@ -135,10 +135,23 @@ export function buildRecommendations(input: {
     })
     .sort((a, b) => b.score - a.score);
 
+  // Mode of preferredRounds across all submitted preferences (fallback: null)
+  const roundsVotes = preferences
+    .map(p => p.preferredRounds)
+    .filter((r): r is number => r != null && r > 0);
+  const consensusRounds = roundsVotes.length
+    ? (() => {
+        const counts: Record<number, number> = {};
+        for (const r of roundsVotes) counts[r] = (counts[r] ?? 0) + 1;
+        return Number(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
+      })()
+    : null;
+
   return {
     bestDates,
     destinationScores,
     golfScores,
-    lodgingScores
+    lodgingScores,
+    consensusRounds
   };
 }

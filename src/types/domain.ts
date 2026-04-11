@@ -72,6 +72,8 @@ export interface PreferenceSubmission {
   courseQualityPreference: number;
   walkingPreference: "walking" | "riding" | "either";
   comments?: string;
+  preferredRounds?: number | null;
+  homeCity?: string | null;
   updatedAt: string;
 }
 
@@ -308,6 +310,7 @@ export interface OutingRecommendations {
   destinationScores: RecommendationScore[];
   golfScores: RecommendationScore[];
   lodgingScores: RecommendationScore[];
+  consensusRounds: number | null;
 }
 
 export interface DemoState {

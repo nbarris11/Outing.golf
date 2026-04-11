@@ -295,23 +295,43 @@ export async function saveLodgingOption(input: {
     featured: false
   };
 
-  const { data, error } = await writeClient
+  // 1. Check for existing row
+  const { data: existing } = await writeClient
     .from("lodging_options")
-    .upsert(row, { onConflict: "outing_id,offer_id" })
     .select("id")
-    .single();
+    .eq("outing_id", input.outingId)
+    .eq("offer_id", input.option.offerId)
+    .maybeSingle();
 
-  if (error || !data) {
-    throw error ?? new Error("Failed to save lodging option");
+  let savedId: string;
+  if (existing) {
+    // Update existing
+    const { data, error } = await writeClient
+      .from("lodging_options")
+      .update(row)
+      .eq("id", existing.id)
+      .select("id")
+      .single();
+    if (error || !data) throw error ?? new Error("Failed to update lodging option");
+    savedId = data.id;
+  } else {
+    // Insert new
+    const { data, error } = await writeClient
+      .from("lodging_options")
+      .insert(row)
+      .select("id")
+      .single();
+    if (error || !data) throw error ?? new Error("Failed to save lodging option");
+    savedId = data.id;
   }
 
   await writeClient.from("saved_lodging_options").upsert({
     outing_id: input.outingId,
-    lodging_option_id: data.id,
+    lodging_option_id: savedId,
     created_by: profile.id
-  });
+  }, { onConflict: "outing_id,lodging_option_id" });
 
-  return data.id as string;
+  return savedId as string;
 }
 
 export async function toggleLodgingFavorite(input: {

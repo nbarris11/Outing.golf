@@ -46,24 +46,31 @@ function preferenceDefaults(preference: PreferenceSubmission | null, outingBudge
     lodgingPreferences: preference?.lodgingPreferences.join(", ") ?? "",
     courseQualityPreference: preference?.courseQualityPreference?.toString() ?? "7",
     walkingPreference: preference?.walkingPreference ?? "either",
-    comments: preference?.comments ?? ""
+    comments: preference?.comments ?? "",
+    preferredRounds: preference?.preferredRounds ?? null,
+    homeCity: preference?.homeCity ?? null
   };
 }
 
 function MemberRow({
   person,
   responded,
-  role
+  role,
+  homeCity
 }: {
   person: Profile | undefined;
   responded: boolean;
   role: string;
+  homeCity?: string | null;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-3 border-b border-charcoal/6 last:border-0">
       <div className="min-w-0">
         <p className="font-medium text-charcoal truncate">{person?.fullName ?? "Member"}</p>
         <p className="text-sm text-charcoal/50 truncate">{person?.email}</p>
+        {homeCity && (
+          <p className="text-xs text-charcoal/40">✈️ From {homeCity}</p>
+        )}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <Badge className={responded ? "bg-emerald-100 text-emerald-800" : "bg-sand text-charcoal/70"}>
@@ -132,7 +139,8 @@ export default async function OutingDetailPage({
   const nights = tripWindow
     ? Math.max(1, Math.round((new Date(tripWindow.end).getTime() - new Date(tripWindow.start).getTime()) / (1000 * 60 * 60 * 24)))
     : 3;
-  const roundsPerPlayer = detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3;
+  const roundsPerPlayer = detail.recommendation.consensusRounds
+    ?? (detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3);
   const players = detail.outing.numberOfPlayers;
 
   return (
@@ -228,7 +236,10 @@ export default async function OutingDetailPage({
             <Card>
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">⛳ Golf courses</h2>
-                <p className="text-sm text-charcoal/50">{roundsPerPlayer} rounds · {players} players</p>
+                <p className="text-sm text-charcoal/50">
+                  {roundsPerPlayer} rounds · {players} players
+                  {detail.recommendation.consensusRounds ? " · from group votes" : " · estimated"}
+                </p>
               </div>
 
               {detail.golfCourses.length === 0 ? (
@@ -379,6 +390,41 @@ export default async function OutingDetailPage({
           {/* ── Right column ── */}
           <div className="space-y-6">
 
+            {/* Getting there */}
+            {detail.currentPreference?.homeCity ? (
+              <Card>
+                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">✈️ Getting there</h2>
+                <p className="mt-1 text-sm text-charcoal/55">
+                  From <strong>{detail.currentPreference.homeCity}</strong> to {detail.outing.destinationLabel}
+                </p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <a
+                    href={`https://www.google.com/maps/dir/${encodeURIComponent(detail.currentPreference.homeCity)}/${encodeURIComponent(detail.outing.destinationLabel)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-charcoal/12 bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-charcoal/5 transition-colors"
+                  >
+                    🚗 Get driving directions
+                  </a>
+                  <a
+                    href={`https://www.google.com/travel/flights?q=flights+from+${encodeURIComponent(detail.currentPreference.homeCity)}+to+${encodeURIComponent(detail.outing.destinationLabel)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-charcoal/12 bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-charcoal/5 transition-colors"
+                  >
+                    ✈️ Search flights
+                  </a>
+                </div>
+                <p className="mt-3 text-xs text-charcoal/40">
+                  Links open Google Maps / Google Flights in a new tab.
+                </p>
+              </Card>
+            ) : (
+              <div className="rounded-[22px] border border-dashed border-charcoal/15 px-5 py-4 text-sm text-charcoal/50">
+                Add your home city in preferences below to see driving and flight options for this trip.
+              </div>
+            )}
+
             {/* Preferences form */}
             <Card id="preferences">
               <div className="flex items-center justify-between gap-3">
@@ -463,6 +509,20 @@ export default async function OutingDetailPage({
                 </div>
 
                 <div>
+                  <FieldLabel htmlFor="preferredRounds">How many rounds do you want to play?</FieldLabel>
+                  <Select id="preferredRounds" name="preferredRounds" defaultValue={defaults.preferredRounds ?? ""}>
+                    <option value="">No preference</option>
+                    <option value="1">1 round</option>
+                    <option value="2">2 rounds</option>
+                    <option value="3">3 rounds</option>
+                    <option value="4">4 rounds</option>
+                    <option value="5">5 rounds</option>
+                    <option value="6">6 rounds</option>
+                    <option value="7">7 rounds</option>
+                  </Select>
+                </div>
+
+                <div>
                   <FieldLabel htmlFor="comments">Anything else?</FieldLabel>
                   <Textarea
                     id="comments"
@@ -470,6 +530,19 @@ export default async function OutingDetailPage({
                     defaultValue={defaults.comments}
                     placeholder="Notes for the organizer..."
                   />
+                </div>
+
+                <div>
+                  <FieldLabel htmlFor="homeCity">Where are you traveling from?</FieldLabel>
+                  <Input
+                    id="homeCity"
+                    name="homeCity"
+                    defaultValue={defaults.homeCity ?? ""}
+                    placeholder="e.g. Chicago, IL or Grand Rapids, MI"
+                  />
+                  <p className="mt-1.5 text-xs text-charcoal/45">
+                    Used to show driving and flight options tailored to you.
+                  </p>
                 </div>
 
                 <SubmitButton label="Save preferences" pendingLabel="Saving..." />
@@ -495,6 +568,7 @@ export default async function OutingDetailPage({
                       person={person}
                       responded={snapshot.responded}
                       role={labelize(snapshot.member.role)}
+                      homeCity={snapshot.preference?.homeCity}
                     />
                   );
                 })}

@@ -76,7 +76,7 @@ const preferenceSchema = z.object({
   outingId: z.string().min(1),
   budgetMin: z.coerce.number().min(0),
   budgetMax: z.coerce.number().min(0),
-  availableDates: z.array(z.string()).min(1),
+  availableDates: z.array(z.string()).min(0),
   destinationVotes: z.array(z.string()).optional().default([]),
   lodgingPreferences: z
     .array(z.enum(["hotel", "resort", "house", "mixed"]))
@@ -84,7 +84,9 @@ const preferenceSchema = z.object({
     .default([]),
   courseQualityPreference: z.coerce.number().min(1).max(10),
   walkingPreference: z.enum(["walking", "riding", "either"]),
-  comments: z.string().optional()
+  comments: z.string().optional(),
+  preferredRounds: z.coerce.number().int().min(1).max(7).optional(),
+  homeCity: z.string().optional()
 }).refine((value) => value.budgetMax >= value.budgetMin, {
   message: "Budget max must be greater than or equal to budget min",
   path: ["budgetMax"]
@@ -784,7 +786,9 @@ export async function submitPreferencesAction(formData: FormData) {
       .filter(Boolean),
     courseQualityPreference: formData.get("courseQualityPreference"),
     walkingPreference: formData.get("walkingPreference"),
-    comments: String(formData.get("comments") ?? "")
+    comments: String(formData.get("comments") ?? ""),
+    preferredRounds: formData.get("preferredRounds") || undefined,
+    homeCity: String(formData.get("homeCity") ?? "").trim() || undefined
   });
 
   if (!parsed.success) {
@@ -801,7 +805,9 @@ export async function submitPreferencesAction(formData: FormData) {
       lodgingPreferences: parsed.data.lodgingPreferences,
       courseQualityPreference: parsed.data.courseQualityPreference,
       walkingPreference: parsed.data.walkingPreference,
-      comments: parsed.data.comments
+      comments: parsed.data.comments,
+      preferredRounds: parsed.data.preferredRounds ?? null,
+      homeCity: parsed.data.homeCity ?? null
     });
 
     revalidatePath(`/outings/${parsed.data.outingId}`);
@@ -840,7 +846,9 @@ export async function submitPreferencesAction(formData: FormData) {
       lodging_preferences: parsed.data.lodgingPreferences,
       course_quality_preference: parsed.data.courseQualityPreference,
       walking_preference: parsed.data.walkingPreference,
-      comments: parsed.data.comments ?? null
+      comments: parsed.data.comments ?? null,
+      preferred_rounds: parsed.data.preferredRounds ?? null,
+      home_city: parsed.data.homeCity ?? null
     },
     { onConflict: "outing_id,profile_id" }
   );
