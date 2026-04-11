@@ -13,6 +13,7 @@ import {
   createDemoInvite,
   createDemoOuting,
   joinDemoOuting,
+  resendDemoInvite,
   upsertDemoPreference
 } from "@/lib/demo/store";
 import { isDemoMode, publicAppUrl } from "@/lib/env";
@@ -61,6 +62,11 @@ const createOutingSchema = z
 const inviteSchema = z.object({
   outingId: z.string().min(1),
   emails: z.string().trim().min(1)
+});
+
+const resendInviteSchema = z.object({
+  outingId: z.string().min(1),
+  inviteId: z.string().min(1)
 });
 
 const acceptInviteSchema = z.object({
@@ -398,6 +404,93 @@ async function createLiveInvite(input: {
   }
 }
 
+async function resendLiveInvite(input: {
+  outingId: string;
+  inviteId: string;
+  invitedBy: string;
+  organizerName: string;
+}) {
+  const adminClient = createSupabaseAdminClient();
+  const supabase = adminClient ?? (await createSupabaseServerClient());
+
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  const { data: inviteRow } = await supabase
+    .from("invites")
+    .select("id,outing_id,email,status")
+    .eq("id", input.inviteId)
+    .eq("outing_id", input.outingId)
+    .maybeSingle();
+
+  if (!inviteRow) {
+    throw new Error("Invite not found");
+  }
+
+  if (inviteRow.status === "accepted") {
+    throw new Error("This invite has already been accepted");
+  }
+
+  const { data: outingRow } = await supabase
+    .from("outings")
+    .select("name")
+    .eq("id", input.outingId)
+    .maybeSingle();
+
+  if (!outingRow) {
+    throw new Error("Outing not found");
+  }
+
+  const token = randomUUID();
+  const { error: updateError } = await supabase
+    .from("invites")
+    .update({
+      token,
+      invited_by: input.invitedBy,
+      status: "pending"
+    })
+    .eq("id", input.inviteId);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  if (!isInviteEmailConfigured()) {
+    return {
+      email: inviteRow.email,
+      token,
+      emailStatus: "not_configured" as const
+    };
+  }
+
+  try {
+    await sendInviteEmail({
+      inviteeEmail: inviteRow.email,
+      outingName: outingRow.name,
+      organizerName: input.organizerName,
+      inviteLink: `/invite/${token}`
+    });
+
+    return {
+      email: inviteRow.email,
+      token,
+      emailStatus: "sent" as const
+    };
+  } catch (error) {
+    logError("Invite resend email delivery failed", error, {
+      outingId: input.outingId,
+      inviteeEmail: inviteRow.email
+    });
+
+    return {
+      email: inviteRow.email,
+      token,
+      emailStatus: "failed" as const
+    };
+  }
+}
+
 export async function createOutingAction(formData: FormData) {
   const profile = await requireProfile();
   let destination = "/outings/new";
@@ -716,6 +809,92 @@ export async function inviteMemberAction(formData: FormData) {
       emails: parsedEmails.emails
     });
     redirect(`/outings/${parsed.data.outingId}?error=Unable%20to%20send%20invite`);
+  }
+}
+
+export async function resendInviteAction(formData: FormData) {
+  const profile = await requireProfile();
+  const parsed = resendInviteSchema.safeParse({
+    outingId: formData.get("outingId"),
+    inviteId: formData.get("inviteId")
+  });
+
+  if (!parsed.success) {
+    const outingId = String(formData.get("outingId") ?? "");
+    redirect(`/outings/${outingId}?error=Unable%20to%20resend%20that%20invite`);
+  }
+
+  try {
+    if (isDemoMode) {
+      const invite = await resendDemoInvite(parsed.data.inviteId, profile.id);
+
+      if (!invite) {
+        redirect(`/outings/${parsed.data.outingId}?error=Invite%20not%20found`);
+      }
+
+      redirect(
+        buildOutingRedirect(parsed.data.outingId, {
+          success: "Fresh invite link ready",
+          inviteEmail: invite.email,
+          inviteLink: buildInviteLink(invite.token)
+        })
+      );
+    }
+
+    const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+
+    if (!supabase) {
+      redirect(`/outings/${parsed.data.outingId}?error=Supabase%20not%20configured`);
+    }
+
+    const { data: outingRow } = await supabase!
+      .from("outings")
+      .select("id,organizer_id")
+      .eq("id", parsed.data.outingId)
+      .maybeSingle();
+
+    if (!outingRow) {
+      redirect(`/outings/${parsed.data.outingId}?error=Outing%20not%20found`);
+    }
+
+    if (!isAdmin(profile) && !canManageOuting({ organizerId: outingRow.organizer_id } as Outing, profile)) {
+      redirect(`/outings/${parsed.data.outingId}?error=Only%20the%20organizer%20can%20resend%20invites`);
+    }
+
+    const resentInvite = await resendLiveInvite({
+      outingId: parsed.data.outingId,
+      inviteId: parsed.data.inviteId,
+      invitedBy: profile.id,
+      organizerName: profile.fullName
+    });
+
+    const statusMessage =
+      resentInvite.emailStatus === "sent"
+        ? `Invite re-sent to ${resentInvite.email}`
+        : resentInvite.emailStatus === "failed"
+          ? `Fresh invite saved for ${resentInvite.email}. Email delivery failed, so use the link below instead`
+          : `Fresh invite link ready for ${resentInvite.email}`;
+
+    revalidatePath(`/outings/${parsed.data.outingId}`);
+    revalidatePath(`/outings/${parsed.data.outingId}/compare`);
+    redirect(
+      buildOutingRedirect(parsed.data.outingId, {
+        success: statusMessage,
+        inviteEmail: resentInvite.email,
+        inviteLink: buildInviteLink(resentInvite.token),
+        shareLink: (await getOutingShareLink(parsed.data.outingId, profile.id)) ?? undefined
+      })
+    );
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    logError("Failed to resend invite", error, {
+      outingId: parsed.data.outingId,
+      inviteId: parsed.data.inviteId
+    });
+    redirect(`/outings/${parsed.data.outingId}?error=${encodeURIComponent(error instanceof Error ? error.message : "Unable to resend invite")}`);
   }
 }
 

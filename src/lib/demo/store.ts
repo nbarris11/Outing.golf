@@ -357,6 +357,23 @@ export async function createDemoInvite(outingId: string, email: string, invitedB
   return invite;
 }
 
+export async function resendDemoInvite(inviteId: string, invitedBy: string) {
+  const state = await readState();
+  const invite = state.invites.find((item) => item.id === inviteId);
+
+  if (!invite) {
+    return null;
+  }
+
+  invite.invitedBy = invitedBy;
+  invite.status = "pending";
+  invite.token = generateId("token");
+  invite.createdAt = new Date().toISOString();
+
+  await writeState(state);
+  return invite;
+}
+
 export async function deleteDemoOuting(outingId: string, profileId: string) {
   const state = await readState();
   const outing = state.outings.find((item) => item.id === outingId);

@@ -10,6 +10,7 @@ import { FieldLabel, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import {
   inviteMemberAction,
+  resendInviteAction,
   sendChatMessageAction,
   submitPreferencesAction
 } from "@/lib/actions/outings";
@@ -598,8 +599,21 @@ export default async function OutingDetailPage({
                 <div className="mt-4 space-y-2">
                   {detail.invites.map((invite) => (
                     <div key={invite.id} className="flex items-center justify-between gap-3 rounded-[18px] bg-cream px-4 py-3">
-                      <p className="text-sm text-charcoal">{invite.email}</p>
-                      <Badge>{labelize(invite.status)}</Badge>
+                      <div className="min-w-0">
+                        <p className="text-sm text-charcoal">{invite.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge>{labelize(invite.status)}</Badge>
+                        {isOrganizer && invite.status === "pending" ? (
+                          <form action={resendInviteAction}>
+                            <input type="hidden" name="outingId" value={detail.outing.id} />
+                            <input type="hidden" name="inviteId" value={invite.id} />
+                            <Button type="submit" variant="secondary" className="px-3 py-2 text-xs">
+                              Resend invite
+                            </Button>
+                          </form>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
