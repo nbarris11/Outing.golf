@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CalendarRange, CheckCircle2, CircleDollarSign, MapPinned, MessageSquareText } from "lucide-react";
 
 import { PageShell } from "@/components/layout/page-shell";
@@ -28,14 +27,12 @@ export default async function LandingPage() {
                 "Collect budgets, dates, courses, and lodging in one place so your group can actually decide and book faster."}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href={hero?.ctaHref ?? "/sign-up"}>
-                <Button className="w-full sm:w-auto">{hero?.ctaLabel ?? "Start Planning Free"}</Button>
-              </Link>
-              <Link href="#how-it-works">
-                <Button variant="secondary" className="w-full sm:w-auto">
-                  See How It Works
-                </Button>
-              </Link>
+              <Button href={hero?.ctaHref ?? "/sign-up"} className="w-full sm:w-auto">
+                {hero?.ctaLabel ?? "Start Planning Free"}
+              </Button>
+              <Button href="#how-it-works" variant="secondary" className="w-full sm:w-auto">
+                See How It Works
+              </Button>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
@@ -182,27 +179,6 @@ export default async function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <Card className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Social proof</p>
-            <h2 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.04em] text-charcoal">
-              {landingPage.socialProofTitle}
-            </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-charcoal/66">
-              {landingPage.socialProofBody}
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {landingPage.socialProofItems.map((line) => (
-              <div key={line} className="rounded-[24px] bg-cream px-4 py-4 text-sm leading-6 text-charcoal/68">
-                {line}
-              </div>
-            ))}
-          </div>
-        </Card>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-4 lg:grid-cols-2">
           {landingPage.faqs.map((item) => (
             <Card key={item.question} className="p-6">
@@ -223,9 +199,9 @@ export default async function LandingPage() {
             {landingPage.finalCtaBody}
           </p>
           <div className="mt-8">
-            <Link href={landingPage.finalCtaHref}>
-              <Button className="bg-cream text-charcoal hover:bg-white">{landingPage.finalCtaLabel}</Button>
-            </Link>
+            <Button href={landingPage.finalCtaHref} className="bg-cream text-charcoal hover:bg-white">
+              {landingPage.finalCtaLabel}
+            </Button>
           </div>
         </Card>
       </section>

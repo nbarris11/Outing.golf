@@ -35,6 +35,14 @@ export default async function ComparePage({
   const roundsPerPlayer = detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3;
   const players = detail.outing.numberOfPlayers;
 
+  // Deduplicate lodging by hotel name — LiteAPI returns multiple room types per hotel
+  const seenLodgingNames = new Set<string>();
+  const dedupedLodging = detail.lodging.filter((stay) => {
+    if (seenLodgingNames.has(stay.name)) return false;
+    seenLodgingNames.add(stay.name);
+    return true;
+  });
+
   return (
     <PageShell>
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -177,7 +185,7 @@ export default async function ComparePage({
                         </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-3">
                           <p className="text-sm text-charcoal/68">{currency(course.averageGreensFee)} × {roundsPerPlayer} rounds</p>
-                          <p className="text-sm text-charcoal/68">{course.qualityScore}/10 quality</p>
+                          <p className="text-sm text-charcoal/68">{course.qualityScore}/100 quality</p>
                           <p className="text-sm text-charcoal/68">
                             {course.walkingFriendly ? "Walking-friendly" : "Riding-first"}
                           </p>
@@ -195,10 +203,10 @@ export default async function ComparePage({
                     <h2 className="text-xl font-semibold tracking-[-0.03em]">Lodging options</h2>
                     <p className="mt-1 text-sm text-charcoal/60">{nights} nights · split across {players} players</p>
                   </div>
-                  <Badge>{detail.lodging.length} stays</Badge>
+                  <Badge>{dedupedLodging.length} stays</Badge>
                 </div>
                 <div className="mt-5 space-y-3">
-                  {detail.lodging.map((stay) => {
+                  {dedupedLodging.map((stay) => {
                     const score = detail.recommendation.lodgingScores.find((item) => item.id === stay.id);
                     const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
                     const perPerson = Math.round(lodgingTotal / players);

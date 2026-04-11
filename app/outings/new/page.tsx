@@ -46,7 +46,7 @@ export default async function NewOutingPage({
 
                 <div>
                   <FieldLabel htmlFor="tripName">Trip name</FieldLabel>
-                  <Input id="tripName" name="name" placeholder="Summer friends trip" required />
+                  <Input id="tripName" name="name" placeholder="Summer friends trip" autoComplete="off" required />
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2">

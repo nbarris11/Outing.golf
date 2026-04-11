@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { EmptyState } from "@/components/common/empty-state";
+import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   submitPreferencesAction
 } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
+import { deploymentUrl } from "@/lib/env";
 import { currency, formatLongDateLabel, percent } from "@/lib/utils";
 import { getOutingDetail } from "@/modules/outings/service";
 import type { PreferenceSubmission, Profile } from "@/types/domain";
@@ -39,6 +40,12 @@ function planningWindowLabel(start: string, end: string) {
   return `${formatLongDateLabel(start)} to ${formatLongDateLabel(end)}`;
 }
 
+function budgetRangeDefaults(target: number) {
+  return {
+    budgetMin: Math.max(300, target - 200).toString(),
+    budgetMax: Math.min(4000, target + 200).toString()
+  };
+}
 
 function MemberCard({
   person,
@@ -66,16 +73,22 @@ function MemberCard({
         </div>
       </div>
       <p className="mt-3 text-xs text-charcoal/48">
-        {responded && updatedAt ? `Last updated ${formatLongDateLabel(updatedAt)}` : "Needs a quick nudge."}
+        {responded && updatedAt
+          ? `Last updated ${formatLongDateLabel(updatedAt)}`
+          : role === "Organizer"
+            ? "Organizer already set the trip frame."
+            : "Needs a quick nudge."}
       </p>
     </div>
   );
 }
 
-function preferenceDefaults(preference: PreferenceSubmission | null) {
+function preferenceDefaults(preference: PreferenceSubmission | null, outingBudgetTarget: number) {
+  const seededBudgetRange = budgetRangeDefaults(outingBudgetTarget);
+
   return {
-    budgetMin: preference?.budgetMin?.toString() ?? "900",
-    budgetMax: preference?.budgetMax?.toString() ?? "1400",
+    budgetMin: preference?.budgetMin?.toString() ?? seededBudgetRange.budgetMin,
+    budgetMax: preference?.budgetMax?.toString() ?? seededBudgetRange.budgetMax,
     availableDates: preference?.availableDates.join(", ") ?? "",
     destinationVotes: preference?.destinationVotes.join(", ") ?? "",
     lodgingPreferences: preference?.lodgingPreferences.join(", ") ?? "",
@@ -90,7 +103,7 @@ export default async function OutingDetailPage({
   searchParams
 }: {
   params: Promise<{ outingId: string }>;
-  searchParams: Promise<{ success?: string; error?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string }>;
 }) {
   const profile = await requireProfile();
   const { outingId } = await params;
@@ -110,9 +123,7 @@ export default async function OutingDetailPage({
               The link may be wrong, the outing may have moved, or your account does not have access.
             </p>
             <div className="mt-8 flex justify-center">
-              <Link href="/dashboard">
-                <Button>Return to dashboard</Button>
-              </Link>
+              <Button href="/dashboard">Return to dashboard</Button>
             </div>
           </Card>
         </section>
@@ -122,10 +133,25 @@ export default async function OutingDetailPage({
 
   const profiles = detail.profiles;
   const bestDate = detail.recommendation.bestDates[0];
-  const defaults = preferenceDefaults(detail.currentPreference);
+  const defaults = preferenceDefaults(detail.currentPreference, detail.outing.budgetTarget);
   const dateSuggestion = detail.outing.preferredDateWindows
     .flatMap((window) => [window.start, window.end])
     .join(", ");
+  const progressTarget = detail.insights.respondedCount + detail.insights.pendingCount;
+  const latestInvite = [...detail.invites].sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
+  const latestInviteLink = latestInvite ? `${deploymentUrl}/invite/${latestInvite.token}` : null;
+  const surfacedInviteLink = notices.inviteLink || latestInviteLink;
+  const confidenceReady = detail.insights.respondedCount > 0;
+  const confidenceStatus = confidenceReady ? confidenceLabel(detail.insights.confidence) : "Waiting for group input";
+
+  // Deduplicate lodging by hotel name — keep lowest nightly rate per name
+  // (LiteAPI returns multiple room types per hotel; we surface one per property here)
+  const seenLodgingNames = new Set<string>();
+  const dedupedLodging = detail.lodging.filter((stay) => {
+    if (seenLodgingNames.has(stay.name)) return false;
+    seenLodgingNames.add(stay.name);
+    return true;
+  });
 
   // Trip cost estimates
   const tripWindow = detail.outing.preferredDateWindows[0];
@@ -156,21 +182,52 @@ export default async function OutingDetailPage({
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link href={`/outings/${detail.outing.id}/compare`} className="block">
-              <Button variant="secondary" className="w-full">
-                Compare options
-              </Button>
-            </Link>
-            <Link href="#preferences" className="block">
-              <Button className="w-full">Update your preferences</Button>
-            </Link>
+            <Button href={`/outings/${detail.outing.id}/compare`} variant="secondary" className="w-full">
+              Compare options
+            </Button>
+            <Button href="#preferences" className="w-full">Update your preferences</Button>
           </div>
         </div>
 
-        {notices.success ? (
-          <p className="mt-6 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {notices.success}
-          </p>
+        {notices.created === "1" ? (
+          <Card className="mt-6 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)]">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <p className="text-sm uppercase tracking-[0.24em] text-emerald-800/70">Outing created</p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+                  The trip is live and ready to share
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-charcoal/68">
+                  {notices.inviteEmail
+                    ? `Your first invite is ready for ${notices.inviteEmail}.`
+                    : "Your outing is set up. Invite the group now so the page can start collecting real input."}
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                {notices.inviteLink ? <CopyLinkButton link={notices.inviteLink} className="w-full sm:w-auto" /> : null}
+                <Button href="#people" className="w-full sm:w-auto">
+                  {notices.inviteLink ? "Invite more golfers" : "Add your first invite"}
+                </Button>
+              </div>
+            </div>
+            {notices.inviteLink ? (
+              <p className="mt-4 text-xs text-charcoal/56">
+                This invite link is tied to {notices.inviteEmail}. If you want a link for someone else, send them their own invite.
+              </p>
+            ) : null}
+          </Card>
+        ) : notices.success ? (
+          <Card className="mt-6 border-emerald-200 bg-emerald-50/80">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-emerald-800">{notices.success}</p>
+                {notices.inviteEmail ? (
+                  <p className="mt-1 text-xs text-emerald-900/70">Invite created for {notices.inviteEmail}</p>
+                ) : null}
+              </div>
+              {notices.inviteLink ? <CopyLinkButton link={notices.inviteLink} className="w-full sm:w-auto" /> : null}
+            </div>
+          </Card>
         ) : null}
         {notices.error ? (
           <p className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -186,7 +243,9 @@ export default async function OutingDetailPage({
                   <div className="max-w-2xl">
                     <p className="text-xs uppercase tracking-[0.26em] text-cream/58">Planning pulse</p>
                     <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">
-                      {detail.insights.respondedCount} of {detail.members.length} players have shared preferences
+                      {progressTarget > 0
+                        ? `${detail.insights.respondedCount} of ${progressTarget} players have shared preferences`
+                        : "The trip frame is set. Now it needs group input."}
                     </h2>
                     <p className="mt-3 max-w-xl text-sm leading-6 text-cream/76">
                       {detail.insights.nextAction}
@@ -194,8 +253,10 @@ export default async function OutingDetailPage({
                   </div>
                   <div className="rounded-[22px] border border-white/12 bg-white/8 px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.22em] text-cream/52">Decision confidence</p>
-                    <p className="mt-2 text-3xl font-semibold">{detail.insights.confidence}</p>
-                    <p className="mt-1 text-sm text-cream/66">{confidenceLabel(detail.insights.confidence)}</p>
+                    <p className="mt-2 text-3xl font-semibold">
+                      {confidenceReady ? `${detail.insights.confidence}%` : "Waiting"}
+                    </p>
+                    <p className="mt-1 text-sm text-cream/66">{confidenceStatus}</p>
                   </div>
                 </div>
                 <div className="mt-5 h-2 rounded-full bg-white/10">
@@ -284,7 +345,7 @@ export default async function OutingDetailPage({
                           </div>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-4 text-sm text-charcoal/64">
-                          <span>Quality {course.qualityScore}/10</span>
+                          <span>Quality {course.qualityScore}/100</span>
                           <span>{course.walkingFriendly ? "Walking-friendly" : "Riding-first"}</span>
                         </div>
                       </div>
@@ -294,7 +355,7 @@ export default async function OutingDetailPage({
               )}
             </Card>
 
-            <Card>
+            <Card id="people">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Lodging options</p>
@@ -307,7 +368,7 @@ export default async function OutingDetailPage({
                 </p>
               </div>
 
-              {detail.lodging.length === 0 ? (
+              {dedupedLodging.length === 0 ? (
                 <div className="mt-5">
                   <EmptyState
                     title="Lodging options will appear here"
@@ -316,7 +377,7 @@ export default async function OutingDetailPage({
                 </div>
               ) : (
                 <div className="mt-5 space-y-3">
-                  {detail.lodging.map((stay) => {
+                  {dedupedLodging.map((stay) => {
                     const isTop = stay.id === detail.insights.topLodging?.id;
                     const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
                     const perPerson = Math.round(lodgingTotal / players);
@@ -438,9 +499,14 @@ export default async function OutingDetailPage({
                       />
                     </div>
                     <p className="mt-3 text-sm leading-6 text-cream/60">
-                      Email invites are live now. Share links can drop into this same workflow later without changing the organizer flow.
+                      Each invite creates a copyable link for that specific email, so you can still drop it into a text thread after you send it.
                     </p>
-                    <SubmitButton label="Send invite" pendingLabel="Sending..." className="mt-4" />
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <SubmitButton label="Send invite" pendingLabel="Sending..." className="w-full sm:w-auto" />
+                      {surfacedInviteLink ? (
+                        <CopyLinkButton link={surfacedInviteLink} className="w-full sm:w-auto" />
+                      ) : null}
+                    </div>
                   </form>
 
                   {detail.invites.length ? (
@@ -497,10 +563,16 @@ export default async function OutingDetailPage({
                   <div>
                     <FieldLabel htmlFor="budgetMin">Budget min</FieldLabel>
                     <Input id="budgetMin" name="budgetMin" type="number" defaultValue={defaults.budgetMin} />
+                    <p className="mt-2 text-xs text-charcoal/50">
+                      Suggested from the trip target: {currency(detail.outing.budgetTarget)}
+                    </p>
                   </div>
                   <div>
                     <FieldLabel htmlFor="budgetMax">Budget max</FieldLabel>
                     <Input id="budgetMax" name="budgetMax" type="number" defaultValue={defaults.budgetMax} />
+                    <p className="mt-2 text-xs text-charcoal/50">
+                      Start with your realistic all-in range, then tighten it later if needed.
+                    </p>
                   </div>
                 </div>
 

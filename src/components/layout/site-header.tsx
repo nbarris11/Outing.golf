@@ -25,9 +25,7 @@ export async function SiteHeader({ minimal = false }: { minimal?: boolean }) {
           {profile ? (
             <>
               {minimal ? (
-                <Link href="/dashboard">
-                  <Button variant="secondary">Open Dashboard</Button>
-                </Link>
+                <Button href="/dashboard" variant="secondary">Open Dashboard</Button>
               ) : (
                 <>
                   <Link href="/settings" className="hidden text-sm text-charcoal/70 sm:inline-flex">
@@ -52,9 +50,7 @@ export async function SiteHeader({ minimal = false }: { minimal?: boolean }) {
                   Sign in
                 </Link>
               ) : null}
-              <Link href="/sign-up">
-                <Button>Start Planning Free</Button>
-              </Link>
+              <Button href="/sign-up">Start Planning Free</Button>
             </>
           )}
         </div>

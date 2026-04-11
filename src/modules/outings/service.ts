@@ -39,6 +39,19 @@ function membersCompletionRate(memberCount: number, preferenceCount: number) {
   return preferenceCount / memberCount;
 }
 
+function eligibleProgressMembers(
+  members: OutingMember[],
+  preferences: Array<{ profileId: string }>
+) {
+  return members.filter((member) => {
+    if (member.role !== "organizer") {
+      return true;
+    }
+
+    return preferences.some((preference) => preference.profileId === member.profileId);
+  });
+}
+
 function mapOutingRow(row: Record<string, any>): Outing {
   return {
     id: row.id,
@@ -291,7 +304,8 @@ async function getLiveOutings(profileId: string) {
         lodging,
         votes
       });
-      const responseRate = membersCompletionRate(members.length, preferences.length);
+      const progressMembers = eligibleProgressMembers(members, preferences);
+      const responseRate = membersCompletionRate(progressMembers.length, preferences.length);
       const topDestination = destinations.find((item) => item.id === recommendation.destinationScores[0]?.id);
       const topCourse = golfCourses.find((item) => item.id === recommendation.golfScores[0]?.id);
       const topLodging = lodging.find((item) => item.id === recommendation.lodgingScores[0]?.id);
@@ -318,6 +332,10 @@ async function getLiveOutings(profileId: string) {
         recommendation,
         insights: {
           responseRate,
+          respondedCount: preferences.length,
+          pendingCount: progressMembers.filter(
+            (member) => !preferences.some((item) => item.profileId === member.profileId)
+          ).length,
           confidence: confidenceScore(responseRate, votes.length),
           averageBudget,
           topDestination,
@@ -357,10 +375,9 @@ export async function getDashboardData(profileId: string) {
       lodging,
       votes
     });
-    const responseRate = membersCompletionRate(
-      state.outingMembers.filter((item) => item.outingId === outing.id).length,
-      preferences.length
-    );
+    const outingMembers = state.outingMembers.filter((item) => item.outingId === outing.id);
+    const progressMembers = eligibleProgressMembers(outingMembers, preferences);
+    const responseRate = membersCompletionRate(progressMembers.length, preferences.length);
     const topDestination = destinations.find((item) => item.id === recommendation.destinationScores[0]?.id);
     const topCourse = golfCourses.find((item) => item.id === recommendation.golfScores[0]?.id);
     const topLodging = lodging.find((item) => item.id === recommendation.lodgingScores[0]?.id);
@@ -381,12 +398,16 @@ export async function getDashboardData(profileId: string) {
 
     return {
       outing,
-      members: state.outingMembers.filter((item) => item.outingId === outing.id),
+      members: outingMembers,
       invites: state.invites.filter((item) => item.outingId === outing.id),
       preferences,
       recommendation,
       insights: {
         responseRate,
+        respondedCount: preferences.length,
+        pendingCount: progressMembers.filter(
+          (member) => !preferences.some((item) => item.profileId === member.profileId)
+        ).length,
         confidence: confidenceScore(responseRate, votes.length),
         averageBudget,
         topDestination,
@@ -474,7 +495,8 @@ export async function getOutingDetail(outingId: string, profileId: string) {
       lodging,
       votes
     });
-    const responseRate = membersCompletionRate(members.length, preferences.length);
+    const progressMembers = eligibleProgressMembers(members, preferences);
+    const responseRate = membersCompletionRate(progressMembers.length, preferences.length);
     const topDestination = destinations.find((item) => item.id === recommendation.destinationScores[0]?.id);
     const topCourse = golfCourses.find((item) => item.id === recommendation.golfScores[0]?.id);
     const topLodging = lodging.find((item) => item.id === recommendation.lodgingScores[0]?.id);
@@ -524,7 +546,9 @@ export async function getOutingDetail(outingId: string, profileId: string) {
       insights: {
         responseRate,
         respondedCount: memberSnapshots.filter((item) => item.responded).length,
-        pendingCount: memberSnapshots.filter((item) => !item.responded).length,
+        pendingCount: progressMembers.filter(
+          (member) => !preferences.some((item) => item.profileId === member.profileId)
+        ).length,
         confidence: confidenceScore(responseRate, votes.length),
         topDestination,
         topCourse,
@@ -567,7 +591,8 @@ export async function getOutingDetail(outingId: string, profileId: string) {
     lodging,
     votes
   });
-  const responseRate = membersCompletionRate(members.length, preferences.length);
+  const progressMembers = eligibleProgressMembers(members, preferences);
+  const responseRate = membersCompletionRate(progressMembers.length, preferences.length);
   const topDestination = destinations.find((item) => item.id === recommendation.destinationScores[0]?.id);
   const topCourse = golfCourses.find((item) => item.id === recommendation.golfScores[0]?.id);
   const topLodging = lodging.find((item) => item.id === recommendation.lodgingScores[0]?.id);
@@ -606,7 +631,9 @@ export async function getOutingDetail(outingId: string, profileId: string) {
     insights: {
       responseRate,
       respondedCount: memberSnapshots.filter((item) => item.responded).length,
-      pendingCount: memberSnapshots.filter((item) => !item.responded).length,
+      pendingCount: progressMembers.filter(
+        (member) => !preferences.some((item) => item.profileId === member.profileId)
+      ).length,
       confidence: confidenceScore(responseRate, votes.length),
       topDestination,
       topCourse,

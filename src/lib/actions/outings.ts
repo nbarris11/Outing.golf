@@ -13,7 +13,7 @@ import {
   createDemoOuting,
   upsertDemoPreference
 } from "@/lib/demo/store";
-import { isDemoMode } from "@/lib/env";
+import { deploymentUrl, isDemoMode } from "@/lib/env";
 import { isInviteEmailConfigured, sendInviteEmail } from "@/lib/email/invite-email";
 import { logError } from "@/lib/logger";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -83,6 +83,64 @@ const preferenceSchema = z.object({
   walkingPreference: z.enum(["walking", "riding", "either"]),
   comments: z.string().optional()
 });
+
+function buildBudgetRange(target: number) {
+  return {
+    budgetMin: Math.max(300, target - 200),
+    budgetMax: Math.min(4000, target + 200)
+  };
+}
+
+function buildOrganizerPreferenceSeed(input: z.infer<typeof createOutingSchema>) {
+  const budgetRange = buildBudgetRange(input.budgetTarget);
+
+  return {
+    budgetMin: budgetRange.budgetMin,
+    budgetMax: budgetRange.budgetMax,
+    availableDates: [input.dateStart, input.dateEnd],
+    destinationVotes: [],
+    lodgingPreferences: input.lodgingPreference === "mixed" ? [] : [input.lodgingPreference],
+    courseQualityPreference:
+      input.tripVibe === "serious_golf" ? 9 : input.tripVibe === "casual" ? 6 : 7,
+    walkingPreference: "either" as const,
+    comments: input.notes || undefined
+  };
+}
+
+function buildInviteLink(token: string) {
+  return `${deploymentUrl}/invite/${token}`;
+}
+
+function buildOutingRedirect(
+  outingId: string,
+  options?: {
+    success?: string;
+    created?: boolean;
+    inviteEmail?: string;
+    inviteLink?: string;
+  }
+) {
+  const params = new URLSearchParams();
+
+  if (options?.success) {
+    params.set("success", options.success);
+  }
+
+  if (options?.created) {
+    params.set("created", "1");
+  }
+
+  if (options?.inviteEmail) {
+    params.set("inviteEmail", options.inviteEmail);
+  }
+
+  if (options?.inviteLink) {
+    params.set("inviteLink", options.inviteLink);
+  }
+
+  const query = params.toString();
+  return query ? `/outings/${outingId}?${query}` : `/outings/${outingId}`;
+}
 
 function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerId: string): Omit<Outing, "createdAt"> {
   const vibeDefaults = {
@@ -312,11 +370,22 @@ export async function createOutingAction(formData: FormData) {
         organizerWeighting: outingDraft.organizerWeighting
       });
 
-      if (parsed.data.initialInviteEmail) {
-        await createDemoInvite(outing.id, parsed.data.initialInviteEmail, profile.id);
-      }
+      await upsertDemoPreference(profile.id, outing.id, buildOrganizerPreferenceSeed(parsed.data));
 
-      destination = `/outings/${outing.id}`;
+      if (parsed.data.initialInviteEmail) {
+        const invite = await createDemoInvite(outing.id, parsed.data.initialInviteEmail, profile.id);
+        destination = buildOutingRedirect(outing.id, {
+          success: "Outing created and first invite is ready",
+          created: true,
+          inviteEmail: parsed.data.initialInviteEmail,
+          inviteLink: buildInviteLink(invite.token)
+        });
+      } else {
+        destination = buildOutingRedirect(outing.id, {
+          success: "Outing created",
+          created: true
+        });
+      }
     } else {
       const adminClient = createSupabaseAdminClient();
 
@@ -357,12 +426,39 @@ export async function createOutingAction(formData: FormData) {
         throw memberError;
       }
 
+      const organizerPreference = buildOrganizerPreferenceSeed(parsed.data);
+      const { error: organizerPreferenceError } = await adminClient!.from("preference_submissions").upsert(
+        {
+          id: randomUUID(),
+          outing_id: outing.id,
+          profile_id: profile.id,
+          budget_min: organizerPreference.budgetMin,
+          budget_max: organizerPreference.budgetMax,
+          available_dates: organizerPreference.availableDates,
+          destination_votes: organizerPreference.destinationVotes,
+          lodging_preferences: organizerPreference.lodgingPreferences,
+          course_quality_preference: organizerPreference.courseQualityPreference,
+          walking_preference: organizerPreference.walkingPreference,
+          comments: organizerPreference.comments ?? null
+        },
+        { onConflict: "outing_id,profile_id" }
+      );
+
+      if (organizerPreferenceError) {
+        logError("Failed to seed organizer preferences", organizerPreferenceError, {
+          organizerId: profile.id,
+          outingId: outing.id
+        });
+      }
+
       await seedLiveInventory({
         ...outing,
         createdAt: new Date().toISOString()
       });
 
-      let message = "Outing%20created";
+      let message = "Outing created";
+      let inviteEmail: string | undefined;
+      let inviteLink: string | undefined;
 
       if (parsed.data.initialInviteEmail) {
         const inviteResult = await createLiveInvite({
@@ -373,12 +469,19 @@ export async function createOutingAction(formData: FormData) {
           organizerName: profile.fullName
         });
 
+        inviteEmail = parsed.data.initialInviteEmail;
+        inviteLink = buildInviteLink(inviteResult.token);
         message = inviteResult.emailSent
-          ? "Outing%20created%20and%20invite%20email%20sent"
-          : "Outing%20created.%20Invite%20was%20saved,%20but%20email%20is%20not%20configured%20yet";
+          ? "Outing created and first invite is ready"
+          : "Outing created. The invite link is ready even though email is not configured yet";
       }
 
-      destination = `/outings/${outing.id}?success=${message}`;
+      destination = buildOutingRedirect(outing.id, {
+        success: message,
+        created: true,
+        inviteEmail,
+        inviteLink
+      });
     }
   } catch (error) {
     if (isRedirectError(error)) {
@@ -406,8 +509,14 @@ export async function inviteMemberAction(formData: FormData) {
 
   try {
     if (isDemoMode) {
-      await createDemoInvite(parsed.data.outingId, parsed.data.email, profile.id);
-      redirect(`/outings/${parsed.data.outingId}?success=Invite%20sent`);
+      const invite = await createDemoInvite(parsed.data.outingId, parsed.data.email, profile.id);
+      redirect(
+        buildOutingRedirect(parsed.data.outingId, {
+          success: "Invite sent",
+          inviteEmail: parsed.data.email,
+          inviteLink: buildInviteLink(invite.token)
+        })
+      );
     }
 
     const supabase = await createSupabaseServerClient();
@@ -439,9 +548,13 @@ export async function inviteMemberAction(formData: FormData) {
     });
 
     redirect(
-      inviteResult.emailSent
-        ? `/outings/${parsed.data.outingId}?success=Invite%20email%20sent`
-        : `/outings/${parsed.data.outingId}?error=Invite%20saved,%20but%20email%20is%20not%20configured%20yet`
+      buildOutingRedirect(parsed.data.outingId, {
+        success: inviteResult.emailSent
+          ? "Invite email sent"
+          : "Invite saved. The link is ready even though email delivery is not configured yet",
+        inviteEmail: parsed.data.email,
+        inviteLink: buildInviteLink(inviteResult.token)
+      })
     );
   } catch (error) {
     if (isRedirectError(error)) {

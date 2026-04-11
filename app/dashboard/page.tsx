@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   ArrowRight,
   CalendarRange,
@@ -7,6 +6,7 @@ import {
   Plus,
   Sparkles
 } from "lucide-react";
+import Link from "next/link";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
@@ -28,6 +28,8 @@ export default async function DashboardPage() {
     outings.length > 0
       ? [...outings].sort((left, right) => right.insights.confidence - left.insights.confidence)[0]
       : null;
+  const primaryOutingLink = leadOuting ? `/outings/${leadOuting.outing.id}` : "/outings/new";
+  const compareLink = leadOuting ? `/outings/${leadOuting.outing.id}/compare` : "/outings/new";
 
   return (
     <PageShell>
@@ -42,31 +44,35 @@ export default async function DashboardPage() {
               See what is ready, what still needs input, and what decision the group should make next.
             </p>
           </div>
-          <Link href="/outings/new">
-            <Button className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Create outing
-            </Button>
-          </Link>
+          <Button href="/outings/new" className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            Create outing
+          </Button>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <Card>
-            <p className="text-sm text-charcoal/50">Active outings</p>
-            <p className="mt-4 text-4xl font-semibold tracking-[-0.04em]">{outings.length}</p>
-          </Card>
-          <Card>
-            <p className="text-sm text-charcoal/50">Pending invites</p>
-            <p className="mt-4 text-4xl font-semibold tracking-[-0.04em]">
-              {outings.reduce((total, outing) => total + outing.invites.length, 0)}
-            </p>
-          </Card>
-          <Card>
-            <p className="text-sm text-charcoal/50">Average decision confidence</p>
-            <p className="mt-4 text-2xl font-semibold tracking-[-0.04em]">
-              {outings.length ? `${averageConfidence}%` : "No outings yet"}
-            </p>
-          </Card>
+          <Link href={primaryOutingLink}>
+            <Card className="h-full transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(33,36,35,0.1)]">
+              <p className="text-sm text-charcoal/50">Active outings</p>
+              <p className="mt-4 text-4xl font-semibold tracking-[-0.04em]">{outings.length}</p>
+            </Card>
+          </Link>
+          <Link href={primaryOutingLink}>
+            <Card className="h-full transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(33,36,35,0.1)]">
+              <p className="text-sm text-charcoal/50">Pending invites</p>
+              <p className="mt-4 text-4xl font-semibold tracking-[-0.04em]">
+                {outings.reduce((total, outing) => total + outing.invites.length, 0)}
+              </p>
+            </Card>
+          </Link>
+          <Link href={compareLink}>
+            <Card className="h-full transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(33,36,35,0.1)]">
+              <p className="text-sm text-charcoal/50">Average decision confidence</p>
+              <p className="mt-4 text-2xl font-semibold tracking-[-0.04em]">
+                {outings.length && averageConfidence > 0 ? `${averageConfidence}%` : outings.length ? "Waiting on group input" : "No outings yet"}
+              </p>
+            </Card>
+          </Link>
         </div>
 
         {outings.length === 0 ? (
@@ -97,9 +103,13 @@ export default async function DashboardPage() {
                   </div>
                   <div className="rounded-[24px] border border-white/12 bg-white/8 px-5 py-4">
                     <p className="text-xs uppercase tracking-[0.22em] text-cream/55">Decision confidence</p>
-                    <p className="mt-2 text-4xl font-semibold">{leadOuting.insights.confidence}%</p>
+                    <p className="mt-2 text-4xl font-semibold">
+                      {leadOuting.insights.respondedCount > 0 ? `${leadOuting.insights.confidence}%` : "Waiting"}
+                    </p>
                     <p className="mt-2 text-sm text-cream/68">
-                      The app has enough signal to point the organizer toward a clear next move.
+                      {leadOuting.insights.respondedCount > 0
+                        ? "The app has enough signal to point the organizer toward a clear next move."
+                        : "The trip frame is ready. A little group input will make the recommendation useful."}
                     </p>
                   </div>
                 </div>
@@ -152,14 +162,10 @@ export default async function DashboardPage() {
                   Quick recommendation: {leadOuting.insights.nextAction}
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <Link href={`/outings/${leadOuting.outing.id}`}>
-                    <Button className="w-full sm:w-auto">Open outing</Button>
-                  </Link>
-                  <Link href={`/outings/${leadOuting.outing.id}/compare`}>
-                    <Button variant="secondary" className="w-full sm:w-auto">
-                      Compare options
-                    </Button>
-                  </Link>
+                  <Button href={`/outings/${leadOuting.outing.id}`} className="w-full sm:w-auto">Open outing</Button>
+                  <Button href={`/outings/${leadOuting.outing.id}/compare`} variant="secondary" className="w-full sm:w-auto">
+                    Compare options
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -168,7 +174,8 @@ export default async function DashboardPage() {
 
         <div className="mt-8 space-y-5">
           {outings.map(({ outing, members, invites, preferences, recommendation, insights }) => {
-            const responsePercent = Math.round((preferences.length / members.length) * 100) || 0;
+            const progressTarget = insights.respondedCount + insights.pendingCount;
+            const responsePercent = progressTarget ? Math.round((insights.respondedCount / progressTarget) * 100) : 0;
 
             return (
               <Card key={outing.id} className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -209,7 +216,9 @@ export default async function DashboardPage() {
                       <div>
                         <p className="text-sm text-charcoal/50">Response progress</p>
                         <p className="mt-1 text-sm text-charcoal/68">
-                          {preferences.length} of {members.length} members have submitted preferences
+                          {progressTarget
+                            ? `${insights.respondedCount} of ${progressTarget} members have submitted preferences`
+                            : "The organizer has set the frame. Invite the group to start collecting responses."}
                         </p>
                       </div>
                       <p className="text-sm font-semibold text-forest-900">{responsePercent}%</p>
@@ -224,9 +233,13 @@ export default async function DashboardPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-sm text-cream/60">Decision panel</p>
-                      <p className="mt-2 text-4xl font-semibold">{insights.confidence}%</p>
+                      <p className="mt-2 text-4xl font-semibold">
+                        {insights.respondedCount > 0 ? `${insights.confidence}%` : "Waiting"}
+                      </p>
                       <p className="mt-1 text-sm text-cream/62">
-                        confidence that the group can narrow this down now
+                        {insights.respondedCount > 0
+                          ? "confidence that the group can narrow this down now"
+                          : "for the first real preference to come in"}
                       </p>
                     </div>
                     <Badge className="bg-white/10 text-cream">{invites.length} invites open</Badge>
@@ -248,14 +261,10 @@ export default async function DashboardPage() {
                   </div>
 
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <Link href={`/outings/${outing.id}`} className="w-full">
-                      <Button className="w-full bg-cream text-charcoal hover:bg-white">Open outing</Button>
-                    </Link>
-                    <Link href={`/outings/${outing.id}/compare`} className="w-full">
-                      <Button variant="ghost" className="w-full border border-white/15 text-cream">
-                        Compare options
-                      </Button>
-                    </Link>
+                    <Button href={`/outings/${outing.id}`} className="w-full bg-cream text-charcoal hover:bg-white">Open outing</Button>
+                    <Button href={`/outings/${outing.id}/compare`} variant="ghost" className="w-full border border-white/15 text-cream">
+                      Compare options
+                    </Button>
                   </div>
                   <div className="mt-4 flex items-center gap-2 text-sm text-cream/62">
                     <ArrowRight className="h-4 w-4" />
