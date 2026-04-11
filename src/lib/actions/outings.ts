@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { z } from "zod";
@@ -59,7 +60,7 @@ const createOutingSchema = z
 
 const inviteSchema = z.object({
   outingId: z.string().min(1),
-  email: z.string().email()
+  emails: z.string().trim().min(1)
 });
 
 const acceptInviteSchema = z.object({
@@ -84,6 +85,9 @@ const preferenceSchema = z.object({
   courseQualityPreference: z.coerce.number().min(1).max(10),
   walkingPreference: z.enum(["walking", "riding", "either"]),
   comments: z.string().optional()
+}).refine((value) => value.budgetMax >= value.budgetMin, {
+  message: "Budget max must be greater than or equal to budget min",
+  path: ["budgetMax"]
 });
 
 function buildBudgetRange(target: number) {
@@ -111,6 +115,21 @@ function buildOrganizerPreferenceSeed(input: z.infer<typeof createOutingSchema>)
 
 function buildInviteLink(token: string) {
   return `${publicAppUrl}/invite/${token}`;
+}
+
+function parseInviteEmails(raw: string) {
+  const emails = raw
+    .split(/[\n,;]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  const deduped = Array.from(new Set(emails));
+  const invalid = deduped.filter((email) => !z.string().email().safeParse(email).success);
+
+  return {
+    emails: deduped.filter((email) => !invalid.includes(email)),
+    invalid
+  };
 }
 
 function buildOutingRedirect(
@@ -523,22 +542,42 @@ export async function inviteMemberAction(formData: FormData) {
   const profile = await requireProfile();
   const parsed = inviteSchema.safeParse({
     outingId: formData.get("outingId"),
-    email: String(formData.get("email") ?? "").trim().toLowerCase()
+    emails: String(formData.get("emails") ?? "")
   });
 
   if (!parsed.success) {
     const outingId = String(formData.get("outingId") ?? "");
-    redirect(`/outings/${outingId}?error=Enter%20a%20valid%20invite%20email`);
+    redirect(`/outings/${outingId}?error=Enter%20at%20least%20one%20valid%20email`);
+  }
+
+  const parsedEmails = parseInviteEmails(parsed.data.emails);
+
+  if (!parsedEmails.emails.length || parsedEmails.invalid.length) {
+    redirect(
+      `/outings/${parsed.data.outingId}?error=${encodeURIComponent(
+        parsedEmails.invalid.length
+          ? `Fix these email addresses first: ${parsedEmails.invalid.join(", ")}`
+          : "Enter at least one valid invite email"
+      )}`
+    );
   }
 
   try {
     if (isDemoMode) {
-      const invite = await createDemoInvite(parsed.data.outingId, parsed.data.email, profile.id);
+      const createdInvites = [];
+
+      for (const email of parsedEmails.emails) {
+        createdInvites.push(await createDemoInvite(parsed.data.outingId, email, profile.id));
+      }
+
       redirect(
         buildOutingRedirect(parsed.data.outingId, {
-          success: "Invite sent",
-          inviteEmail: parsed.data.email,
-          inviteLink: buildInviteLink(invite.token)
+          success:
+            createdInvites.length === 1
+              ? "Invite sent"
+              : `${createdInvites.length} invites created`,
+          inviteEmail: createdInvites.length === 1 ? createdInvites[0]?.email : undefined,
+          inviteLink: createdInvites.length === 1 ? buildInviteLink(createdInvites[0].token) : undefined
         })
       );
     }
@@ -563,24 +602,69 @@ export async function inviteMemberAction(formData: FormData) {
       redirect(`/outings/${parsed.data.outingId}?error=Only%20the%20organizer%20can%20invite%20members`);
     }
 
-    const inviteResult = await createLiveInvite({
-      outingId: parsed.data.outingId,
-      email: parsed.data.email,
-      invitedBy: profile.id,
-      outingName: outingRow.name,
-      organizerName: profile.fullName
-    });
+    const [{ data: inviteRows }, { data: memberRows }] = await Promise.all([
+      supabase!.from("invites").select("email,status").eq("outing_id", parsed.data.outingId),
+      supabase!.from("outing_members").select("profile_id").eq("outing_id", parsed.data.outingId)
+    ]);
 
+    const memberIds = Array.from(new Set((memberRows ?? []).map((row) => row.profile_id).filter(Boolean)));
+    const { data: profileRows } = memberIds.length
+      ? await supabase!
+          .from("profiles")
+          .select("email")
+          .in("id", memberIds)
+      : { data: [] as Array<{ email: string }> };
+
+    const existingEmails = new Set(
+      [...(inviteRows ?? []).map((row) => row.email.toLowerCase()), ...(profileRows ?? []).map((row) => row.email.toLowerCase())]
+    );
+
+    const emailsToInvite = parsedEmails.emails.filter((email) => !existingEmails.has(email));
+    const skippedEmails = parsedEmails.emails.filter((email) => existingEmails.has(email));
+
+    if (!emailsToInvite.length) {
+      redirect(
+        buildOutingRedirect(parsed.data.outingId, {
+          success: "Everyone in that list already has access or already has an invite",
+          shareLink: (await getOutingShareLink(parsed.data.outingId, profile.id)) ?? undefined
+        })
+      );
+    }
+
+    const inviteResults = [];
+
+    for (const email of emailsToInvite) {
+      inviteResults.push(
+        await createLiveInvite({
+          outingId: parsed.data.outingId,
+          email,
+          invitedBy: profile.id,
+          outingName: outingRow.name,
+          organizerName: profile.fullName
+        })
+      );
+    }
+
+    const sentCount = inviteResults.filter((item) => item.emailStatus === "sent").length;
+    const failedCount = inviteResults.filter((item) => item.emailStatus === "failed").length;
+    const createdCount = inviteResults.length;
+    const singleInvite = createdCount === 1 ? inviteResults[0] : null;
+    const statusMessage =
+      createdCount === 1
+        ? sentCount === 1
+          ? "Invite email sent"
+          : failedCount === 1
+            ? "Invite saved. Email delivery failed, so use the link below instead"
+            : "Invite saved. The link is ready even though email delivery is not configured yet"
+        : `${createdCount} invites created${skippedEmails.length ? `. ${skippedEmails.length} skipped.` : ""}`;
+
+    revalidatePath(`/outings/${parsed.data.outingId}`);
+    revalidatePath(`/outings/${parsed.data.outingId}/compare`);
     redirect(
       buildOutingRedirect(parsed.data.outingId, {
-        success:
-          inviteResult.emailStatus === "sent"
-            ? "Invite email sent"
-            : inviteResult.emailStatus === "failed"
-            ? "Invite saved. Email delivery failed, so use the link below instead"
-            : "Invite saved. The link is ready even though email delivery is not configured yet",
-        inviteEmail: parsed.data.email,
-        inviteLink: buildInviteLink(inviteResult.token),
+        success: statusMessage,
+        inviteEmail: singleInvite ? emailsToInvite[0] : undefined,
+        inviteLink: singleInvite ? buildInviteLink(singleInvite.token) : undefined,
         shareLink: (await getOutingShareLink(parsed.data.outingId, profile.id)) ?? undefined
       })
     );
@@ -591,7 +675,7 @@ export async function inviteMemberAction(formData: FormData) {
 
     logError("Failed to invite member", error, {
       outingId: parsed.data.outingId,
-      email: parsed.data.email
+      emails: parsedEmails.emails
     });
     redirect(`/outings/${parsed.data.outingId}?error=Unable%20to%20send%20invite`);
   }
@@ -679,11 +763,32 @@ export async function submitPreferencesAction(formData: FormData) {
       comments: parsed.data.comments
     });
 
+    revalidatePath(`/outings/${parsed.data.outingId}`);
+    revalidatePath(`/outings/${parsed.data.outingId}/compare`);
     redirect(`/outings/${parsed.data.outingId}?success=Preferences%20saved`);
   }
 
-  const supabase = await createSupabaseServerClient();
-  await supabase?.from("preference_submissions").upsert(
+  const adminClient = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+
+  if (!adminClient) {
+    redirect(`/outings/${parsed.data.outingId}?error=Saving%20preferences%20is%20not%20configured`);
+  }
+
+  const [{ data: outingRow }, { data: memberRow }] = await Promise.all([
+    adminClient!.from("outings").select("organizer_id").eq("id", parsed.data.outingId).maybeSingle(),
+    adminClient!
+      .from("outing_members")
+      .select("id")
+      .eq("outing_id", parsed.data.outingId)
+      .eq("profile_id", profile.id)
+      .maybeSingle()
+  ]);
+
+  if (!outingRow || (!memberRow && !isAdmin(profile) && outingRow.organizer_id !== profile.id)) {
+    redirect(`/outings/${parsed.data.outingId}?error=You%20do%20not%20have%20access%20to%20save%20preferences`);
+  }
+
+  const { error } = await adminClient!.from("preference_submissions").upsert(
     {
       outing_id: parsed.data.outingId,
       profile_id: profile.id,
@@ -699,6 +804,16 @@ export async function submitPreferencesAction(formData: FormData) {
     { onConflict: "outing_id,profile_id" }
   );
 
+  if (error) {
+    logError("Failed to save preferences", error, {
+      outingId: parsed.data.outingId,
+      profileId: profile.id
+    });
+    redirect(`/outings/${parsed.data.outingId}?error=Unable%20to%20save%20preferences`);
+  }
+
+  revalidatePath(`/outings/${parsed.data.outingId}`);
+  revalidatePath(`/outings/${parsed.data.outingId}/compare`);
   redirect(`/outings/${parsed.data.outingId}?success=Preferences%20saved`);
 }
 

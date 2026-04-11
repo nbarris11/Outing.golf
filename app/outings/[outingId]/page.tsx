@@ -482,28 +482,27 @@ export default async function OutingDetailPage({
                     <input type="hidden" name="outingId" value={detail.outing.id} />
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-semibold tracking-[-0.03em]">Invite another golfer</h3>
+                        <h3 className="text-lg font-semibold tracking-[-0.03em]">Invite more golfers</h3>
                         <p className="mt-2 text-sm text-cream/66">
-                          Add a friend by email and keep response tracking tidy.
+                          Paste one email per line, or use commas if that is faster.
                         </p>
                       </div>
                       <Badge className="bg-white/10 text-cream">Organizer action</Badge>
                     </div>
                     <div className="mt-4">
-                      <FieldLabel htmlFor="inviteEmail">Invite by email</FieldLabel>
-                      <Input
-                        id="inviteEmail"
-                        name="email"
-                        type="email"
-                        placeholder="friend@example.com"
-                        className="bg-white/10 text-cream placeholder:text-cream/35"
+                      <FieldLabel htmlFor="inviteEmails">Invite by email</FieldLabel>
+                      <Textarea
+                        id="inviteEmails"
+                        name="emails"
+                        placeholder={"friend@example.com\nanotherfriend@example.com"}
+                        className="min-h-28 bg-white/10 text-cream placeholder:text-cream/35"
                       />
                     </div>
                     <p className="mt-3 text-sm leading-6 text-cream/60">
-                      Email works when you know exactly who to invite. The share link is the fastest way to drop this outing into the group chat.
+                      Email works when you already know the list. The share link is still the fastest way to drop this outing into the group chat.
                     </p>
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                      <SubmitButton label="Send invite" pendingLabel="Sending..." className="w-full sm:w-auto" />
+                      <SubmitButton label="Send invites" pendingLabel="Sending..." className="w-full sm:w-auto" />
                       {shareLink ? (
                         <CopyLinkButton link={shareLink} className="w-full sm:w-auto" label="Copy share link" copiedLabel="Share link copied" />
                       ) : null}
