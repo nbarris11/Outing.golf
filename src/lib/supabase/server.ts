@@ -24,7 +24,7 @@ export async function createSupabaseServerClient() {
       ) {
         cookieEntries.forEach(({ name, value, options }) => {
           try {
-            cookieStore.set(name, value, options);
+            cookieStore.set(name, value, { path: "/", ...(options ?? {}) });
           } catch {
             // Server Components can read cookies but cannot mutate them during render.
             // Ignore write attempts here so public pages can safely use the shared client.
