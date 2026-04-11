@@ -70,6 +70,10 @@ export async function sendInviteEmail(input: {
     text
   });
 
+  if (response.error) {
+    throw new Error(response.error.message || "Resend rejected the invite email");
+  }
+
   logInfo("Invite email sent", {
     inviteeEmail: input.inviteeEmail,
     outingName: input.outingName,

@@ -1,4 +1,5 @@
 import { PageShell } from "@/components/layout/page-shell";
+import { DestinationPicker } from "@/components/outings/destination-picker";
 import { Card } from "@/components/ui/card";
 import { BudgetSlider } from "@/components/ui/budget-slider";
 import { FieldLabel, Input, Select, Textarea } from "@/components/ui/field";
@@ -49,17 +50,9 @@ export default async function NewOutingPage({
                   <Input id="tripName" name="name" placeholder="Summer friends trip" autoComplete="off" required />
                 </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div>
-                    <FieldLabel htmlFor="destinationLabel">Rough location</FieldLabel>
-                    <Input
-                      id="destinationLabel"
-                      name="destinationLabel"
-                      placeholder="Driveable golf weekend"
-                    />
-                    <p className="mt-2 text-xs text-charcoal/48">Optional. Keep it broad if you want.</p>
-                  </div>
-                  <div>
+                <DestinationPicker />
+
+                <div className="max-w-sm">
                     <FieldLabel htmlFor="groupSize">Group size</FieldLabel>
                     <Input
                       id="groupSize"
@@ -70,7 +63,6 @@ export default async function NewOutingPage({
                       defaultValue="8"
                       required
                     />
-                  </div>
                 </div>
               </section>
 
@@ -165,15 +157,6 @@ export default async function NewOutingPage({
                 </summary>
                 <div className="mt-5 grid gap-5 md:grid-cols-2">
                   <div>
-                    <FieldLabel htmlFor="destinationType">Location precision</FieldLabel>
-                    <Select id="destinationType" name="destinationType" defaultValue="open">
-                      <option value="open">Flexible</option>
-                      <option value="city">Specific city</option>
-                      <option value="state">State</option>
-                      <option value="region">Region</option>
-                    </Select>
-                  </div>
-                  <div>
                     <FieldLabel htmlFor="lodgingPreference">Stay preference</FieldLabel>
                     <Select id="lodgingPreference" name="lodgingPreference" defaultValue="mixed">
                       <option value="mixed">Let the group decide later</option>
@@ -181,6 +164,9 @@ export default async function NewOutingPage({
                       <option value="hotel">Hotel</option>
                       <option value="resort">Resort</option>
                     </Select>
+                  </div>
+                  <div className="rounded-[24px] bg-stone-50 p-4 text-sm leading-6 text-charcoal/62">
+                    The destination can stay broad here. The group will help narrow it down once people start submitting preferences.
                   </div>
                   <div className="md:col-span-2">
                     <FieldLabel htmlFor="notes">Notes</FieldLabel>

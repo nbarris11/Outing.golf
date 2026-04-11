@@ -11,12 +11,13 @@ import {
   addDemoChatMessage,
   createDemoInvite,
   createDemoOuting,
+  joinDemoOuting,
   upsertDemoPreference
 } from "@/lib/demo/store";
 import { isDemoMode, publicAppUrl } from "@/lib/env";
 import { isInviteEmailConfigured, sendInviteEmail } from "@/lib/email/invite-email";
 import { logError } from "@/lib/logger";
-import { getOutingShareLink } from "@/lib/outing-share-links";
+import { getOutingShareLink, resolveOutingIdFromShareToken } from "@/lib/outing-share-links";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canManageOuting, isAdmin } from "@/modules/outings/permissions";
@@ -321,17 +322,26 @@ async function createLiveInvite(input: {
   }
 
   if (!isInviteEmailConfigured()) {
-    return { token, emailSent: false };
+    return { token, emailStatus: "not_configured" as const };
   }
 
-  await sendInviteEmail({
-    inviteeEmail: input.email,
-    outingName: input.outingName,
-    organizerName: input.organizerName,
-    inviteLink: `/invite/${token}`
-  });
+  try {
+    await sendInviteEmail({
+      inviteeEmail: input.email,
+      outingName: input.outingName,
+      organizerName: input.organizerName,
+      inviteLink: `/invite/${token}`
+    });
 
-  return { token, emailSent: true };
+    return { token, emailStatus: "sent" as const };
+  } catch (error) {
+    logError("Invite email delivery failed", error, {
+      outingId: input.outingId,
+      inviteeEmail: input.email
+    });
+
+    return { token, emailStatus: "failed" as const };
+  }
 }
 
 export async function createOutingAction(formData: FormData) {
@@ -481,9 +491,12 @@ export async function createOutingAction(formData: FormData) {
 
         inviteEmail = parsed.data.initialInviteEmail;
         inviteLink = buildInviteLink(inviteResult.token);
-        message = inviteResult.emailSent
-          ? "Outing created and first invite is ready"
-          : "Outing created. The invite link is ready even though email is not configured yet";
+        message =
+          inviteResult.emailStatus === "sent"
+            ? "Outing created and first invite is ready"
+            : inviteResult.emailStatus === "failed"
+              ? "Outing created. Email delivery failed, so use the invite link below instead"
+              : "Outing created. The invite link is ready even though email is not configured yet";
       }
 
       destination = buildOutingRedirect(outing.id, {
@@ -560,9 +573,12 @@ export async function inviteMemberAction(formData: FormData) {
 
     redirect(
       buildOutingRedirect(parsed.data.outingId, {
-        success: inviteResult.emailSent
-          ? "Invite email sent"
-          : "Invite saved. The link is ready even though email delivery is not configured yet",
+        success:
+          inviteResult.emailStatus === "sent"
+            ? "Invite email sent"
+            : inviteResult.emailStatus === "failed"
+            ? "Invite saved. Email delivery failed, so use the link below instead"
+            : "Invite saved. The link is ready even though email delivery is not configured yet",
         inviteEmail: parsed.data.email,
         inviteLink: buildInviteLink(inviteResult.token),
         shareLink: (await getOutingShareLink(parsed.data.outingId, profile.id)) ?? undefined
@@ -579,6 +595,48 @@ export async function inviteMemberAction(formData: FormData) {
     });
     redirect(`/outings/${parsed.data.outingId}?error=Unable%20to%20send%20invite`);
   }
+}
+
+export async function joinOutingFromShareLinkAction(formData: FormData) {
+  const profile = await requireProfile();
+  const token = String(formData.get("token") ?? "").trim();
+
+  if (!token) {
+    redirect("/dashboard?error=Share%20link%20is%20missing");
+  }
+
+  const outingId = await resolveOutingIdFromShareToken(token);
+
+  if (!outingId) {
+    redirect("/?error=That%20share%20link%20is%20no%20longer%20valid");
+  }
+
+  if (isDemoMode) {
+    await joinDemoOuting(outingId, profile.id);
+    redirect(`/outings/${outingId}?success=You%20joined%20the%20outing`);
+  }
+
+  const adminClient = createSupabaseAdminClient();
+
+  if (!adminClient) {
+    redirect("/dashboard?error=Joining%20is%20not%20configured");
+  }
+
+  const { error } = await adminClient!.from("outing_members").upsert(
+    {
+      outing_id: outingId,
+      profile_id: profile.id,
+      role: "participant"
+    },
+    { onConflict: "outing_id,profile_id" }
+  );
+
+  if (error) {
+    logError("Failed to join outing from share link", error, { outingId, profileId: profile.id });
+    redirect(`/join/${token}?error=Unable%20to%20join%20this%20outing`);
+  }
+
+  redirect(`/outings/${outingId}?success=You%20joined%20the%20outing`);
 }
 
 export async function submitPreferencesAction(formData: FormData) {

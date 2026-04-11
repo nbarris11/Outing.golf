@@ -78,7 +78,7 @@ export async function signUpAction(formData: FormData) {
       redirect("/sign-up?error=Supabase%20not%20configured");
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -90,6 +90,14 @@ export async function signUpAction(formData: FormData) {
 
     if (error) {
       redirect(`/sign-up?error=${encodeURIComponent(error.message)}`);
+    }
+
+    if (!data.session) {
+      redirect(
+        `/sign-in?next=${encodeURIComponent(destination)}&notice=${encodeURIComponent(
+          "Check your email to confirm your account, then sign in to join the outing."
+        )}`
+      );
     }
   } catch (error) {
     if (isRedirectError(error)) {

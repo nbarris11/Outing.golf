@@ -1,6 +1,3 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +54,27 @@ export default async function InvitePage({
   }
 
   if (!profile) {
-    redirect(`/sign-in?next=${encodeURIComponent(`/invite/${token}`)}`);
+    return (
+      <PageShell>
+        <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
+          <Card className="text-center">
+            <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Outing invite</p>
+            <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
+              You were invited at {invite.email}
+            </h1>
+            <p className="mt-5 text-base leading-7 text-charcoal/68">
+              Create an account with that email address or sign in first. Then you’ll come right back here to accept the invite.
+            </p>
+            <div className="mt-8 flex justify-center gap-3">
+              <Button href={`/sign-up?next=${encodeURIComponent(`/invite/${token}`)}`}>Create account</Button>
+              <Button href={`/sign-in?next=${encodeURIComponent(`/invite/${token}`)}`} variant="secondary">
+                Sign in
+              </Button>
+            </div>
+          </Card>
+        </section>
+      </PageShell>
+    );
   }
 
   if (profile.email.toLowerCase() !== invite.email.toLowerCase()) {
@@ -73,9 +90,7 @@ export default async function InvitePage({
               This invite was sent to a different email address. Switch accounts, then open this invite again.
             </p>
             <div className="mt-8 flex justify-center">
-              <Link href="/settings">
-                <Button variant="secondary">Check account</Button>
-              </Link>
+              <Button href="/settings" variant="secondary">Check account</Button>
             </div>
           </Card>
         </section>
@@ -105,9 +120,7 @@ export default async function InvitePage({
           </div>
           <div className="mt-8 flex justify-center gap-3">
             {invite.status === "accepted" ? (
-              <Link href={`/outings/${invite.outing_id}`}>
-                <Button>Open outing</Button>
-              </Link>
+              <Button href={`/outings/${invite.outing_id}`}>Open outing</Button>
             ) : (
               <form action={acceptInviteAction}>
                 <input type="hidden" name="token" value={token} />

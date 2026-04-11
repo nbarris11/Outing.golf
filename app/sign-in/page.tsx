@@ -9,7 +9,7 @@ import { isDemoMode } from "@/lib/env";
 export default async function SignInPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; next?: string }>;
 }) {
   const params = await searchParams;
   const next = params.next?.startsWith("/") ? params.next : "/dashboard";
@@ -35,6 +35,9 @@ export default async function SignInPage({
         ) : null}
         <form action={formAction} method={isDemoMode ? "post" : undefined} className="space-y-4">
           <input type="hidden" name="next" value={next} />
+          {params.notice ? (
+            <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{params.notice}</p>
+          ) : null}
           <div>
             <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input id="email" name="email" type="email" placeholder="host@outing.golf" required />
