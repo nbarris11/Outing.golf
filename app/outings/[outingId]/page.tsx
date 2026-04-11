@@ -15,7 +15,7 @@ import {
 import { requireProfile } from "@/lib/auth";
 import { currency, formatLongDateLabel, percent } from "@/lib/utils";
 import { getOutingDetail } from "@/modules/outings/service";
-import type { PreferenceSubmission, Profile, RecommendationScore } from "@/types/domain";
+import type { PreferenceSubmission, Profile } from "@/types/domain";
 
 function labelize(value: string) {
   return value
@@ -39,46 +39,6 @@ function planningWindowLabel(start: string, end: string) {
   return `${formatLongDateLabel(start)} to ${formatLongDateLabel(end)}`;
 }
 
-function scoreReasons(score: RecommendationScore | undefined) {
-  return score?.reasons.slice(0, 2) ?? [];
-}
-
-function ShortlistCard({
-  eyebrow,
-  title,
-  body,
-  meta,
-  reasons,
-  featured
-}: {
-  eyebrow: string;
-  title: string;
-  body: string;
-  meta: string[];
-  reasons: string[];
-  featured?: boolean;
-}) {
-  return (
-    <div className="rounded-[28px] border border-charcoal/8 bg-cream p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-[0.24em] text-charcoal/42">{eyebrow}</p>
-        {featured ? <Badge className="bg-forest-900/10 text-forest-900">Top fit</Badge> : null}
-      </div>
-      <h3 className="mt-3 text-lg font-semibold tracking-[-0.03em] text-charcoal">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-charcoal/66">{body}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {meta.map((item) => (
-          <Badge key={item}>{item}</Badge>
-        ))}
-      </div>
-      <ul className="mt-4 space-y-2 text-sm leading-6 text-charcoal/68">
-        {reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 function MemberCard({
   person,
@@ -166,9 +126,14 @@ export default async function OutingDetailPage({
   const dateSuggestion = detail.outing.preferredDateWindows
     .flatMap((window) => [window.start, window.end])
     .join(", ");
-  const destinationReasons = scoreReasons(detail.recommendation.destinationScores[0]);
-  const courseReasons = scoreReasons(detail.recommendation.golfScores[0]);
-  const lodgingReasons = scoreReasons(detail.recommendation.lodgingScores[0]);
+
+  // Trip cost estimates
+  const tripWindow = detail.outing.preferredDateWindows[0];
+  const nights = tripWindow
+    ? Math.max(1, Math.round((new Date(tripWindow.end).getTime() - new Date(tripWindow.start).getTime()) / (1000 * 60 * 60 * 24)))
+    : 3;
+  const roundsPerPlayer = detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3;
+  const players = detail.outing.numberOfPlayers;
 
   return (
     <PageShell>
@@ -281,59 +246,104 @@ export default async function OutingDetailPage({
             <Card>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Decision board</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Golf options</p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
-                    Current shortlist
+                    Courses on the shortlist
                   </h2>
                 </div>
                 <p className="max-w-sm text-sm leading-6 text-charcoal/60">
-                  These are the strongest options right now based on budget fit, date overlap, group lean, and votes.
+                  {roundsPerPlayer} rounds per player · {players} golfers
                 </p>
               </div>
 
-              {detail.insights.topDestination && detail.insights.topCourse && detail.insights.topLodging ? (
-                <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                  <ShortlistCard
-                    eyebrow="Destination"
-                    title={detail.insights.topDestination.name}
-                    body={detail.insights.topDestination.summary}
-                    meta={[
-                      `${currency(detail.insights.topDestination.averageNightlyRate)}/night`,
-                      `${currency(detail.insights.topDestination.averageRoundCost)}/round`,
-                      detail.insights.topDestination.region
-                    ]}
-                    reasons={destinationReasons}
-                    featured
-                  />
-                  <ShortlistCard
-                    eyebrow="Golf"
-                    title={detail.insights.topCourse.name}
-                    body={detail.insights.topCourse.summary}
-                    meta={[
-                      `${currency(detail.insights.topCourse.averageGreensFee)}/round`,
-                      `Quality ${detail.insights.topCourse.qualityScore}/10`,
-                      detail.insights.topCourse.locationLabel
-                    ]}
-                    reasons={courseReasons}
-                  />
-                  <ShortlistCard
-                    eyebrow="Stay"
-                    title={detail.insights.topLodging.name}
-                    body={detail.insights.topLodging.summary}
-                    meta={[
-                      `${currency(detail.insights.topLodging.nightlyRate)}/night`,
-                      `Sleeps ${detail.insights.topLodging.sleeps}`,
-                      labelize(detail.insights.topLodging.lodgingType)
-                    ]}
-                    reasons={lodgingReasons}
+              {detail.golfCourses.length === 0 ? (
+                <div className="mt-5">
+                  <EmptyState
+                    title="Golf options will appear here"
+                    body="Courses are seeded when an outing is created. If you just created this outing, they should appear shortly."
                   />
                 </div>
               ) : (
+                <div className="mt-5 space-y-3">
+                  {detail.golfCourses.map((course) => {
+                    const isTop = course.id === detail.insights.topCourse?.id;
+                    const golfPerPerson = course.averageGreensFee * roundsPerPlayer;
+                    return (
+                      <div key={course.id} className="rounded-[24px] border border-charcoal/8 bg-cream p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-medium text-charcoal">{course.name}</p>
+                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top fit</Badge>}
+                            </div>
+                            <p className="mt-1 text-sm text-charcoal/58">{course.locationLabel}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-charcoal">{currency(golfPerPerson)}<span className="ml-1 text-sm font-normal text-charcoal/55">/person</span></p>
+                            <p className="mt-1 text-xs text-charcoal/48">{currency(course.averageGreensFee)} × {roundsPerPlayer} rounds</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-4 text-sm text-charcoal/64">
+                          <span>Quality {course.qualityScore}/10</span>
+                          <span>{course.walkingFriendly ? "Walking-friendly" : "Riding-first"}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+
+            <Card>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Lodging options</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
+                    Stays on the shortlist
+                  </h2>
+                </div>
+                <p className="max-w-sm text-sm leading-6 text-charcoal/60">
+                  {nights} nights · {players} golfers
+                </p>
+              </div>
+
+              {detail.lodging.length === 0 ? (
                 <div className="mt-5">
                   <EmptyState
-                    title="Recommendations will tighten as the group responds"
-                    body="Once the outing has enough date and budget data, the shortlist will rise to the top automatically."
+                    title="Lodging options will appear here"
+                    body="Stays are seeded when an outing is created. If you just created this outing, they should appear shortly."
                   />
+                </div>
+              ) : (
+                <div className="mt-5 space-y-3">
+                  {detail.lodging.map((stay) => {
+                    const isTop = stay.id === detail.insights.topLodging?.id;
+                    const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
+                    const perPerson = Math.round(lodgingTotal / players);
+                    return (
+                      <div key={stay.id} className="rounded-[24px] border border-charcoal/8 bg-cream p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-medium text-charcoal">{stay.name}</p>
+                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top fit</Badge>}
+                            </div>
+                            <p className="mt-1 text-sm capitalize text-charcoal/58">{labelize(stay.lodgingType)} · Sleeps {stay.sleeps}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-charcoal">{currency(perPerson)}<span className="ml-1 text-sm font-normal text-charcoal/55">/person</span></p>
+                            <p className="mt-1 text-xs text-charcoal/48">{currency(stay.nightlyRate)}/night × {nights} nights ÷ {players}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-4 text-sm text-charcoal/64">
+                          {stay.refundable !== null && stay.refundable !== undefined && (
+                            <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
+                          )}
+                          {stay.city && <span>{stay.city}{stay.state ? `, ${stay.state}` : ""}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </Card>

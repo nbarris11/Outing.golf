@@ -29,6 +29,12 @@ export default async function ComparePage({
     .map((item) => item.entityId);
   const canManageLodging = detail.outing.organizerId === profile.id || isAdmin(profile);
 
+  const nights = defaultWindow
+    ? Math.max(1, Math.round((new Date(defaultWindow.end).getTime() - new Date(defaultWindow.start).getTime()) / (1000 * 60 * 60 * 24)))
+    : 3;
+  const roundsPerPlayer = detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3;
+  const players = detail.outing.numberOfPlayers;
+
   return (
     <PageShell>
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -149,13 +155,14 @@ export default async function ComparePage({
                 <div className="flex items-end justify-between">
                   <div>
                     <h2 className="text-xl font-semibold tracking-[-0.03em]">Golf course options</h2>
-                    <p className="mt-1 text-sm text-charcoal/60">Which rounds feel worth the trip?</p>
+                    <p className="mt-1 text-sm text-charcoal/60">{roundsPerPlayer} rounds per player · {players} golfers</p>
                   </div>
                   <Badge>{detail.golfCourses.length} courses</Badge>
                 </div>
                 <div className="mt-5 space-y-3">
                   {detail.golfCourses.map((course) => {
                     const score = detail.recommendation.golfScores.find((item) => item.id === course.id);
+                    const golfPerPerson = course.averageGreensFee * roundsPerPlayer;
                     return (
                       <div key={course.id} className="rounded-[24px] bg-cream p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -163,11 +170,14 @@ export default async function ComparePage({
                             <p className="font-medium">{course.name}</p>
                             <p className="text-sm text-charcoal/60">{course.locationLabel}</p>
                           </div>
-                          <p className="text-sm font-medium text-forest-900">{score?.score ?? 0} fit</p>
+                          <div className="text-right">
+                            <p className="font-semibold text-charcoal">{currency(golfPerPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
+                            <p className="text-xs text-charcoal/45">{score?.score ?? 0} fit</p>
+                          </div>
                         </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                          <p className="text-sm text-charcoal/68">{currency(course.averageGreensFee)} / round</p>
-                          <p className="text-sm text-charcoal/68">{course.qualityScore} quality</p>
+                          <p className="text-sm text-charcoal/68">{currency(course.averageGreensFee)} × {roundsPerPlayer} rounds</p>
+                          <p className="text-sm text-charcoal/68">{course.qualityScore}/10 quality</p>
                           <p className="text-sm text-charcoal/68">
                             {course.walkingFriendly ? "Walking-friendly" : "Riding-first"}
                           </p>
@@ -183,33 +193,36 @@ export default async function ComparePage({
                 <div className="flex items-end justify-between">
                   <div>
                     <h2 className="text-xl font-semibold tracking-[-0.03em]">Lodging options</h2>
-                    <p className="mt-1 text-sm text-charcoal/60">Which stay keeps the group comfortable and aligned?</p>
+                    <p className="mt-1 text-sm text-charcoal/60">{nights} nights · split across {players} players</p>
                   </div>
                   <Badge>{detail.lodging.length} stays</Badge>
                 </div>
                 <div className="mt-5 space-y-3">
                   {detail.lodging.map((stay) => {
                     const score = detail.recommendation.lodgingScores.find((item) => item.id === stay.id);
+                    const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
+                    const perPerson = Math.round(lodgingTotal / players);
                     return (
                       <div key={stay.id} className="rounded-[24px] bg-cream p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                          <p className="font-medium">{stay.name}</p>
+                            <p className="font-medium">{stay.name}</p>
                             <p className="text-sm capitalize text-charcoal/60">
                               {stay.lodgingType}
                               {stay.topPick ? " · top pick" : ""}
                             </p>
                           </div>
-                          <p className="text-sm font-medium text-forest-900">{score?.score ?? 0} fit</p>
+                          <div className="text-right">
+                            <p className="font-semibold text-charcoal">{currency(perPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
+                            <p className="text-xs text-charcoal/45">{score?.score ?? 0} fit</p>
+                          </div>
                         </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                          <p className="text-sm text-charcoal/68">
-                            {stay.priceTotal ? `${currency(stay.priceTotal)} total` : `${currency(stay.nightlyRate)} / night`}
-                          </p>
+                          <p className="text-sm text-charcoal/68">{currency(stay.nightlyRate)}/night × {nights} nights</p>
                           <p className="text-sm text-charcoal/68">Sleeps {stay.sleeps}</p>
                           <p className="text-sm text-charcoal/68">
                             {stay.refundable === null || stay.refundable === undefined
-                              ? stay.tags[0] ?? "Flexible stay"
+                              ? stay.tags?.[0] ?? "Flexible stay"
                               : stay.refundable
                                 ? "Refundable"
                                 : "Non-refundable"}
