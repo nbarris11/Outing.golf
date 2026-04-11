@@ -15,30 +15,18 @@ import {
 } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
 import { getOutingShareLink } from "@/lib/outing-share-links";
-import { currency, formatLongDateLabel, percent } from "@/lib/utils";
+import { currency, formatLongDateLabel } from "@/lib/utils";
 import { getOutingDetail } from "@/modules/outings/service";
 import type { PreferenceSubmission, Profile } from "@/types/domain";
 
 function labelize(value: string) {
   return value
     .replaceAll("_", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function confidenceLabel(score: number) {
-  if (score >= 80) {
-    return "High confidence";
-  }
-
-  if (score >= 60) {
-    return "Good signal";
-  }
-
-  return "Still early";
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function planningWindowLabel(start: string, end: string) {
-  return `${formatLongDateLabel(start)} to ${formatLongDateLabel(end)}`;
+  return `${formatLongDateLabel(start)} – ${formatLongDateLabel(end)}`;
 }
 
 function budgetRangeDefaults(target: number) {
@@ -48,45 +36,8 @@ function budgetRangeDefaults(target: number) {
   };
 }
 
-function MemberCard({
-  person,
-  responded,
-  updatedAt,
-  role
-}: {
-  person: Profile | undefined;
-  responded: boolean;
-  updatedAt?: string;
-  role: string;
-}) {
-  return (
-    <div className="rounded-[24px] border border-charcoal/8 bg-cream p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-medium text-charcoal">{person?.fullName ?? "Member"}</p>
-          <p className="mt-1 text-sm text-charcoal/58">{person?.email}</p>
-        </div>
-        <div className="text-right">
-          <Badge className={responded ? "bg-emerald-100 text-emerald-800" : "bg-sand text-charcoal/78"}>
-            {responded ? "Preferences in" : "Waiting"}
-          </Badge>
-          <p className="mt-2 text-xs uppercase tracking-[0.18em] text-charcoal/35">{role}</p>
-        </div>
-      </div>
-      <p className="mt-3 text-xs text-charcoal/48">
-        {responded && updatedAt
-          ? `Last updated ${formatLongDateLabel(updatedAt)}`
-          : role === "Organizer"
-            ? "Organizer already set the trip frame."
-            : "Needs a quick nudge."}
-      </p>
-    </div>
-  );
-}
-
 function preferenceDefaults(preference: PreferenceSubmission | null, outingBudgetTarget: number) {
   const seededBudgetRange = budgetRangeDefaults(outingBudgetTarget);
-
   return {
     budgetMin: preference?.budgetMin?.toString() ?? seededBudgetRange.budgetMin,
     budgetMax: preference?.budgetMax?.toString() ?? seededBudgetRange.budgetMax,
@@ -97,6 +48,31 @@ function preferenceDefaults(preference: PreferenceSubmission | null, outingBudge
     walkingPreference: preference?.walkingPreference ?? "either",
     comments: preference?.comments ?? ""
   };
+}
+
+function MemberRow({
+  person,
+  responded,
+  role
+}: {
+  person: Profile | undefined;
+  responded: boolean;
+  role: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-3 border-b border-charcoal/6 last:border-0">
+      <div className="min-w-0">
+        <p className="font-medium text-charcoal truncate">{person?.fullName ?? "Member"}</p>
+        <p className="text-sm text-charcoal/50 truncate">{person?.email}</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <Badge className={responded ? "bg-emerald-100 text-emerald-800" : "bg-sand text-charcoal/70"}>
+          {responded ? "Responded" : "Waiting"}
+        </Badge>
+        <span className="hidden sm:inline text-xs text-charcoal/35">{role}</span>
+      </div>
+    </div>
+  );
 }
 
 export default async function OutingDetailPage({
@@ -116,15 +92,14 @@ export default async function OutingDetailPage({
       <PageShell>
         <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
           <Card className="text-center">
-            <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Access</p>
-            <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
-              This outing isn’t available to you
+            <h1 className="font-serif text-4xl font-semibold tracking-[-0.05em]">
+              This trip isn&apos;t available to you
             </h1>
-            <p className="mt-5 text-base leading-7 text-charcoal/68">
-              The link may be wrong, the outing may have moved, or your account does not have access.
+            <p className="mt-4 text-base leading-7 text-charcoal/68">
+              The link may be wrong, or your account doesn&apos;t have access.
             </p>
             <div className="mt-8 flex justify-center">
-              <Button href="/dashboard">Return to dashboard</Button>
+              <Button href="/dashboard">Back to dashboard</Button>
             </div>
           </Card>
         </section>
@@ -135,19 +110,16 @@ export default async function OutingDetailPage({
   const profiles = detail.profiles;
   const bestDate = detail.recommendation.bestDates[0];
   const defaults = preferenceDefaults(detail.currentPreference, detail.outing.budgetTarget);
-  const dateSuggestion = detail.outing.preferredDateWindows
-    .flatMap((window) => [window.start, window.end])
-    .join(", ");
   const progressTarget = detail.insights.respondedCount + detail.insights.pendingCount;
   const isOrganizer = detail.outing.organizerId === profile.id;
   const shareLink = isOrganizer
     ? notices.shareLink ?? (await getOutingShareLink(detail.outing.id, detail.outing.organizerId)) ?? null
     : null;
-  const confidenceReady = detail.insights.respondedCount > 0;
-  const confidenceStatus = confidenceReady ? confidenceLabel(detail.insights.confidence) : "Waiting for group input";
+  const responsePercent = progressTarget
+    ? Math.round((detail.insights.respondedCount / progressTarget) * 100)
+    : 0;
 
-  // Deduplicate lodging by hotel name — keep lowest nightly rate per name
-  // (LiteAPI returns multiple room types per hotel; we surface one per property here)
+  // Deduplicate lodging — keep one card per hotel name
   const seenLodgingNames = new Set<string>();
   const dedupedLodging = detail.lodging.filter((stay) => {
     if (seenLodgingNames.has(stay.name)) return false;
@@ -155,7 +127,7 @@ export default async function OutingDetailPage({
     return true;
   });
 
-  // Trip cost estimates
+  // Cost estimates
   const tripWindow = detail.outing.preferredDateWindows[0];
   const nights = tripWindow
     ? Math.max(1, Math.round((new Date(tripWindow.end).getTime() - new Date(tripWindow.start).getTime()) / (1000 * 60 * 60 * 24)))
@@ -165,199 +137,199 @@ export default async function OutingDetailPage({
 
   return (
     <PageShell>
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Outing</p>
-              <Badge>{detail.outing.status.replaceAll("_", " ")}</Badge>
-              <Badge className="bg-forest-900/10 text-forest-900">
-                {confidenceLabel(detail.insights.confidence)}
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+
+        {/* ── Trip header ── */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className={detail.outing.status === "booked" ? "bg-emerald-100 text-emerald-800" : detail.outing.status === "completed" ? "bg-charcoal/8 text-charcoal/50" : "bg-sand text-charcoal/70"}>
+                {detail.outing.status === "narrowed_down" ? "Narrowed down" : labelize(detail.outing.status)}
               </Badge>
             </div>
-            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.05em] text-charcoal sm:text-5xl">
+            <h1 className="mt-2 font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal sm:text-4xl">
               {detail.outing.name}
             </h1>
-            <p className="mt-4 text-base leading-7 text-charcoal/68">
-              {detail.outing.notes ??
-                "Gather dates, budgets, courses, and lodging preferences in one calm planning flow."}
+            <p className="mt-1 text-sm text-charcoal/55">
+              {detail.outing.destinationLabel} · {detail.outing.numberOfPlayers} golfers
+              {tripWindow ? ` · ${planningWindowLabel(tripWindow.start, tripWindow.end)}` : ""}
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button href={`/outings/${detail.outing.id}/compare`} variant="secondary" className="w-full">
+          <div className="flex shrink-0 flex-col gap-2 sm:items-end sm:min-w-[160px]">
+            <Button href={`/outings/${detail.outing.id}/compare`} className="w-full sm:w-auto">
               Compare options
             </Button>
-            <Button href="#preferences" className="w-full">Update your preferences</Button>
+            <Button href="#preferences" variant="secondary" className="w-full sm:w-auto">
+              My preferences
+            </Button>
           </div>
         </div>
 
-        {notices.created === "1" ? (
-          <Card className="mt-6 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)]">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl">
-                <p className="text-sm uppercase tracking-[0.24em] text-emerald-800/70">Outing created</p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-charcoal">
-                  The trip is live and ready to share
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-charcoal/68">
-                  {notices.inviteEmail
-                    ? `Your first invite is ready for ${notices.inviteEmail}.`
-                    : "Your outing is set up. Invite the group now so the page can start collecting real input."}
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                {shareLink ? <CopyLinkButton link={shareLink} className="w-full sm:w-auto" label="Copy share link" copiedLabel="Share link copied" /> : null}
-                <Button href="#people" className="w-full sm:w-auto">
-                  {shareLink ? "Invite more golfers" : "Add your first invite"}
-                </Button>
-              </div>
+        {/* ── Group progress bar ── */}
+        <div className="mt-5 rounded-[20px] bg-white border border-charcoal/8 px-5 py-4">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="font-medium text-charcoal">
+              {progressTarget === 0
+                ? "Invite the group to get started"
+                : detail.insights.respondedCount === progressTarget
+                  ? `All ${progressTarget} members responded ✓`
+                  : `${detail.insights.respondedCount} of ${progressTarget} members responded`}
+            </span>
+            {bestDate && (
+              <span className="hidden sm:inline text-charcoal/50 text-xs">
+                Best overlap: {bestDate.date} · {bestDate.availableCount} available
+              </span>
+            )}
+          </div>
+          {progressTarget > 0 && (
+            <div className="h-2 w-full rounded-full bg-charcoal/8">
+              <div
+                className={["h-2 rounded-full transition-all", responsePercent === 100 ? "bg-emerald-500" : "bg-forest-900"].join(" ")}
+                style={{ width: `${responsePercent}%` }}
+              />
             </div>
-            {shareLink ? (
-              <p className="mt-4 text-xs text-charcoal/56">
-                Share this link in a text or email and anyone who opens it can join this exact outing.
-              </p>
-            ) : null}
-          </Card>
-        ) : notices.success ? (
-          <Card className="mt-6 border-emerald-200 bg-emerald-50/80">
+          )}
+        </div>
+
+        {/* ── Notices ── */}
+        {notices.created === "1" ? (
+          <Card className="mt-5 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-emerald-800">{notices.success}</p>
-                {notices.inviteEmail ? (
-                  <p className="mt-1 text-xs text-emerald-900/70">Invite created for {notices.inviteEmail}</p>
-                ) : null}
+                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">
+                  Trip created — now invite the group
+                </h2>
+                <p className="mt-1 text-sm text-charcoal/68">
+                  {notices.inviteEmail
+                    ? `First invite is ready for ${notices.inviteEmail}.`
+                    : "Share the link or invite by email below."}
+                </p>
               </div>
-              {shareLink ? <CopyLinkButton link={shareLink} className="w-full sm:w-auto" label="Copy share link" copiedLabel="Share link copied" /> : null}
+              <div className="flex flex-col gap-2 sm:flex-row shrink-0">
+                {shareLink ? <CopyLinkButton link={shareLink} label="Copy share link" copiedLabel="Copied!" /> : null}
+                <Button href="#people" variant="secondary">Invite more</Button>
+              </div>
             </div>
           </Card>
+        ) : notices.success ? (
+          <p className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notices.success}</p>
         ) : null}
         {notices.error ? (
-          <p className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
-            {notices.error}
-          </p>
+          <p className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{notices.error}</p>
         ) : null}
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+        {/* ── Main two-column grid ── */}
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+
+          {/* ── Left column ── */}
           <div className="space-y-6">
-            <Card className="overflow-hidden p-0">
-              <div className="border-b border-charcoal/8 bg-[linear-gradient(135deg,rgba(20,58,44,0.96),rgba(53,79,67,0.9))] px-6 py-6 text-cream">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                  <div className="max-w-2xl">
-                    <p className="text-xs uppercase tracking-[0.26em] text-cream/58">Planning pulse</p>
-                    <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">
-                      {progressTarget > 0
-                        ? `${detail.insights.respondedCount} of ${progressTarget} players have shared preferences`
-                        : "The trip frame is set. Now it needs group input."}
-                    </h2>
-                    <p className="mt-3 max-w-xl text-sm leading-6 text-cream/76">
-                      {detail.insights.nextAction}
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/12 bg-white/8 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.22em] text-cream/52">Decision confidence</p>
-                    <p className="mt-2 text-3xl font-semibold">
-                      {confidenceReady ? `${detail.insights.confidence}%` : "Waiting"}
-                    </p>
-                    <p className="mt-1 text-sm text-cream/66">{confidenceStatus}</p>
-                  </div>
-                </div>
-                <div className="mt-5 h-2 rounded-full bg-white/10">
-                  <div
-                    className="h-2 rounded-full bg-sand-strong"
-                    style={{ width: percent(detail.insights.responseRate) }}
-                  />
-                </div>
-              </div>
 
-              <div className="grid gap-3 px-6 py-6 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-[24px] bg-cream p-4">
-                  <p className="text-sm text-charcoal/48">Budget target</p>
-                  <p className="mt-2 text-2xl font-semibold text-charcoal">
-                    {currency(detail.outing.budgetTarget)}
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-cream p-4">
-                  <p className="text-sm text-charcoal/48">Best overlap</p>
-                  <p className="mt-2 text-lg font-semibold text-charcoal">
-                    {bestDate ? formatLongDateLabel(bestDate.date) : "Waiting on dates"}
-                  </p>
-                  <p className="mt-1 text-xs text-charcoal/48">
-                    {bestDate ? `${bestDate.availableCount} players free` : "Add more availability to rank dates"}
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-cream p-4">
-                  <p className="text-sm text-charcoal/48">Votes and favorites</p>
-                  <p className="mt-2 text-2xl font-semibold text-charcoal">
-                    {detail.insights.voteCount + detail.insights.favoriteCount}
-                  </p>
-                  <p className="mt-1 text-xs text-charcoal/48">
-                    {detail.insights.voteCount} votes, {detail.insights.favoriteCount} saves
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-cream p-4">
-                  <p className="text-sm text-charcoal/48">Trip frame</p>
-                  <p className="mt-2 text-lg font-semibold text-charcoal">
-                    {labelize(detail.outing.tripStyle)}
-                  </p>
-                  <p className="mt-1 text-xs text-charcoal/48">
-                    {labelize(detail.outing.golfIntensity)} golf · {labelize(detail.outing.lodgingPreference)} stay
-                  </p>
-                </div>
-              </div>
-            </Card>
-
+            {/* Golf courses */}
             <Card>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Golf options</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
-                    Courses on the shortlist
-                  </h2>
-                </div>
-                <p className="max-w-sm text-sm leading-6 text-charcoal/60">
-                  {roundsPerPlayer} rounds per player · {players} golfers
-                </p>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">⛳ Golf courses</h2>
+                <p className="text-sm text-charcoal/50">{roundsPerPlayer} rounds · {players} players</p>
               </div>
 
               {detail.golfCourses.length === 0 ? (
-                <div className="mt-5">
+                <div className="mt-4">
                   <EmptyState
-                    title="Golf options will appear here"
-                    body="Courses are seeded when an outing is created. If you just created this outing, they should appear shortly."
+                    title="Courses coming soon"
+                    body="Golf options are seeded automatically — check back in a moment."
                   />
                 </div>
               ) : (
-                <div className="mt-5 space-y-3">
+                <div className="mt-4 space-y-3">
                   {detail.golfCourses.map((course) => {
                     const isTop = course.id === detail.insights.topCourse?.id;
                     const golfPerPerson = course.averageGreensFee * roundsPerPlayer;
                     return (
-                      <div key={course.id} className="rounded-[24px] border border-charcoal/8 bg-cream p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
+                      <div key={course.id} className="rounded-[22px] border border-charcoal/8 bg-cream p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-medium text-charcoal">{course.name}</p>
-                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top fit</Badge>}
+                              <p className="font-semibold text-charcoal">{course.name}</p>
+                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
                             </div>
-                            <p className="mt-1 text-sm text-charcoal/58">{course.locationLabel}</p>
+                            <p className="mt-0.5 text-sm text-charcoal/55">{course.locationLabel}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-charcoal">{currency(golfPerPerson)}<span className="ml-1 text-sm font-normal text-charcoal/55">/person</span></p>
-                            <p className="mt-1 text-xs text-charcoal/48">{currency(course.averageGreensFee)} × {roundsPerPlayer} rounds</p>
+                          <div className="text-right shrink-0">
+                            <p className="font-semibold text-charcoal">{currency(golfPerPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
+                            <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {roundsPerPlayer} rounds</p>
                           </div>
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex flex-wrap gap-4 text-sm text-charcoal/64">
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <div className="flex gap-3 text-xs text-charcoal/55">
                             <span>Quality {course.qualityScore}/100</span>
-                            <span>{course.walkingFriendly ? "Walking-friendly" : "Riding-first"}</span>
+                            <span>{course.walkingFriendly ? "Walking-friendly" : "Riding"}</span>
                           </div>
                           <a
                             href={`https://www.google.com/search?q=${encodeURIComponent(course.name + " golf course " + course.locationLabel)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs font-medium text-forest-900 underline-offset-2 hover:underline"
+                            className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
                           >
-                            Search course →
+                            Find tee times →
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+
+            {/* Lodging options */}
+            <Card id="people">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">🏨 Lodging options</h2>
+                <p className="text-sm text-charcoal/50">{nights} nights · {players} players</p>
+              </div>
+
+              {dedupedLodging.length === 0 ? (
+                <div className="mt-4">
+                  <EmptyState
+                    title="Lodging options coming soon"
+                    body="Stays are seeded automatically — check back in a moment."
+                  />
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {dedupedLodging.map((stay) => {
+                    const isTop = stay.id === detail.insights.topLodging?.id;
+                    const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
+                    const perPerson = Math.round(lodgingTotal / players);
+                    return (
+                      <div key={stay.id} className="rounded-[22px] border border-charcoal/8 bg-cream p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-charcoal">{stay.name}</p>
+                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
+                            </div>
+                            <p className="mt-0.5 text-sm capitalize text-charcoal/55">
+                              {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-semibold text-charcoal">{currency(perPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
+                            <p className="mt-0.5 text-xs text-charcoal/45">{currency(stay.nightlyRate)}/night × {nights} nights</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <div className="flex gap-3 text-xs text-charcoal/55">
+                            <span>Sleeps {stay.sleeps}</span>
+                            {stay.refundable !== null && stay.refundable !== undefined && (
+                              <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
+                            )}
+                          </div>
+                          <a
+                            href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
+                          >
+                            View on Maps →
                           </a>
                         </div>
                       </div>
@@ -374,290 +346,83 @@ export default async function OutingDetailPage({
               const lodgingPerPerson = Math.round(lodgingTotal / players);
               const totalPerPerson = golfPerPerson + lodgingPerPerson;
               return (
-                <Card className="bg-forest-950 text-cream">
-                  <div className="flex flex-wrap items-end justify-between gap-4">
+                <div className="rounded-[28px] bg-forest-950 px-6 py-5 text-cream">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-cream/50">Estimated total</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-cream/50">Estimated per person</p>
                       <p className="mt-2 font-serif text-4xl font-semibold tracking-[-0.05em]">
-                        {currency(totalPerPerson)}<span className="ml-2 text-xl font-normal text-cream/60">/person</span>
+                        {currency(totalPerPerson)}
                       </p>
-                      <p className="mt-2 text-sm text-cream/60">
-                        Based on top-ranked golf + lodging options · {nights} nights · {roundsPerPlayer} rounds
+                      <p className="mt-1 text-sm text-cream/55">
+                        Based on top-ranked golf &amp; lodging · {nights} nights · {roundsPerPlayer} rounds
                       </p>
                     </div>
-                    <div className="space-y-1 text-sm text-cream/70">
-                      <p>{currency(golfPerPerson)} golf ({roundsPerPlayer}× rounds)</p>
-                      <p>{currency(lodgingPerPerson)} lodging ({nights} nights ÷ {players})</p>
+                    <div className="space-y-1 text-sm text-cream/65">
+                      <p>{currency(golfPerPerson)} golf ({roundsPerPlayer} rounds)</p>
+                      <p>{currency(lodgingPerPerson)} lodging (÷ {players} players)</p>
                     </div>
                   </div>
-                </Card>
+                </div>
               );
             })() : null}
 
-            <Card id="people">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Lodging options</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
-                    Stays on the shortlist
-                  </h2>
-                </div>
-                <p className="max-w-sm text-sm leading-6 text-charcoal/60">
-                  {nights} nights · {players} golfers
-                </p>
-              </div>
-
-              {dedupedLodging.length === 0 ? (
-                <div className="mt-5">
-                  <EmptyState
-                    title="Lodging options will appear here"
-                    body="Stays are seeded when an outing is created. If you just created this outing, they should appear shortly."
-                  />
-                </div>
-              ) : (
-                <div className="mt-5 space-y-3">
-                  {dedupedLodging.map((stay) => {
-                    const isTop = stay.id === detail.insights.topLodging?.id;
-                    const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
-                    const perPerson = Math.round(lodgingTotal / players);
-                    return (
-                      <div key={stay.id} className="rounded-[24px] border border-charcoal/8 bg-cream p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-medium text-charcoal">{stay.name}</p>
-                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top fit</Badge>}
-                            </div>
-                            <p className="mt-1 text-sm capitalize text-charcoal/58">{labelize(stay.lodgingType)} · Sleeps {stay.sleeps}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-charcoal">{currency(perPerson)}<span className="ml-1 text-sm font-normal text-charcoal/55">/person</span></p>
-                            <p className="mt-1 text-xs text-charcoal/48">{currency(stay.nightlyRate)}/night × {nights} nights ÷ {players}</p>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex flex-wrap gap-4 text-sm text-charcoal/64">
-                            {stay.refundable !== null && stay.refundable !== undefined && (
-                              <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
-                            )}
-                            {stay.city && <span>{stay.city}{stay.state ? `, ${stay.state}` : ""}</span>}
-                          </div>
-                          <a
-                            href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-medium text-forest-900 underline-offset-2 hover:underline"
-                          >
-                            View on Maps →
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-
-            <Card>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Trip frame</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
-                    Outing summary
-                  </h2>
-                </div>
-                <p className="max-w-xl text-sm leading-6 text-charcoal/60">
-                  The organizer has already set the planning rails. The group only needs to tighten the date and final shortlist.
-                </p>
-              </div>
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[24px] bg-cream p-4">
-                  <p className="text-sm text-charcoal/48">Destination prompt</p>
-                  <p className="mt-2 text-base font-medium text-charcoal">{detail.outing.destinationLabel}</p>
-                </div>
-                <div className="rounded-[24px] bg-cream p-4">
-                  <p className="text-sm text-charcoal/48">Player count</p>
-                  <p className="mt-2 text-base font-medium text-charcoal">
-                    {detail.outing.numberOfPlayers} golfers
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-cream p-4 sm:col-span-2">
-                  <p className="text-sm text-charcoal/48">Preferred windows</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {detail.outing.preferredDateWindows.map((window) => (
-                      <Badge key={`${window.start}-${window.end}`}>
-                        {planningWindowLabel(window.start, window.end)}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">People</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
-                    Members and invites
-                  </h2>
-                </div>
-                <p className="max-w-xl text-sm leading-6 text-charcoal/60">
-                  Keep response collection visible so the organizer knows whether to push for more availability or start narrowing options.
-                </p>
-              </div>
-
-              <div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-                <div className="space-y-3">
-                  {detail.memberSnapshots.map((snapshot) => {
-                    const person = profiles.find((item) => item.id === snapshot.member.profileId);
-
-                    return (
-                      <MemberCard
-                        key={snapshot.member.id}
-                        person={person}
-                        responded={snapshot.responded}
-                        updatedAt={snapshot.preference?.updatedAt}
-                        role={labelize(snapshot.member.role)}
-                      />
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-4">
-                  <form action={inviteMemberAction} className="rounded-[28px] bg-forest-950 p-5 text-cream">
-                    <input type="hidden" name="outingId" value={detail.outing.id} />
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-semibold tracking-[-0.03em]">Invite more golfers</h3>
-                        <p className="mt-2 text-sm text-cream/66">
-                          Paste one email per line, or use commas if that is faster.
-                        </p>
-                      </div>
-                      <Badge className="bg-white/10 text-cream">Organizer action</Badge>
-                    </div>
-                    <div className="mt-4">
-                      <FieldLabel htmlFor="inviteEmails">Invite by email</FieldLabel>
-                      <Textarea
-                        id="inviteEmails"
-                        name="emails"
-                        placeholder={"friend@example.com\nanotherfriend@example.com"}
-                        className="min-h-28 bg-white/10 text-cream placeholder:text-cream/35"
-                      />
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-cream/60">
-                      Email works when you already know the list. The share link is still the fastest way to drop this outing into the group chat.
-                    </p>
-                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                      <SubmitButton label="Send invites" pendingLabel="Sending..." className="w-full sm:w-auto" />
-                      {shareLink ? (
-                        <CopyLinkButton link={shareLink} className="w-full sm:w-auto" label="Copy share link" copiedLabel="Share link copied" />
-                      ) : null}
-                    </div>
-                  </form>
-
-                  {detail.invites.length ? (
-                    <div className="space-y-3">
-                      {detail.invites.map((invite) => (
-                        <div key={invite.id} className="rounded-[24px] border border-charcoal/8 bg-cream p-4">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                              <p className="font-medium text-charcoal">{invite.email}</p>
-                              <p className="mt-1 text-xs text-charcoal/48">
-                                Sent {formatLongDateLabel(invite.createdAt)}
-                              </p>
-                            </div>
-                            <Badge>{labelize(invite.status)}</Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      title="No pending invites"
-                      body="Once you invite more people, their status will appear here so the organizer always knows who still needs to join."
-                    />
-                  )}
-                </div>
-              </div>
-            </Card>
+            {/* Chat */}
+            <ChatPanel
+              messages={detail.messages}
+              profiles={profiles}
+              outingId={detail.outing.id}
+              currentProfileId={profile.id}
+              sendAction={sendChatMessageAction}
+            />
           </div>
 
+          {/* ── Right column ── */}
           <div className="space-y-6">
+
+            {/* Preferences form */}
             <Card id="preferences">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-charcoal/38">Your input</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
-                    Submit your preferences
-                  </h2>
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Your preferences</h2>
                 {detail.currentPreference ? (
-                  <Badge className="bg-emerald-100 text-emerald-800">Saved already</Badge>
+                  <Badge className="bg-emerald-100 text-emerald-800">Saved ✓</Badge>
                 ) : (
-                  <Badge>Quick form</Badge>
+                  <Badge className="bg-amber-100 text-amber-800">Not filled in yet</Badge>
                 )}
               </div>
-
-              <p className="mt-3 text-sm leading-6 text-charcoal/62">
-                Give the organizer the basics: your budget, the dates that work, and any strong destination or lodging lean. You can always update it later.
+              <p className="mt-2 text-sm text-charcoal/58">
+                Tell the group your budget, available dates, and what you care about most. Takes under a minute.
               </p>
 
-              <form action={submitPreferencesAction} className="mt-5 space-y-5">
+              <form action={submitPreferencesAction} className="mt-5 space-y-4">
                 <input type="hidden" name="outingId" value={detail.outing.id} />
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <FieldLabel htmlFor="budgetMin">Budget min</FieldLabel>
+                    <FieldLabel htmlFor="budgetMin">Budget min ($)</FieldLabel>
                     <Input id="budgetMin" name="budgetMin" type="number" defaultValue={defaults.budgetMin} />
-                    <p className="mt-2 text-xs text-charcoal/50">
-                      Suggested from the trip target: {currency(detail.outing.budgetTarget)}
-                    </p>
                   </div>
                   <div>
-                    <FieldLabel htmlFor="budgetMax">Budget max</FieldLabel>
+                    <FieldLabel htmlFor="budgetMax">Budget max ($)</FieldLabel>
                     <Input id="budgetMax" name="budgetMax" type="number" defaultValue={defaults.budgetMax} />
-                    <p className="mt-2 text-xs text-charcoal/50">
-                      Start with your realistic all-in range, then tighten it later if needed.
-                    </p>
+                    <p className="mt-1.5 text-xs text-charcoal/45">Trip target: {currency(detail.outing.budgetTarget)}</p>
                   </div>
                 </div>
 
-                <div className="rounded-[24px] bg-cream p-4">
-                  <FieldLabel htmlFor="availableDates">Which dates work for you?</FieldLabel>
-                  <DateAvailabilityPicker
-                    windows={detail.outing.preferredDateWindows}
-                    defaultSelected={detail.currentPreference?.availableDates ?? []}
-                  />
-                </div>
-
-                <div className="rounded-[24px] bg-cream p-4">
-                  <FieldLabel htmlFor="destinationVotes">Destination votes</FieldLabel>
-                  <Input
-                    id="destinationVotes"
-                    name="destinationVotes"
-                    defaultValue={defaults.destinationVotes}
-                    placeholder="Northern Michigan Loop, Scottsdale Sun Split"
-                  />
-                  <p className="mt-2 text-xs text-charcoal/50">
-                    Optional, but helpful if you already have a favorite destination from the shortlist.
-                  </p>
-                </div>
-
-                <div className="rounded-[24px] bg-cream p-4">
-                  <FieldLabel htmlFor="lodgingPreferences">Lodging preferences</FieldLabel>
-                  <Input
-                    id="lodgingPreferences"
-                    name="lodgingPreferences"
-                    defaultValue={defaults.lodgingPreferences}
-                    placeholder="house, resort"
-                  />
-                </div>
+                {detail.outing.preferredDateWindows.length > 0 && (
+                  <div className="rounded-[22px] bg-cream p-4">
+                    <FieldLabel>Which dates work for you?</FieldLabel>
+                    <div className="mt-2">
+                      <DateAvailabilityPicker
+                        windows={detail.outing.preferredDateWindows}
+                        defaultSelected={detail.currentPreference?.availableDates ?? []}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <FieldLabel htmlFor="courseQualityPreference">Course quality preference (1-10)</FieldLabel>
+                    <FieldLabel htmlFor="courseQualityPreference">Course quality (1–10)</FieldLabel>
                     <Input
                       id="courseQualityPreference"
                       name="courseQualityPreference"
@@ -668,9 +433,9 @@ export default async function OutingDetailPage({
                     />
                   </div>
                   <div>
-                    <FieldLabel htmlFor="walkingPreference">Walking vs riding</FieldLabel>
+                    <FieldLabel htmlFor="walkingPreference">Walking or riding?</FieldLabel>
                     <Select id="walkingPreference" name="walkingPreference" defaultValue={defaults.walkingPreference}>
-                      <option value="either">Either</option>
+                      <option value="either">Either is fine</option>
                       <option value="walking">Prefer walking</option>
                       <option value="riding">Prefer riding</option>
                     </Select>
@@ -678,12 +443,32 @@ export default async function OutingDetailPage({
                 </div>
 
                 <div>
-                  <FieldLabel htmlFor="comments">Comments</FieldLabel>
+                  <FieldLabel htmlFor="destinationVotes">Destination preference (optional)</FieldLabel>
+                  <Input
+                    id="destinationVotes"
+                    name="destinationVotes"
+                    defaultValue={defaults.destinationVotes}
+                    placeholder="e.g. Scottsdale, Myrtle Beach"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel htmlFor="lodgingPreferences">Lodging style (optional)</FieldLabel>
+                  <Input
+                    id="lodgingPreferences"
+                    name="lodgingPreferences"
+                    defaultValue={defaults.lodgingPreferences}
+                    placeholder="e.g. house, resort"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel htmlFor="comments">Anything else?</FieldLabel>
                   <Textarea
                     id="comments"
                     name="comments"
                     defaultValue={defaults.comments}
-                    placeholder="Anything else the organizer should know?"
+                    placeholder="Notes for the organizer..."
                   />
                 </div>
 
@@ -691,41 +476,83 @@ export default async function OutingDetailPage({
               </form>
             </Card>
 
-            {detail.destinations.length > 0 || detail.golfCourses.length > 0 ? (
-              <Card className="border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)]">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.24em] text-emerald-800/70">Trip status</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-charcoal">
-                      {detail.insights.respondedCount >= 2
-                        ? "Your group is aligned — ready to lock it in"
-                        : "Getting close — compare options and lock the dates"}
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-charcoal/66">
-                      {detail.insights.respondedCount >= 2
-                        ? `${detail.insights.respondedCount} members have submitted preferences. Head to the compare view to finalize the hotel and tee times.`
-                        : "Once the group finishes submitting preferences, the best-fit options will rise to the top automatically."}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-stretch">
-                    <Button href={`/outings/${detail.outing.id}/compare`}>
-                      Compare &amp; finalize options
-                    </Button>
-                    <p className="text-center text-xs text-charcoal/50 lg:text-left">
-                      Direct booking coming soon
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ) : null}
+            {/* Group / People */}
+            <Card id="group">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">The group</h2>
+                {shareLink ? (
+                  <CopyLinkButton link={shareLink} label="Copy invite link" copiedLabel="Copied!" />
+                ) : null}
+              </div>
 
-            <ChatPanel
-              messages={detail.messages}
-              profiles={profiles}
-              outingId={detail.outing.id}
-              currentProfileId={profile.id}
-              sendAction={sendChatMessageAction}
-            />
+              {/* Member list */}
+              <div className="mt-4">
+                {detail.memberSnapshots.map((snapshot) => {
+                  const person = profiles.find((item) => item.id === snapshot.member.profileId);
+                  return (
+                    <MemberRow
+                      key={snapshot.member.id}
+                      person={person}
+                      responded={snapshot.responded}
+                      role={labelize(snapshot.member.role)}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Invite form — organizer only */}
+              {isOrganizer && (
+                <form action={inviteMemberAction} className="mt-5 rounded-[22px] bg-forest-950 p-4 text-cream">
+                  <input type="hidden" name="outingId" value={detail.outing.id} />
+                  <h3 className="font-semibold tracking-[-0.02em]">Invite more golfers</h3>
+                  <p className="mt-1 text-sm text-cream/60">One email per line, or comma-separated.</p>
+                  <div className="mt-3">
+                    <Textarea
+                      name="emails"
+                      placeholder={"friend@example.com\nanother@example.com"}
+                      className="min-h-24 bg-white/10 text-cream placeholder:text-cream/35"
+                    />
+                  </div>
+                  <div className="mt-3">
+                    <SubmitButton label="Send invites" pendingLabel="Sending..." className="w-full" />
+                  </div>
+                </form>
+              )}
+
+              {/* Pending invites */}
+              {detail.invites.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {detail.invites.map((invite) => (
+                    <div key={invite.id} className="flex items-center justify-between gap-3 rounded-[18px] bg-cream px-4 py-3">
+                      <p className="text-sm text-charcoal">{invite.email}</p>
+                      <Badge>{labelize(invite.status)}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* Ready to book CTA */}
+            {(detail.destinations.length > 0 || detail.golfCourses.length > 0) && detail.insights.respondedCount >= 1 && (
+              <div className="rounded-[28px] border-2 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)] px-6 py-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-emerald-800/60">Next step</p>
+                <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-charcoal">
+                  {detail.insights.respondedCount >= 2
+                    ? "Ready to compare and lock it in"
+                    : "Compare options while the group responds"}
+                </h2>
+                <p className="mt-2 text-sm text-charcoal/60">
+                  {detail.insights.respondedCount >= 2
+                    ? "Enough preferences are in — head to the compare view to pick your hotel and tee times."
+                    : "You can start comparing options now. Rankings update as more preferences come in."}
+                </p>
+                <div className="mt-4">
+                  <Button href={`/outings/${detail.outing.id}/compare`} className="w-full justify-center">
+                    Compare &amp; finalize →
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
