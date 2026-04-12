@@ -35,8 +35,15 @@ function destinationPreferenceBoost(
   destination: DestinationOption,
   preferences: PreferenceSubmission[]
 ) {
+  const destNameLower = destination.name.toLowerCase();
   return preferences.reduce((total, submission) => {
-    return total + (submission.destinationVotes.includes(destination.name) ? 10 : 0);
+    // Case-insensitive partial match — "scottsdale" matches "Scottsdale Sun Split"
+    const voted = submission.destinationVotes.some(
+      (v) =>
+        destNameLower.includes(v.toLowerCase()) ||
+        v.toLowerCase().includes(destNameLower)
+    );
+    return total + (voted ? 10 : 0);
   }, 0);
 }
 
@@ -48,14 +55,16 @@ function lodgingPreferenceBoost(lodging: LodgingOption, preferences: PreferenceS
 
 function coursePreferenceBoost(course: GolfCourseOption, preferences: PreferenceSubmission[]) {
   return preferences.reduce((total, submission) => {
-    let next = total + submission.courseQualityPreference;
+    // Normalize quality preference (1–10) to 0–100 so it's on par with budget fit
+    const qualityScore = ((submission.courseQualityPreference - 1) / 9) * 100;
+    let next = total + qualityScore;
 
+    // Walking/riding fit — meaningful bonus so preference actually shifts rankings
     if (submission.walkingPreference === "walking" && course.walkingFriendly) {
-      next += 8;
+      next += 25;
     }
-
     if (submission.walkingPreference === "riding" && course.rideFriendly) {
-      next += 8;
+      next += 25;
     }
 
     return next;
@@ -73,10 +82,30 @@ export function buildRecommendations(input: {
   const { outing, preferences, destinations, golfCourses, lodging, votes } = input;
   const bestDates = dateFit(preferences);
 
+  // Compute consensus rounds first — used for the golf budget comparison below
+  const roundsVotes = preferences
+    .map((p) => p.preferredRounds)
+    .filter((r): r is number => r != null && r > 0);
+  const consensusRounds = roundsVotes.length
+    ? (() => {
+        const counts: Record<number, number> = {};
+        for (const r of roundsVotes) counts[r] = (counts[r] ?? 0) + 1;
+        return Number(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
+      })()
+    : null;
+
+  const estimatedRounds =
+    consensusRounds ??
+    (outing.golfIntensity === "light" ? 2 : outing.golfIntensity === "golf_first" ? 4 : 3);
+
+  // Golf is ~40% of the trip budget; compare total expected spend vs that portion
+  const golfBudgetPerPerson = outing.budgetTarget * 0.4;
+
   const destinationScores = destinations
     .map((destination) => {
       const totalTripCost =
-        destination.averageNightlyRate * 2 + destination.averageRoundCost * (outing.golfIntensity === "golf_first" ? 3 : 2);
+        destination.averageNightlyRate * 2 +
+        destination.averageRoundCost * (outing.golfIntensity === "golf_first" ? 3 : 2);
       const score =
         normalizeBudgetFit(outing.budgetTarget, totalTripCost) * 0.5 +
         destinationPreferenceBoost(destination, preferences) * 1.2 +
@@ -97,8 +126,9 @@ export function buildRecommendations(input: {
 
   const golfScores = golfCourses
     .map((course) => {
+      const totalGolfCost = course.averageGreensFee * estimatedRounds;
       const score =
-        normalizeBudgetFit(outing.budgetTarget / 2, course.averageGreensFee) * 0.45 +
+        normalizeBudgetFit(golfBudgetPerPerson, totalGolfCost) * 0.45 +
         coursePreferenceBoost(course, preferences) * 0.9 +
         voteBoost(course.id, votes) * 6 +
         course.qualityScore;
@@ -134,18 +164,6 @@ export function buildRecommendations(input: {
       };
     })
     .sort((a, b) => b.score - a.score);
-
-  // Mode of preferredRounds across all submitted preferences (fallback: null)
-  const roundsVotes = preferences
-    .map(p => p.preferredRounds)
-    .filter((r): r is number => r != null && r > 0);
-  const consensusRounds = roundsVotes.length
-    ? (() => {
-        const counts: Record<number, number> = {};
-        for (const r of roundsVotes) counts[r] = (counts[r] ?? 0) + 1;
-        return Number(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
-      })()
-    : null;
 
   return {
     bestDates,

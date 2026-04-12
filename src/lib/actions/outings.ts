@@ -968,14 +968,16 @@ export async function submitPreferencesAction(formData: FormData) {
         .map((s) => s.trim())
         .filter(Boolean);
     })(),
-    destinationVotes: String(formData.get("destinationVotes") ?? "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-    lodgingPreferences: String(formData.get("lodgingPreferences") ?? "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
+    destinationVotes: (() => {
+      const all = formData.getAll("destinationVotes").map(String).filter(Boolean);
+      if (all.length > 0) return all;
+      return String(formData.get("destinationVotes") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    })(),
+    lodgingPreferences: (() => {
+      const all = formData.getAll("lodgingPreferences").map(String).filter(Boolean);
+      if (all.length > 0) return all;
+      return String(formData.get("lodgingPreferences") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    })(),
     courseQualityPreference: formData.get("courseQualityPreference"),
     walkingPreference: formData.get("walkingPreference"),
     comments: String(formData.get("comments") ?? ""),

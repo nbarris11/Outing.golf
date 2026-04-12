@@ -43,8 +43,8 @@ function preferenceDefaults(preference: PreferenceSubmission | null, outingBudge
     budgetMin: preference?.budgetMin?.toString() ?? seededBudgetRange.budgetMin,
     budgetMax: preference?.budgetMax?.toString() ?? seededBudgetRange.budgetMax,
     availableDates: preference?.availableDates.join(", ") ?? "",
-    destinationVotes: preference?.destinationVotes.join(", ") ?? "",
-    lodgingPreferences: preference?.lodgingPreferences.join(", ") ?? "",
+    destinationVotes: preference?.destinationVotes ?? [],
+    lodgingPreferences: preference?.lodgingPreferences ?? [],
     courseQualityPreference: preference?.courseQualityPreference?.toString() ?? "7",
     walkingPreference: preference?.walkingPreference ?? "either",
     comments: preference?.comments ?? "",
@@ -218,24 +218,53 @@ export default async function OutingDetailPage({
                 </div>
               </div>
 
-              <div>
-                <FieldLabel htmlFor="destinationVotes">Destination preference (optional)</FieldLabel>
-                <Input
-                  id="destinationVotes"
-                  name="destinationVotes"
-                  defaultValue={defaults.destinationVotes}
-                  placeholder="e.g. Scottsdale, Myrtle Beach"
-                />
-              </div>
+              {detail.destinations.length > 0 ? (
+                <div>
+                  <FieldLabel>Destination lean (optional)</FieldLabel>
+                  <div className="mt-2 space-y-2">
+                    {detail.destinations.map((dest) => (
+                      <label
+                        key={dest.id}
+                        className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"
+                      >
+                        <input
+                          type="checkbox"
+                          name="destinationVotes"
+                          value={dest.name}
+                          defaultChecked={(defaults.destinationVotes as string[]).includes(dest.name)}
+                          className="h-4 w-4 accent-forest-900"
+                        />
+                        <span className="font-medium">{dest.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div>
-                <FieldLabel htmlFor="lodgingPreferences">Lodging style (optional)</FieldLabel>
-                <Input
-                  id="lodgingPreferences"
-                  name="lodgingPreferences"
-                  defaultValue={defaults.lodgingPreferences}
-                  placeholder="e.g. house, resort"
-                />
+                <FieldLabel>Lodging style (optional)</FieldLabel>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {([
+                    ["hotel", "Hotel"],
+                    ["resort", "Resort"],
+                    ["house", "House / Rental"],
+                    ["mixed", "No preference"]
+                  ] as const).map(([value, label]) => (
+                    <label
+                      key={value}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"
+                    >
+                      <input
+                        type="checkbox"
+                        name="lodgingPreferences"
+                        value={value}
+                        defaultChecked={(defaults.lodgingPreferences as string[]).includes(value)}
+                        className="h-4 w-4 accent-forest-900"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -448,7 +477,12 @@ export default async function OutingDetailPage({
             {/* Golf courses */}
             <Card>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">⛳ Golf courses</h2>
+                <div>
+                  <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">⛳ Golf courses</h2>
+                  {detail.insights.respondedCount > 0 && (
+                    <p className="mt-0.5 text-xs text-forest-900/70">↑ Ranked by group preferences</p>
+                  )}
+                </div>
                 <p className="text-sm text-charcoal/50">
                   {roundsPerPlayer} rounds · {players} players
                   {detail.recommendation.consensusRounds ? " · from group votes" : " · estimated"}
@@ -506,7 +540,12 @@ export default async function OutingDetailPage({
             {/* Lodging options */}
             <Card id="people">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">🏨 Lodging options</h2>
+                <div>
+                  <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">🏨 Lodging options</h2>
+                  {detail.insights.respondedCount > 0 && (
+                    <p className="mt-0.5 text-xs text-forest-900/70">↑ Ranked by group preferences</p>
+                  )}
+                </div>
                 <p className="text-sm text-charcoal/50">{nights} nights · {players} players</p>
               </div>
 
@@ -701,24 +740,53 @@ export default async function OutingDetailPage({
                   </div>
                 </div>
 
-                <div>
-                  <FieldLabel htmlFor="destinationVotes">Destination preference (optional)</FieldLabel>
-                  <Input
-                    id="destinationVotes"
-                    name="destinationVotes"
-                    defaultValue={defaults.destinationVotes}
-                    placeholder="e.g. Scottsdale, Myrtle Beach"
-                  />
-                </div>
+                {detail.destinations.length > 0 ? (
+                  <div>
+                    <FieldLabel>Destination lean (optional)</FieldLabel>
+                    <div className="mt-2 space-y-2">
+                      {detail.destinations.map((dest) => (
+                        <label
+                          key={dest.id}
+                          className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"
+                        >
+                          <input
+                            type="checkbox"
+                            name="destinationVotes"
+                            value={dest.name}
+                            defaultChecked={(defaults.destinationVotes as string[]).includes(dest.name)}
+                            className="h-4 w-4 accent-forest-900"
+                          />
+                          <span className="font-medium">{dest.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 <div>
-                  <FieldLabel htmlFor="lodgingPreferences">Lodging style (optional)</FieldLabel>
-                  <Input
-                    id="lodgingPreferences"
-                    name="lodgingPreferences"
-                    defaultValue={defaults.lodgingPreferences}
-                    placeholder="e.g. house, resort"
-                  />
+                  <FieldLabel>Lodging style (optional)</FieldLabel>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {([
+                      ["hotel", "Hotel"],
+                      ["resort", "Resort"],
+                      ["house", "House / Rental"],
+                      ["mixed", "No preference"]
+                    ] as const).map(([value, label]) => (
+                      <label
+                        key={value}
+                        className="flex cursor-pointer items-center gap-2.5 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"
+                      >
+                        <input
+                          type="checkbox"
+                          name="lodgingPreferences"
+                          value={value}
+                          defaultChecked={(defaults.lodgingPreferences as string[]).includes(value)}
+                          className="h-4 w-4 accent-forest-900"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
