@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
 import { ComparePanel } from "@/components/outings/compare-panel";
 import { LodgingSearchPanel } from "@/components/outings/lodging-search-panel";
+import { RentalListingPanel } from "@/components/outings/rental-listing-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requireProfile } from "@/lib/auth";
@@ -213,11 +214,24 @@ export default async function ComparePage({
               roundsPerPlayer={roundsPerPlayer}
             />
 
-            {/* ── Live lodging search (organizer only) ── */}
+            {/* ── Airbnb / VRBO + manual listing (organizer only) ── */}
+            {canManageLodging && (
+              <RentalListingPanel
+                outingId={detail.outing.id}
+                destination={detail.outing.destinationLabel}
+                checkIn={defaultWindow?.start ?? new Date().toISOString().slice(0, 10)}
+                checkOut={defaultWindow?.end ?? new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10)}
+                guests={detail.outing.numberOfPlayers}
+                nights={nights}
+                players={players}
+              />
+            )}
+
+            {/* ── Live hotel search (organizer only) ── */}
             {canManageLodging && (
               <div>
                 <p className="mb-3 text-xs uppercase tracking-[0.22em] text-charcoal/40">
-                  Organizer — add lodging options
+                  Search hotels
                 </p>
                 <LodgingSearchPanel
                   outingId={detail.outing.id}
