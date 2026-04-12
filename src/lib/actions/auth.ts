@@ -1,13 +1,18 @@
 "use server";
 
 import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { getDemoProfileByEmail, createDemoUser } from "@/lib/demo/store";
 import { clearDemoSession, setDemoSession } from "@/lib/demo/session";
-import { isDemoMode } from "@/lib/env";
+import { isDemoMode, isProductionEnvironment, publicAppUrl } from "@/lib/env";
 import { logError } from "@/lib/logger";
+import {
+  getExpiredSupabaseCookieOptions,
+  getSupabaseAuthCookieNames
+} from "@/lib/supabase/cookie-options";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function signInAction(formData: FormData) {
@@ -135,14 +140,25 @@ export async function startGoogleSignInAction(formData: FormData) {
     }
 
     const headerStore = await headers();
+    const cookieStore = await cookies();
     const forwardedHost = headerStore.get("x-forwarded-host");
     const requestHost = forwardedHost ?? headerStore.get("host");
     const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
-    const origin =
+    const requestOrigin =
       (requestHost ? `${forwardedProto}://${requestHost}` : null) ??
       headerStore.get("origin") ??
       process.env.NEXT_PUBLIC_APP_URL ??
       "http://127.0.0.1:3000";
+    const origin = isProductionEnvironment ? new URL(publicAppUrl).origin : requestOrigin;
+    const cookieNames = getSupabaseAuthCookieNames(
+      cookieStore.getAll().map((cookie) => cookie.name),
+      "verifier"
+    );
+
+    for (const name of cookieNames) {
+      cookieStore.set(name, "", getExpiredSupabaseCookieOptions(requestHost, false));
+      cookieStore.set(name, "", getExpiredSupabaseCookieOptions(requestHost, true));
+    }
 
     const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(destination)}`;
     const { data, error } = await supabase.auth.signInWithOAuth({

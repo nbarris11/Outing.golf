@@ -1,10 +1,19 @@
+"use client";
+
+import { useActionState, useEffect, useRef, useState } from "react";
+
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { FieldLabel, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { cn, formatDateLabel, formatLongDateLabel, formatTimeLabel } from "@/lib/utils";
+import type { SendChatMessageInlineState } from "@/lib/actions/outings";
 import type { ChatMessage, Profile } from "@/types/domain";
+
+const initialSendState: SendChatMessageInlineState = {
+  status: "idle"
+};
 
 function initialsFor(name: string) {
   return name
@@ -26,9 +35,38 @@ export function ChatPanel({
   profiles: Profile[];
   outingId: string;
   currentProfileId: string;
-  sendAction: (formData: FormData) => Promise<void>;
+  sendAction: (
+    previousState: SendChatMessageInlineState,
+    formData: FormData
+  ) => Promise<SendChatMessageInlineState>;
 }) {
-  const latestMessage = messages.at(-1);
+  const [chatMessages, setChatMessages] = useState(messages);
+  const [sendState, formAction, isPending] = useActionState(sendAction, initialSendState);
+  const formRef = useRef<HTMLFormElement>(null);
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+  const latestMessage = chatMessages.at(-1);
+
+  useEffect(() => {
+    if (sendState.status !== "success") {
+      return;
+    }
+
+    setChatMessages((currentMessages) => {
+      if (currentMessages.some((message) => message.id === sendState.message.id)) {
+        return currentMessages;
+      }
+
+      return [...currentMessages, sendState.message];
+    });
+    formRef.current?.reset();
+  }, [sendState]);
+
+  useEffect(() => {
+    bottomAnchorRef.current?.scrollIntoView({
+      block: "end",
+      behavior: chatMessages.length > messages.length ? "smooth" : "auto"
+    });
+  }, [chatMessages, messages.length]);
 
   return (
     <Card className="overflow-hidden p-0">
@@ -53,9 +91,9 @@ export function ChatPanel({
       </div>
 
       <div className="bg-[linear-gradient(180deg,rgba(247,244,238,0.55),rgba(247,244,238,0.18))] px-4 py-4 sm:px-6">
-        {messages.length ? (
+        {chatMessages.length ? (
           <div className="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
-            {messages.map((message) => {
+            {chatMessages.map((message) => {
               const author = profiles.find((profile) => profile.id === message.profileId);
               const isCurrentUser = message.profileId === currentProfileId;
               const authorName = author?.fullName ?? "Member";
@@ -103,6 +141,7 @@ export function ChatPanel({
                 </div>
               );
             })}
+            <div ref={bottomAnchorRef} />
           </div>
         ) : (
           <EmptyState
@@ -112,7 +151,7 @@ export function ChatPanel({
         )}
       </div>
 
-      <form action={sendAction} className="border-t border-charcoal/8 px-6 py-5">
+      <form action={formAction} ref={formRef} className="border-t border-charcoal/8 px-6 py-5">
         <input type="hidden" name="outingId" value={outingId} />
         <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
@@ -123,13 +162,17 @@ export function ChatPanel({
               maxLength={800}
               className="min-h-24 bg-cream"
               placeholder="Ask the group to vote, confirm a date, or react to the top shortlist."
+              disabled={isPending}
             />
             <p className="mt-2 text-xs leading-5 text-charcoal/52">
               Good messages here tend to be short and specific: a date check, a budget check, or a final vote.
             </p>
+            {sendState.status === "error" ? (
+              <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{sendState.error}</p>
+            ) : null}
           </div>
           <div className="flex items-center justify-between gap-3 lg:block">
-            <p className="text-xs uppercase tracking-[0.24em] text-charcoal/35">Realtime-ready</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-charcoal/35">Instant send</p>
             <SubmitButton label="Send message" pendingLabel="Sending..." className="w-full lg:mt-3" />
           </div>
         </div>

@@ -24,7 +24,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canManageOuting, isAdmin } from "@/modules/outings/permissions";
 import { fetchOutingInventory } from "@/modules/providers/inventory-service";
-import type { Outing } from "@/types/domain";
+import type { ChatMessage, Outing } from "@/types/domain";
 
 const createOutingSchema = z
   .object({
@@ -77,6 +77,19 @@ const chatMessageSchema = z.object({
   outingId: z.string().min(1),
   message: z.string().trim().min(1).max(800)
 });
+
+export type SendChatMessageInlineState =
+  | {
+      status: "idle";
+    }
+  | {
+      status: "error";
+      error: string;
+    }
+  | {
+      status: "success";
+      message: ChatMessage;
+    };
 
 const preferenceSchema = z.object({
   outingId: z.string().min(1),
@@ -1083,6 +1096,83 @@ export async function sendChatMessageAction(formData: FormData) {
 
   revalidatePath(`/outings/${parsed.data.outingId}`);
   redirect(`/outings/${parsed.data.outingId}`);
+}
+
+export async function sendChatMessageInlineAction(
+  _previousState: SendChatMessageInlineState,
+  formData: FormData
+): Promise<SendChatMessageInlineState> {
+  const profile = await requireProfile();
+  const parsed = chatMessageSchema.safeParse({
+    outingId: formData.get("outingId"),
+    message: formData.get("message")
+  });
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      error: "Enter a message under 800 characters"
+    };
+  }
+
+  const createdMessage: ChatMessage = {
+    id: randomUUID(),
+    outingId: parsed.data.outingId,
+    profileId: profile.id,
+    message: parsed.data.message,
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    if (isDemoMode) {
+      await addDemoChatMessage(parsed.data.outingId, profile.id, parsed.data.message);
+
+      return {
+        status: "success",
+        message: createdMessage
+      };
+    }
+
+    const adminClient = createSupabaseAdminClient();
+    const supabase = adminClient ?? (await createSupabaseServerClient());
+
+    const { error: chatError } = await supabase!.from("chat_messages").insert({
+      id: createdMessage.id,
+      outing_id: createdMessage.outingId,
+      profile_id: createdMessage.profileId,
+      message: createdMessage.message,
+      created_at: createdMessage.createdAt
+    });
+
+    if (chatError) {
+      logError("Failed to send chat message inline", chatError, {
+        outingId: parsed.data.outingId,
+        profileId: profile.id
+      });
+
+      return {
+        status: "error",
+        error: "Message could not be sent"
+      };
+    }
+
+    revalidatePath(`/outings/${parsed.data.outingId}`);
+
+    return {
+      status: "success",
+      message: createdMessage
+    };
+  } catch (error) {
+    logError("Unexpected inline chat failure", error, {
+      outingId: parsed.data.outingId,
+      profileId: profile.id
+    });
+
+    return {
+      status: "error",
+      error: "Message could not be sent"
+    };
+  }
 }
 
 export async function acceptInviteAction(formData: FormData) {

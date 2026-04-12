@@ -11,7 +11,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import {
   inviteMemberAction,
   resendInviteAction,
-  sendChatMessageAction,
+  sendChatMessageInlineAction,
   submitPreferencesAction
 } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
@@ -79,6 +79,28 @@ function MemberRow({
         </Badge>
         <span className="hidden sm:inline text-xs text-charcoal/35">{role}</span>
       </div>
+    </div>
+  );
+}
+
+function IncludedPersonPill({
+  title,
+  subtitle,
+  tone = "member"
+}: {
+  title: string;
+  subtitle: string;
+  tone?: "member" | "pending";
+}) {
+  return (
+    <div
+      className={[
+        "rounded-[18px] px-4 py-3",
+        tone === "pending" ? "border border-dashed border-charcoal/15 bg-white" : "bg-cream"
+      ].join(" ")}
+    >
+      <p className="text-sm font-medium text-charcoal">{title}</p>
+      <p className="mt-1 text-xs text-charcoal/50">{subtitle}</p>
     </div>
   );
 }
@@ -200,6 +222,75 @@ export default async function OutingDetailPage({
           )}
         </div>
 
+        {isOrganizer && shareLink ? (
+          <Card className="mt-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-charcoal/42">Sharing link</p>
+                <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-charcoal">
+                  Keep this at the ready
+                </h2>
+                <p className="mt-2 text-sm text-charcoal/60">
+                  Send one simple link when you want someone to jump straight into the outing.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <CopyLinkButton link={shareLink} label="Copy share link" copiedLabel="Copied!" />
+              </div>
+            </div>
+          </Card>
+        ) : null}
+
+        <Card className="mt-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.22em] text-charcoal/42">People</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-charcoal">
+                Who&apos;s in this outing
+              </h2>
+              <p className="mt-2 text-sm text-charcoal/60">
+                Everyone already in the group, plus anyone still sitting on an invite.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Badge className="bg-forest-900/8 text-forest-900">{detail.members.length} joined</Badge>
+              {detail.invites.length ? (
+                <Badge className="bg-sand text-charcoal/72">
+                  {detail.invites.filter((invite) => invite.status === "pending").length} pending
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {detail.memberSnapshots.map((snapshot) => {
+              const person = profiles.find((item) => item.id === snapshot.member.profileId);
+
+              return (
+                <IncludedPersonPill
+                  key={snapshot.member.id}
+                  title={person?.fullName ?? person?.email ?? "Member"}
+                  subtitle={
+                    snapshot.responded
+                      ? `${person?.email ?? "No email"} · preferences submitted`
+                      : `${person?.email ?? "No email"} · still needs to respond`
+                  }
+                />
+              );
+            })}
+            {detail.invites
+              .filter((invite) => invite.status === "pending")
+              .map((invite) => (
+                <IncludedPersonPill
+                  key={invite.id}
+                  title={invite.email}
+                  subtitle="Invite sent · waiting to join"
+                  tone="pending"
+                />
+              ))}
+          </div>
+        </Card>
+
         {/* ── Notices ── */}
         {notices.created === "1" ? (
           <Card className="mt-5 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)]">
@@ -215,7 +306,6 @@ export default async function OutingDetailPage({
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row shrink-0">
-                {shareLink ? <CopyLinkButton link={shareLink} label="Copy share link" copiedLabel="Copied!" /> : null}
                 <Button href="#people" variant="secondary">Invite more</Button>
               </div>
             </div>
@@ -384,7 +474,7 @@ export default async function OutingDetailPage({
               profiles={profiles}
               outingId={detail.outing.id}
               currentProfileId={profile.id}
-              sendAction={sendChatMessageAction}
+              sendAction={sendChatMessageInlineAction}
             />
           </div>
 
@@ -551,32 +641,13 @@ export default async function OutingDetailPage({
             </Card>
 
             {/* Group / People */}
-            <Card id="group">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">The group</h2>
-                {shareLink ? (
-                  <CopyLinkButton link={shareLink} label="Copy invite link" copiedLabel="Copied!" />
-                ) : null}
-              </div>
+            {isOrganizer ? (
+              <Card id="group">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Invite and manage people</h2>
+                  <Badge className="bg-forest-900/8 text-forest-900">{detail.members.length} already in</Badge>
+                </div>
 
-              {/* Member list */}
-              <div className="mt-4">
-                {detail.memberSnapshots.map((snapshot) => {
-                  const person = profiles.find((item) => item.id === snapshot.member.profileId);
-                  return (
-                    <MemberRow
-                      key={snapshot.member.id}
-                      person={person}
-                      responded={snapshot.responded}
-                      role={labelize(snapshot.member.role)}
-                      homeCity={snapshot.preference?.homeCity}
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Invite form — organizer only */}
-              {isOrganizer && (
                 <form action={inviteMemberAction} className="mt-5 rounded-[22px] bg-forest-950 p-4 text-cream">
                   <input type="hidden" name="outingId" value={detail.outing.id} />
                   <h3 className="font-semibold tracking-[-0.02em]">Invite more golfers</h3>
@@ -592,33 +663,48 @@ export default async function OutingDetailPage({
                     <SubmitButton label="Send invites" pendingLabel="Sending..." className="w-full" />
                   </div>
                 </form>
-              )}
+                {detail.memberSnapshots.length > 0 ? (
+                  <div className="mt-5">
+                    {detail.memberSnapshots.map((snapshot) => {
+                      const person = profiles.find((item) => item.id === snapshot.member.profileId);
+                      return (
+                        <MemberRow
+                          key={snapshot.member.id}
+                          person={person}
+                          responded={snapshot.responded}
+                          role={labelize(snapshot.member.role)}
+                          homeCity={snapshot.preference?.homeCity}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : null}
 
-              {/* Pending invites */}
-              {detail.invites.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {detail.invites.map((invite) => (
-                    <div key={invite.id} className="flex items-center justify-between gap-3 rounded-[18px] bg-cream px-4 py-3">
-                      <div className="min-w-0">
-                        <p className="text-sm text-charcoal">{invite.email}</p>
+                {detail.invites.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    {detail.invites.map((invite) => (
+                      <div key={invite.id} className="flex items-center justify-between gap-3 rounded-[18px] bg-cream px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="text-sm text-charcoal">{invite.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge>{labelize(invite.status)}</Badge>
+                          {invite.status === "pending" ? (
+                            <form action={resendInviteAction}>
+                              <input type="hidden" name="outingId" value={detail.outing.id} />
+                              <input type="hidden" name="inviteId" value={invite.id} />
+                              <Button type="submit" variant="secondary" className="px-3 py-2 text-xs">
+                                Resend invite
+                              </Button>
+                            </form>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge>{labelize(invite.status)}</Badge>
-                        {isOrganizer && invite.status === "pending" ? (
-                          <form action={resendInviteAction}>
-                            <input type="hidden" name="outingId" value={detail.outing.id} />
-                            <input type="hidden" name="inviteId" value={invite.id} />
-                            <Button type="submit" variant="secondary" className="px-3 py-2 text-xs">
-                              Resend invite
-                            </Button>
-                          </form>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+                    ))}
+                  </div>
+                ) : null}
+              </Card>
+            ) : null}
 
             {/* Ready to book CTA */}
             {(detail.destinations.length > 0 || detail.golfCourses.length > 0) && detail.insights.respondedCount >= 1 && (
