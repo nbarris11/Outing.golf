@@ -411,10 +411,18 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
     for (const destination of destinations) {
       const metadata = decodeDestinationId(destination.id);
 
+      // Detect state/region-level destinations — the destination name won't contain
+      // a comma and will match a broad administrative area. For these we skip nearby
+      // search (which only covers a 50km radius around the centroid) and go straight
+      // to a text search so we get courses spread across the whole state.
+      const isBroadArea =
+        !destination.name.includes(",") &&
+        (destination.region === destination.name || destination.name.split(" ").length <= 3);
+
       try {
         let places: GooglePlace[] = [];
 
-        if (metadata?.latitude != null && metadata.longitude != null) {
+        if (!isBroadArea && metadata?.latitude != null && metadata.longitude != null) {
           places = await nearbySearch({
             includedTypes: ["golf_course"],
             languageCode: "en",
@@ -435,13 +443,27 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
 
         if (!places.length) {
           places = await textSearch({
-            textQuery: `golf courses in ${destination.name}, ${destination.region}`,
+            textQuery: `best golf courses in ${destination.name}`,
             includedType: "golf_course",
             strictTypeFiltering: true,
             languageCode: "en",
             regionCode: "US",
             pageSize: safeLimit
           });
+        }
+
+        // If still not enough, do a second search for more variety
+        if (places.length < safeLimit / 2) {
+          const more = await textSearch({
+            textQuery: `public golf courses ${destination.name}`,
+            includedType: "golf_course",
+            strictTypeFiltering: true,
+            languageCode: "en",
+            regionCode: "US",
+            pageSize: safeLimit
+          });
+          const existingIds = new Set(places.map(p => p.id));
+          places.push(...more.filter(p => !existingIds.has(p.id)));
         }
 
         if (!places.length) {

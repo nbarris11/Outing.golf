@@ -10,6 +10,7 @@ import { FieldLabel, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import {
   inviteMemberAction,
+  nudgeMemberAction,
   resendInviteAction,
   sendChatMessageInlineAction,
   submitPreferencesAction
@@ -491,10 +492,11 @@ export default async function OutingDetailPage({
 
               {detail.golfCourses.length === 0 ? (
                 <div className="mt-4">
-                  <EmptyState
-                    title="Courses coming soon"
-                    body="Golf options are seeded automatically — check back in a moment."
-                  />
+                  <div className="rounded-[22px] border border-dashed border-amber-200 bg-amber-50 px-5 py-5 text-center">
+                    <p className="text-sm font-medium text-amber-800">⏳ Finding golf courses…</p>
+                    <p className="mt-1 text-xs text-amber-700/70">Options are being pulled in — refresh in a few seconds.</p>
+                    <a href="" className="mt-3 inline-block rounded-full bg-amber-100 px-4 py-2 text-xs font-medium text-amber-800 hover:bg-amber-200 transition-colors">Refresh now</a>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
@@ -551,10 +553,11 @@ export default async function OutingDetailPage({
 
               {dedupedLodging.length === 0 ? (
                 <div className="mt-4">
-                  <EmptyState
-                    title="Lodging options coming soon"
-                    body="Stays are seeded automatically — check back in a moment."
-                  />
+                  <div className="rounded-[22px] border border-dashed border-amber-200 bg-amber-50 px-5 py-5 text-center">
+                    <p className="text-sm font-medium text-amber-800">⏳ Finding lodging options…</p>
+                    <p className="mt-1 text-xs text-amber-700/70">Lodging options are being pulled in — refresh in a few seconds.</p>
+                    <a href="" className="mt-3 inline-block rounded-full bg-amber-100 px-4 py-2 text-xs font-medium text-amber-800 hover:bg-amber-200 transition-colors">Refresh now</a>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
@@ -864,13 +867,26 @@ export default async function OutingDetailPage({
                     {detail.memberSnapshots.map((snapshot) => {
                       const person = profiles.find((item) => item.id === snapshot.member.profileId);
                       return (
-                        <MemberRow
-                          key={snapshot.member.id}
-                          person={person}
-                          responded={snapshot.responded}
-                          role={labelize(snapshot.member.role)}
-                          homeCity={snapshot.preference?.homeCity}
-                        />
+                        <div key={snapshot.member.id}>
+                          <MemberRow
+                            person={person}
+                            responded={snapshot.responded}
+                            role={labelize(snapshot.member.role)}
+                            homeCity={snapshot.preference?.homeCity}
+                          />
+                          {!snapshot.responded && snapshot.member.profileId !== profile.id && (
+                            <div className="mb-2 flex justify-end">
+                              <form action={nudgeMemberAction}>
+                                <input type="hidden" name="outingId" value={detail.outing.id} />
+                                <input type="hidden" name="memberProfileId" value={snapshot.member.profileId} />
+                                <input type="hidden" name="memberEmail" value={person?.email ?? ""} />
+                                <Button type="submit" variant="secondary" className="px-3 py-1.5 text-xs">
+                                  Send reminder
+                                </Button>
+                              </form>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>

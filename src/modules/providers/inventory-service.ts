@@ -15,7 +15,7 @@ export async function fetchOutingInventory(outing: Outing) {
   const golfCourses = await providers.golfCourse.searchCourses({
     outing,
     destinations,
-    limitPerDestination: 4
+    limitPerDestination: 8
   });
   const lodging = await providers.lodging.searchLodging({
     outing,

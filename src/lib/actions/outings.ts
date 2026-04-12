@@ -29,7 +29,7 @@ import type { ChatMessage, Outing } from "@/types/domain";
 const createOutingSchema = z
   .object({
   name: z.string().min(3),
-  destinationType: z.enum(["open", "city", "state", "region"]).default("open"),
+  destinationType: z.enum(["open", "city", "state", "region", "international"]).default("open"),
   destinationLabel: z
     .string()
     .trim()
@@ -909,6 +909,59 @@ export async function resendInviteAction(formData: FormData) {
     });
     redirect(`/outings/${parsed.data.outingId}?error=${encodeURIComponent(error instanceof Error ? error.message : "Unable to resend invite")}`);
   }
+}
+
+export async function nudgeMemberAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  const memberProfileId = String(formData.get("memberProfileId") ?? "").trim();
+  const memberEmail = String(formData.get("memberEmail") ?? "").trim();
+
+  if (!outingId || !memberProfileId) {
+    redirect(`/outings/${outingId}?error=Missing%20required%20fields`);
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const supabase = adminClient ?? (await createSupabaseServerClient());
+
+  if (!supabase) {
+    redirect(`/outings/${outingId}?error=Not%20configured`);
+  }
+
+  // Verify caller is organizer
+  const { data: outingRow } = await supabase
+    .from("outings")
+    .select("organizer_id, name")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outingRow || outingRow.organizer_id !== profile.id) {
+    redirect(`/outings/${outingId}?error=Only%20the%20organizer%20can%20send%20nudges`);
+  }
+
+  // Send the nudge email if Resend is configured
+  try {
+    const { sendInviteEmail: _unused, isInviteEmailConfigured } = await import("@/lib/email/invite-email");
+    if (memberEmail && isInviteEmailConfigured()) {
+      const { Resend } = await import("resend");
+      const { env: appEnv } = await import("@/lib/env");
+      if (appEnv.RESEND_API_KEY && appEnv.RESEND_FROM_EMAIL) {
+        const resend = new Resend(appEnv.RESEND_API_KEY);
+        await resend.emails.send({
+          from: appEnv.RESEND_FROM_EMAIL,
+          to: memberEmail,
+          replyTo: appEnv.RESEND_REPLY_TO_EMAIL || undefined,
+          subject: `Don't forget — fill out your preferences for ${outingRow.name}`,
+          text: `Hey! ${profile.fullName ?? "The organizer"} is asking you to fill out your preferences for the golf trip "${outingRow.name}". Takes under a minute and helps the group lock in the best dates, courses, and lodging. Open the outing to get started.`,
+          html: `<p>Hey!</p><p><strong>${profile.fullName ?? "The organizer"}</strong> is nudging you to fill out your preferences for the golf trip <strong>${outingRow.name}</strong>.</p><p>It takes under a minute and helps the group lock in the best dates, courses, and lodging.</p><p>Open the outing in your app to fill out your preferences.</p>`
+        });
+      }
+    }
+  } catch {
+    // Email failure is non-fatal — still show success
+  }
+
+  redirect(`/outings/${outingId}?success=Nudge%20sent%20to%20${encodeURIComponent(memberEmail || "member")}`);
 }
 
 export async function joinOutingFromShareLinkAction(formData: FormData) {
