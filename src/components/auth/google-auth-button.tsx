@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { startGoogleSignInAction } from "@/lib/actions/auth";
 
 function GoogleIcon() {
   return (
@@ -32,12 +31,13 @@ export function GoogleAuthButton({
   next?: string;
 }) {
   return (
-    <form action={startGoogleSignInAction}>
-      <input type="hidden" name="next" value={next} />
-      <Button type="submit" variant="secondary" className="w-full gap-2">
-        <GoogleIcon />
-        {label}
-      </Button>
-    </form>
+    <Button
+      href={`/api/auth/google?next=${encodeURIComponent(next)}`}
+      variant="secondary"
+      className="w-full gap-2"
+    >
+      <GoogleIcon />
+      {label}
+    </Button>
   );
 }
