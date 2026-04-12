@@ -111,7 +111,7 @@ export default async function OutingDetailPage({
   searchParams
 }: {
   params: Promise<{ outingId: string }>;
-  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string; newMember?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string; newMember?: string; confirmed?: string }>;
 }) {
   const profile = await requireProfile();
   const { outingId } = await params;
@@ -172,6 +172,7 @@ export default async function OutingDetailPage({
 
             <form action={submitPreferencesAction} className="mt-5 space-y-4">
               <input type="hidden" name="outingId" value={detail.outing.id} />
+              <input type="hidden" name="fromNewMember" value="1" />
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -312,6 +313,136 @@ export default async function OutingDetailPage({
       </PageShell>
     );
   }
+
+  // ── Step 3: post-preference confirmation screen for new members ──
+  if (notices.confirmed === "1") {
+    const topDestination = detail.destinations.find(
+      (d) => d.id === detail.recommendation.destinationScores[0]?.id
+    );
+    const topCourse = detail.golfCourses.find(
+      (c) => c.id === detail.recommendation.golfScores[0]?.id
+    );
+    const seenLodgingNamesStep3 = new Set<string>();
+    const dedupedLodgingStep3 = detail.lodging.filter((stay) => {
+      if (seenLodgingNamesStep3.has(stay.name)) return false;
+      seenLodgingNamesStep3.add(stay.name);
+      return true;
+    });
+    const topLodging = dedupedLodgingStep3.find(
+      (l) => l.id === detail.recommendation.lodgingScores[0]?.id
+    );
+    const tripWindowStep3 = detail.outing.preferredDateWindows[0];
+    const nightsStep3 = tripWindowStep3
+      ? Math.max(1, Math.round((new Date(tripWindowStep3.end).getTime() - new Date(tripWindowStep3.start).getTime()) / (1000 * 60 * 60 * 24)))
+      : 3;
+    const roundsStep3 = detail.recommendation.consensusRounds
+      ?? (detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3);
+    const playersStep3 = detail.outing.numberOfPlayers;
+
+    return (
+      <PageShell>
+        <section className="mx-auto max-w-xl px-4 py-12 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-forest-900/10 text-2xl">
+              ⛳
+            </div>
+            <h1 className="mt-5 font-serif text-4xl font-semibold tracking-[-0.05em] text-charcoal">
+              You&apos;re all set!
+            </h1>
+            <p className="mt-3 text-base leading-7 text-charcoal/66">
+              Based on your preferences and the rest of the group&apos;s, here&apos;s what&apos;s shaping up for{" "}
+              <span className="font-semibold text-charcoal">{detail.outing.name}</span>.
+            </p>
+          </div>
+
+          {/* Top picks */}
+          <div className="space-y-4">
+            {topDestination ? (
+              <div className="rounded-[28px] bg-forest-950 p-6 text-cream">
+                <p className="text-xs uppercase tracking-[0.22em] text-cream/50">Top destination</p>
+                <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">{topDestination.name}</p>
+                <p className="mt-1 text-sm text-cream/60">{topDestination.region}</p>
+                {topDestination.summary ? (
+                  <p className="mt-3 text-sm leading-6 text-cream/70">{topDestination.summary}</p>
+                ) : null}
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-[18px] bg-white/8 px-4 py-3">
+                    <p className="text-xs text-cream/50">Avg. round</p>
+                    <p className="mt-1 text-sm font-semibold">{currency(topDestination.averageRoundCost)}</p>
+                  </div>
+                  <div className="rounded-[18px] bg-white/8 px-4 py-3">
+                    <p className="text-xs text-cream/50">Est. per person</p>
+                    <p className="mt-1 text-sm font-semibold">
+                      {currency(
+                        topDestination.averageRoundCost * roundsStep3 +
+                          Math.round((topDestination.averageNightlyRate * nightsStep3) / playersStep3)
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-[28px] bg-cream p-5 text-center text-sm text-charcoal/50">
+                Destination picks are being calculated — check back soon.
+              </div>
+            )}
+
+            {topCourse ? (
+              <div className="rounded-[28px] border border-charcoal/8 bg-white p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-charcoal/40">Top course</p>
+                <p className="mt-3 text-lg font-semibold tracking-[-0.03em] text-charcoal">{topCourse.name}</p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
+                    <span className="text-charcoal/55">Greens fee </span>
+                    <span className="font-semibold text-charcoal">{currency(topCourse.averageGreensFee)}</span>
+                  </div>
+                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
+                    <span className="text-charcoal/55">{roundsStep3} round{roundsStep3 !== 1 ? "s" : ""} · </span>
+                    <span className="font-semibold text-charcoal">{currency(topCourse.averageGreensFee * roundsStep3)} per person</span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {topLodging ? (
+              <div className="rounded-[28px] border border-charcoal/8 bg-white p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-charcoal/40">Top lodging</p>
+                <p className="mt-3 text-lg font-semibold tracking-[-0.03em] text-charcoal">{topLodging.name}</p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
+                    <span className="text-charcoal/55">Nightly rate </span>
+                    <span className="font-semibold text-charcoal">{currency(topLodging.nightlyRate ?? 0)}</span>
+                  </div>
+                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
+                    <span className="text-charcoal/55">{nightsStep3} nights · </span>
+                    <span className="font-semibold text-charcoal">
+                      {currency(Math.round(((topLodging.nightlyRate ?? 0) * nightsStep3) / playersStep3))} per person
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* CTA */}
+          <div className="mt-8 flex flex-col gap-3">
+            <Button href={`/outings/${outingId}`} className="w-full text-center justify-center">
+              See the full outing →
+            </Button>
+            <Button href={`/outings/${outingId}/compare`} variant="secondary" className="w-full text-center justify-center">
+              Compare all options
+            </Button>
+          </div>
+
+          <p className="mt-6 text-center text-sm text-charcoal/40">
+            Results update as more members respond.
+          </p>
+        </section>
+      </PageShell>
+    );
+  }
+
   const shareLink = isOrganizer
     ? notices.shareLink ?? (await getOutingShareLink(detail.outing.id, detail.outing.organizerId)) ?? null
     : null;

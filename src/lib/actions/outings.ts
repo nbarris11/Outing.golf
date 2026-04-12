@@ -1007,6 +1007,7 @@ export async function joinOutingFromShareLinkAction(formData: FormData) {
 }
 
 export async function submitPreferencesAction(formData: FormData) {
+  const fromNewMember = formData.get("fromNewMember") === "1";
   const profile = await requireProfile();
   const parsed = preferenceSchema.safeParse({
     outingId: formData.get("outingId"),
@@ -1059,7 +1060,10 @@ export async function submitPreferencesAction(formData: FormData) {
 
     revalidatePath(`/outings/${parsed.data.outingId}`);
     revalidatePath(`/outings/${parsed.data.outingId}/compare`);
-    redirect(`/outings/${parsed.data.outingId}?success=Preferences%20saved`);
+    redirect(fromNewMember
+      ? `/outings/${parsed.data.outingId}?confirmed=1`
+      : `/outings/${parsed.data.outingId}?success=Preferences%20saved`
+    );
   }
 
   const adminClient = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
@@ -1110,7 +1114,10 @@ export async function submitPreferencesAction(formData: FormData) {
 
   revalidatePath(`/outings/${parsed.data.outingId}`);
   revalidatePath(`/outings/${parsed.data.outingId}/compare`);
-  redirect(`/outings/${parsed.data.outingId}?success=Preferences%20saved`);
+  redirect(fromNewMember
+    ? `/outings/${parsed.data.outingId}?confirmed=1`
+    : `/outings/${parsed.data.outingId}?success=Preferences%20saved`
+  );
 }
 
 export async function sendChatMessageAction(formData: FormData) {
