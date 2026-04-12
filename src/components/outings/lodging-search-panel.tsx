@@ -58,10 +58,24 @@ export function LodgingSearchPanel({
     [savedOptions]
   );
 
+  // Deduplicate by hotelId — LiteAPI returns multiple room types per hotel,
+  // keep only the cheapest offer per hotel so cards don't repeat.
+  const dedupedResults = useMemo(() => {
+    const seen = new Map<string, LodgingSearchResult>();
+    for (const result of results) {
+      const key = result.hotelId ?? result.hotelName;
+      const existing = seen.get(key);
+      if (!existing || result.priceTotal < existing.priceTotal) {
+        seen.set(key, result);
+      }
+    }
+    return Array.from(seen.values());
+  }, [results]);
+
   const filteredResults = useMemo(() => {
     const priceCap = maxPrice ? Number(maxPrice) : null;
 
-    const sorted = results.filter((item) => {
+    const sorted = dedupedResults.filter((item) => {
       if (refundableOnly && !item.refundable) {
         return false;
       }
@@ -292,9 +306,9 @@ export function LodgingSearchPanel({
       ) : null}
 
       {results.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-dashed border-charcoal/12 px-5 py-4 text-sm text-charcoal/55">
-          Run a search above to see live hotel options.
-        </div>
+        <p className="mt-4 text-sm text-charcoal/45">
+          {isPending ? "Searching for hotels..." : "Run a search above to pull live hotel pricing."}
+        </p>
       ) : (
         <div className="mt-5 grid gap-4 xl:grid-cols-2">
           {filteredResults.length === 0 ? (

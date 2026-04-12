@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
+import { ComparePanel } from "@/components/outings/compare-panel";
 import { LodgingSearchPanel } from "@/components/outings/lodging-search-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -30,18 +31,40 @@ export default async function ComparePage({
   const canManageLodging = detail.outing.organizerId === profile.id || isAdmin(profile);
 
   const nights = defaultWindow
-    ? Math.max(1, Math.round((new Date(defaultWindow.end).getTime() - new Date(defaultWindow.start).getTime()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(
+        1,
+        Math.round(
+          (new Date(defaultWindow.end).getTime() - new Date(defaultWindow.start).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
     : 3;
-  const roundsPerPlayer = detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3;
+  const roundsPerPlayer =
+    detail.recommendation.consensusRounds ??
+    (detail.outing.golfIntensity === "light"
+      ? 2
+      : detail.outing.golfIntensity === "golf_first"
+        ? 4
+        : 3);
   const players = detail.outing.numberOfPlayers;
 
-  // Deduplicate lodging by hotel name — LiteAPI returns multiple room types per hotel
+  // Deduplicate lodging by name for display
   const seenLodgingNames = new Set<string>();
   const dedupedLodging = detail.lodging.filter((stay) => {
     if (seenLodgingNames.has(stay.name)) return false;
     seenLodgingNames.add(stay.name);
     return true;
   });
+
+  // Attach fit scores for the interactive panel
+  const coursesWithScores = detail.golfCourses.map((course) => ({
+    ...course,
+    fitScore: detail.recommendation.golfScores.find((s) => s.id === course.id)?.score ?? 0
+  }));
+  const lodgingWithScores = dedupedLodging.map((stay) => ({
+    ...stay,
+    fitScore: detail.recommendation.lodgingScores.find((s) => s.id === stay.id)?.score ?? 0
+  }));
 
   return (
     <PageShell>
@@ -52,8 +75,7 @@ export default async function ComparePage({
             Compare destinations, golf, and lodging side by side
           </h1>
           <p className="mt-4 text-base leading-7 text-charcoal/68">
-            This view is tuned for quick tradeoff scanning: cost, travel logic, group fit, quality,
-            and confidence.
+            Select a course and a lodging option below — the cost breakdown per person updates instantly.
           </p>
         </div>
 
@@ -66,34 +88,30 @@ export default async function ComparePage({
           </div>
         ) : (
           <div className="mt-8 space-y-6">
-            <LodgingSearchPanel
-              outingId={detail.outing.id}
-              destination={detail.outing.destinationLabel}
-              defaultCheckIn={defaultWindow?.start ?? new Date().toISOString().slice(0, 10)}
-              defaultCheckOut={defaultWindow?.end ?? new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10)}
-              defaultGuests={detail.outing.numberOfPlayers}
-              isOrganizer={canManageLodging}
-              savedOptions={detail.lodging}
-              favoriteOptionIds={favoriteLodgingIds}
-            />
 
+            {/* ── Top recommendations ── */}
             <div className="grid gap-6 lg:grid-cols-3">
               {[
                 {
                   label: "Recommended destination",
                   value:
-                    detail.destinations.find((item) => item.id === detail.recommendation.destinationScores[0]?.id)?.name ??
-                    "Waiting"
+                    detail.destinations.find(
+                      (item) => item.id === detail.recommendation.destinationScores[0]?.id
+                    )?.name ?? "Waiting for preferences"
                 },
                 {
                   label: "Recommended course",
                   value:
-                    detail.golfCourses.find((item) => item.id === detail.recommendation.golfScores[0]?.id)?.name ?? "Waiting"
+                    detail.golfCourses.find(
+                      (item) => item.id === detail.recommendation.golfScores[0]?.id
+                    )?.name ?? "Waiting for preferences"
                 },
                 {
                   label: "Recommended stay",
                   value:
-                    detail.lodging.find((item) => item.id === detail.recommendation.lodgingScores[0]?.id)?.name ?? "Waiting"
+                    dedupedLodging.find(
+                      (item) => item.id === detail.recommendation.lodgingScores[0]?.id
+                    )?.name ?? "Waiting for preferences"
                 }
               ].map((item) => (
                 <Card key={item.label} className="bg-forest-950 text-cream">
@@ -103,6 +121,7 @@ export default async function ComparePage({
               ))}
             </div>
 
+            {/* ── Destination shortlist ── */}
             <Card>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -113,37 +132,64 @@ export default async function ComparePage({
               </div>
               <div className="mt-5 grid gap-4">
                 {detail.destinations.map((destination) => {
-                  const score = detail.recommendation.destinationScores.find((item) => item.id === destination.id);
+                  const score = detail.recommendation.destinationScores.find(
+                    (item) => item.id === destination.id
+                  );
+                  const estimatedPerPerson =
+                    destination.averageRoundCost * roundsPerPlayer +
+                    Math.round((destination.averageNightlyRate * nights) / players);
                   return (
-                    <div key={destination.id} className="rounded-[28px] border border-charcoal/8 bg-cream p-5">
+                    <div
+                      key={destination.id}
+                      className="rounded-[28px] border border-charcoal/8 bg-cream p-5"
+                    >
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div>
                           <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="text-lg font-semibold tracking-[-0.03em]">{destination.name}</h3>
+                            <h3 className="text-lg font-semibold tracking-[-0.03em]">
+                              {destination.name}
+                            </h3>
                             <Badge>{destination.region}</Badge>
                           </div>
-                          <p className="mt-2 max-w-2xl text-sm leading-6 text-charcoal/68">{destination.summary}</p>
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-charcoal/68">
+                            {destination.summary}
+                          </p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             {destination.tags.map((tag) => (
-                              <span key={tag} className="rounded-full bg-white px-3 py-1 text-xs text-charcoal/60">
+                              <span
+                                key={tag}
+                                className="rounded-full bg-white px-3 py-1 text-xs text-charcoal/60"
+                              >
                                 {tag}
                               </span>
                             ))}
                           </div>
                         </div>
-                        <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[360px]">
+                        <div className="grid gap-3 sm:grid-cols-4 lg:min-w-[400px]">
                           <div className="rounded-[20px] bg-white p-3">
                             <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Golf</p>
-                            <p className="mt-2 text-sm font-semibold">{currency(destination.averageRoundCost)}/round</p>
+                            <p className="mt-2 text-sm font-semibold">
+                              {currency(destination.averageRoundCost)}/round
+                            </p>
                           </div>
                           <div className="rounded-[20px] bg-white p-3">
                             <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Stay</p>
-                            <p className="mt-2 text-sm font-semibold">{currency(destination.averageNightlyRate)}/night</p>
+                            <p className="mt-2 text-sm font-semibold">
+                              {currency(destination.averageNightlyRate)}/night
+                            </p>
                           </div>
                           <div className="rounded-[20px] bg-white p-3">
                             <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Travel</p>
                             <p className="mt-2 text-sm font-semibold">
-                              {destination.driveHours ? `${destination.driveHours}h drive` : `${destination.flightHours}h flight`}
+                              {destination.driveHours
+                                ? `${destination.driveHours}h drive`
+                                : `${destination.flightHours}h flight`}
+                            </p>
+                          </div>
+                          <div className="rounded-[20px] bg-forest-900/8 p-3">
+                            <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Est./person</p>
+                            <p className="mt-2 text-sm font-semibold text-forest-900">
+                              {currency(estimatedPerPerson)}
                             </p>
                           </div>
                         </div>
@@ -158,91 +204,36 @@ export default async function ComparePage({
               </div>
             </Card>
 
-            <div className="grid gap-6 xl:grid-cols-2">
-              <Card>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold tracking-[-0.03em]">Golf course options</h2>
-                    <p className="mt-1 text-sm text-charcoal/60">{roundsPerPlayer} rounds per player · {players} golfers</p>
-                  </div>
-                  <Badge>{detail.golfCourses.length} courses</Badge>
-                </div>
-                <div className="mt-5 space-y-3">
-                  {detail.golfCourses.map((course) => {
-                    const score = detail.recommendation.golfScores.find((item) => item.id === course.id);
-                    const golfPerPerson = course.averageGreensFee * roundsPerPlayer;
-                    return (
-                      <div key={course.id} className="rounded-[24px] bg-cream p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium">{course.name}</p>
-                            <p className="text-sm text-charcoal/60">{course.locationLabel}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-charcoal">{currency(golfPerPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
-                            <p className="text-xs text-charcoal/45">{score?.score ?? 0} fit</p>
-                          </div>
-                        </div>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                          <p className="text-sm text-charcoal/68">{currency(course.averageGreensFee)} × {roundsPerPlayer} rounds</p>
-                          <p className="text-sm text-charcoal/68">{course.qualityScore}/100 quality</p>
-                          <p className="text-sm text-charcoal/68">
-                            {course.walkingFriendly ? "Walking-friendly" : "Riding-first"}
-                          </p>
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-charcoal/64">{course.summary}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
+            {/* ── Interactive course + lodging selection ── */}
+            <ComparePanel
+              courses={coursesWithScores}
+              lodging={lodgingWithScores}
+              nights={nights}
+              players={players}
+              roundsPerPlayer={roundsPerPlayer}
+            />
 
-              <Card>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold tracking-[-0.03em]">Lodging options</h2>
-                    <p className="mt-1 text-sm text-charcoal/60">{nights} nights · split across {players} players</p>
-                  </div>
-                  <Badge>{dedupedLodging.length} stays</Badge>
-                </div>
-                <div className="mt-5 space-y-3">
-                  {dedupedLodging.map((stay) => {
-                    const score = detail.recommendation.lodgingScores.find((item) => item.id === stay.id);
-                    const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
-                    const perPerson = Math.round(lodgingTotal / players);
-                    return (
-                      <div key={stay.id} className="rounded-[24px] bg-cream p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium">{stay.name}</p>
-                            <p className="text-sm capitalize text-charcoal/60">
-                              {stay.lodgingType}
-                              {stay.topPick ? " · top pick" : ""}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-charcoal">{currency(perPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
-                            <p className="text-xs text-charcoal/45">{score?.score ?? 0} fit</p>
-                          </div>
-                        </div>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                          <p className="text-sm text-charcoal/68">{currency(stay.nightlyRate)}/night × {nights} nights</p>
-                          <p className="text-sm text-charcoal/68">Sleeps {stay.sleeps}</p>
-                          <p className="text-sm text-charcoal/68">
-                            {stay.refundable === null || stay.refundable === undefined
-                              ? stay.tags?.[0] ?? "Flexible stay"
-                              : stay.refundable
-                                ? "Refundable"
-                                : "Non-refundable"}
-                          </p>
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-charcoal/64">{stay.summary}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            </div>
+            {/* ── Live lodging search (organizer only) ── */}
+            {canManageLodging && (
+              <div>
+                <p className="mb-3 text-xs uppercase tracking-[0.22em] text-charcoal/40">
+                  Organizer — add lodging options
+                </p>
+                <LodgingSearchPanel
+                  outingId={detail.outing.id}
+                  destination={detail.outing.destinationLabel}
+                  defaultCheckIn={defaultWindow?.start ?? new Date().toISOString().slice(0, 10)}
+                  defaultCheckOut={
+                    defaultWindow?.end ??
+                    new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10)
+                  }
+                  defaultGuests={detail.outing.numberOfPlayers}
+                  isOrganizer={canManageLodging}
+                  savedOptions={detail.lodging}
+                  favoriteOptionIds={favoriteLodgingIds}
+                />
+              </div>
+            )}
           </div>
         )}
       </section>
