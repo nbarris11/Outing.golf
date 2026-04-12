@@ -39,6 +39,7 @@ export interface Outing {
   notes?: string;
   status: OutingStatus;
   organizerWeighting: number;
+  votingOpen: boolean;
   createdAt: string;
 }
 

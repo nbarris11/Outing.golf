@@ -170,7 +170,7 @@ describe("lodging save permissions", () => {
           golfIntensity: "balanced",
           lodgingPreference: "resort",
           status: "planning",
-          organizerWeighting: 3,
+          organizerWeighting: 3, votingOpen: false,
           createdAt: "2026-04-10T00:00:00Z"
         },
         {
@@ -200,7 +200,7 @@ describe("lodging save permissions", () => {
           golfIntensity: "balanced",
           lodgingPreference: "resort",
           status: "planning",
-          organizerWeighting: 3,
+          organizerWeighting: 3, votingOpen: false,
           createdAt: "2026-04-10T00:00:00Z"
         },
         {

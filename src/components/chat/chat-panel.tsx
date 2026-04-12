@@ -29,7 +29,9 @@ export function ChatPanel({
   profiles,
   outingId,
   currentProfileId,
-  sendAction
+  sendAction,
+  compact = false,
+  totalMessages
 }: {
   messages: ChatMessage[];
   profiles: Profile[];
@@ -39,6 +41,8 @@ export function ChatPanel({
     previousState: SendChatMessageInlineState,
     formData: FormData
   ) => Promise<SendChatMessageInlineState>;
+  compact?: boolean;
+  totalMessages?: number;
 }) {
   const [chatMessages, setChatMessages] = useState(messages);
   const [sendState, formAction, isPending] = useActionState(sendAction, initialSendState);
@@ -76,17 +80,24 @@ export function ChatPanel({
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-semibold tracking-[-0.03em]">Group chat</h3>
               <Badge className="bg-forest-900/8 text-forest-900">Members only</Badge>
+              {compact && totalMessages !== undefined && totalMessages > messages.length && (
+                <span className="text-xs text-charcoal/45">{totalMessages} messages total</span>
+              )}
             </div>
-            <p className="mt-2 text-sm text-charcoal/62">
-              Keep the decision moving in one place instead of scattered texts.
-            </p>
+            {!compact && (
+              <p className="mt-2 text-sm text-charcoal/62">
+                Keep the decision moving in one place instead of scattered texts.
+              </p>
+            )}
           </div>
-          <div className="rounded-[20px] bg-cream px-4 py-3 text-right">
-            <p className="text-xs uppercase tracking-[0.24em] text-charcoal/42">Latest note</p>
-            <p className="mt-2 text-sm font-medium text-charcoal">
-              {latestMessage ? formatLongDateLabel(latestMessage.createdAt) : "No messages yet"}
-            </p>
-          </div>
+          {!compact && (
+            <div className="rounded-[20px] bg-cream px-4 py-3 text-right">
+              <p className="text-xs uppercase tracking-[0.24em] text-charcoal/42">Latest note</p>
+              <p className="mt-2 text-sm font-medium text-charcoal">
+                {latestMessage ? formatLongDateLabel(latestMessage.createdAt) : "No messages yet"}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

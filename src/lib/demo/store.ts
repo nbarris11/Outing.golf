@@ -74,6 +74,7 @@ const seedOuting: Outing = {
   notes: "Looking for two strong rounds, one easy travel day, and a house that keeps everyone together.",
   status: "planning",
   organizerWeighting: 7,
+  votingOpen: false,
   createdAt: now.toISOString()
 };
 

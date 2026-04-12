@@ -24,7 +24,7 @@ const outing: Outing = {
   lodgingPreference: "house",
   notes: "",
   status: "planning",
-  organizerWeighting: 7,
+  organizerWeighting: 7, votingOpen: false,
   createdAt: new Date().toISOString()
 };
 

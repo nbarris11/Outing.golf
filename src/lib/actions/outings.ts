@@ -271,7 +271,8 @@ function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerI
     lodgingPreference: input.lodgingPreference ?? vibeDefaults.lodgingPreference,
     notes: input.notes,
     status: "planning",
-    organizerWeighting: input.organizerWeighting
+    organizerWeighting: input.organizerWeighting,
+    votingOpen: false
   };
 }
 
@@ -557,7 +558,8 @@ export async function createOutingAction(formData: FormData) {
         golfIntensity: outingDraft.golfIntensity,
         lodgingPreference: outingDraft.lodgingPreference,
         notes: outingDraft.notes,
-        organizerWeighting: outingDraft.organizerWeighting
+        organizerWeighting: outingDraft.organizerWeighting,
+        votingOpen: false
       });
 
       await upsertDemoPreference(profile.id, outing.id, buildOrganizerPreferenceSeed(parsed.data, dateWindows));
@@ -1346,4 +1348,128 @@ export async function deleteOutingAction(formData: FormData) {
   }
 
   redirect("/dashboard?success=Outing%20deleted");
+}
+
+// ── Group voting actions ──────────────────────────────────────────────────────
+
+export async function openVotingAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  if (!outingId) redirect(`/dashboard?error=Missing+outing`);
+
+  if (isDemoMode) {
+    revalidatePath(`/outings/${outingId}`);
+    redirect(`/outings/${outingId}?success=Group+vote+opened`);
+  }
+
+  const client = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!client) redirect(`/outings/${outingId}?error=Not+configured`);
+
+  const { data: outing } = await client
+    .from("outings")
+    .select("id,organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing || (outing.organizer_id !== profile.id && !isAdmin(profile))) {
+    redirect(`/outings/${outingId}?error=Only+the+organizer+can+open+voting`);
+  }
+
+  await client.from("outings").update({ voting_open: true }).eq("id", outingId);
+  revalidatePath(`/outings/${outingId}`);
+  redirect(`/outings/${outingId}?success=Group+vote+is+now+open`);
+}
+
+export async function closeVotingAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  if (!outingId) redirect(`/dashboard?error=Missing+outing`);
+
+  if (isDemoMode) {
+    revalidatePath(`/outings/${outingId}`);
+    redirect(`/outings/${outingId}?success=Vote+closed`);
+  }
+
+  const client = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!client) redirect(`/outings/${outingId}?error=Not+configured`);
+
+  const { data: outing } = await client
+    .from("outings")
+    .select("id,organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing || (outing.organizer_id !== profile.id && !isAdmin(profile))) {
+    redirect(`/outings/${outingId}?error=Only+the+organizer+can+close+voting`);
+  }
+
+  await client.from("outings").update({ voting_open: false }).eq("id", outingId);
+  revalidatePath(`/outings/${outingId}`);
+  redirect(`/outings/${outingId}?success=Vote+closed`);
+}
+
+export async function castGroupVoteAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  const entityId = String(formData.get("entityId") ?? "").trim();
+  const entityType = String(formData.get("entityType") ?? "").trim() as "golf_course" | "lodging";
+
+  if (!outingId || !entityId || !entityType) {
+    redirect(`/dashboard?error=Invalid+vote`);
+  }
+
+  if (isDemoMode) {
+    revalidatePath(`/outings/${outingId}`);
+    redirect(`/outings/${outingId}`);
+  }
+
+  const client = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!client) redirect(`/outings/${outingId}?error=Not+configured`);
+
+  // Verify member belongs to this outing
+  const { data: membership } = await client
+    .from("outing_members")
+    .select("id")
+    .eq("outing_id", outingId)
+    .eq("profile_id", profile.id)
+    .maybeSingle();
+
+  if (!membership) {
+    redirect(`/outings/${outingId}?error=Not+a+member`);
+  }
+
+  // Find any existing vote this member has cast for this entity_type in this outing
+  const { data: existingVotes } = await client
+    .from("votes")
+    .select("id,entity_id")
+    .eq("outing_id", outingId)
+    .eq("profile_id", profile.id)
+    .eq("entity_type", entityType);
+
+  const existingForSameEntity = (existingVotes ?? []).find((v) => v.entity_id === entityId);
+
+  // Delete all existing votes for this type (enforces one pick per category)
+  if (existingVotes && existingVotes.length > 0) {
+    await client
+      .from("votes")
+      .delete()
+      .eq("outing_id", outingId)
+      .eq("profile_id", profile.id)
+      .eq("entity_type", entityType);
+  }
+
+  // If they clicked their own existing vote → it's a toggle-off, so just remove (done above)
+  // If they clicked a different option → insert the new vote
+  if (!existingForSameEntity) {
+    await client.from("votes").insert({
+      outing_id: outingId,
+      profile_id: profile.id,
+      entity_type: entityType,
+      entity_id: entityId,
+      weight: 5
+    });
+  }
+
+  revalidatePath(`/outings/${outingId}`);
+  redirect(`/outings/${outingId}`);
 }
