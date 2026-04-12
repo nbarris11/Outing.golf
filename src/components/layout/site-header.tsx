@@ -25,7 +25,18 @@ export async function SiteHeader({ minimal = false }: { minimal?: boolean }) {
           {profile ? (
             <>
               {minimal ? (
-                <Button href="/dashboard" variant="secondary">Open Dashboard</Button>
+                <>
+                  <Button href="/dashboard" variant="secondary">Open Dashboard</Button>
+                  {isDemoMode ? (
+                    <form action="/api/demo/auth/sign-out" method="post">
+                      <Button variant="ghost" className="text-sm text-charcoal/60 hover:text-charcoal">Sign out</Button>
+                    </form>
+                  ) : (
+                    <form action={signOutAction}>
+                      <Button variant="ghost" className="text-sm text-charcoal/60 hover:text-charcoal">Sign out</Button>
+                    </form>
+                  )}
+                </>
               ) : (
                 <>
                   <Link href="/settings" className="hidden text-sm text-charcoal/70 sm:inline-flex">

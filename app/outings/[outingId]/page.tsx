@@ -222,24 +222,6 @@ export default async function OutingDetailPage({
           )}
         </div>
 
-        {isOrganizer && shareLink ? (
-          <Card className="mt-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-charcoal/42">Sharing link</p>
-                <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-charcoal">
-                  Keep this at the ready
-                </h2>
-                <p className="mt-2 text-sm text-charcoal/60">
-                  Send one simple link when you want someone to jump straight into the outing.
-                </p>
-              </div>
-              <div className="shrink-0">
-                <CopyLinkButton link={shareLink} label="Copy share link" copiedLabel="Copied!" />
-              </div>
-            </div>
-          </Card>
-        ) : null}
 
         <Card className="mt-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -662,6 +644,12 @@ export default async function OutingDetailPage({
                   <div className="mt-3">
                     <SubmitButton label="Send invites" pendingLabel="Sending..." className="w-full" />
                   </div>
+                  {shareLink ? (
+                    <div className="mt-4 border-t border-white/10 pt-4">
+                      <p className="mb-2 text-xs text-cream/50">Or share a link directly</p>
+                      <CopyLinkButton link={shareLink} label="Copy share link" copiedLabel="Copied!" />
+                    </div>
+                  ) : null}
                 </form>
                 {detail.memberSnapshots.length > 0 ? (
                   <div className="mt-5">

@@ -91,14 +91,29 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    const errorResponse = NextResponse.redirect(
-      `${redirectBase}/sign-in?error=${encodeURIComponent("Sign-in failed: " + error.message)}`
-    );
+    // PKCE verifier mismatch — this happens when a stale code verifier cookie
+    // is lying around from a prior incomplete auth attempt. Clearing the cookies
+    // and sending the user back to sign-in with a gentle notice (not an error)
+    // means the next click of "Continue with Google" will succeed cleanly.
+    const isPkceError =
+      error.message.toLowerCase().includes("code verifier") ||
+      error.message.toLowerCase().includes("code_challenge") ||
+      error.message.toLowerCase().includes("code challenge");
+
+    const errorResponse = isPkceError
+      ? NextResponse.redirect(
+          `${redirectBase}/sign-in?notice=${encodeURIComponent("Your sign-in session expired — please try again.")}&next=${encodeURIComponent(next)}`
+        )
+      : NextResponse.redirect(
+          `${redirectBase}/sign-in?error=${encodeURIComponent("Sign-in failed: " + error.message)}`
+        );
+
     clearSupabaseVerifierCookies(errorResponse, request, requestHost);
 
     logError("Google callback exchange failed", error, {
       host: requestHost,
-      next
+      next,
+      isPkceError
     });
     return errorResponse;
   }
