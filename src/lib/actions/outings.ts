@@ -927,7 +927,7 @@ export async function joinOutingFromShareLinkAction(formData: FormData) {
 
   if (isDemoMode) {
     await joinDemoOuting(outingId, profile.id);
-    redirect(`/outings/${outingId}?success=You%20joined%20the%20outing`);
+    redirect(`/outings/${outingId}?newMember=1`);
   }
 
   const adminClient = createSupabaseAdminClient();
@@ -950,7 +950,7 @@ export async function joinOutingFromShareLinkAction(formData: FormData) {
     redirect(`/join/${token}?error=Unable%20to%20join%20this%20outing`);
   }
 
-  redirect(`/outings/${outingId}?success=You%20joined%20the%20outing`);
+  redirect(`/outings/${outingId}?newMember=1`);
 }
 
 export async function submitPreferencesAction(formData: FormData) {

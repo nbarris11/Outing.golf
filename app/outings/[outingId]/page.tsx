@@ -110,7 +110,7 @@ export default async function OutingDetailPage({
   searchParams
 }: {
   params: Promise<{ outingId: string }>;
-  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string; newMember?: string }>;
 }) {
   const profile = await requireProfile();
   const { outingId } = await params;
@@ -142,6 +142,146 @@ export default async function OutingDetailPage({
   const defaults = preferenceDefaults(detail.currentPreference, detail.outing.budgetTarget);
   const progressTarget = detail.insights.respondedCount + detail.insights.pendingCount;
   const isOrganizer = detail.outing.organizerId === profile.id;
+
+  // New members who haven't filled out preferences yet get a focused welcome screen
+  // instead of the full page, so the first thing they do is submit their info.
+  if (notices.newMember === "1" && !detail.currentPreference) {
+    return (
+      <PageShell>
+        <section className="mx-auto max-w-xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <Badge className="bg-forest-900/10 text-forest-900">You&apos;re in</Badge>
+            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-[-0.05em] text-charcoal">
+              {detail.outing.name}
+            </h1>
+            <p className="mt-3 text-base leading-7 text-charcoal/66">
+              Fill in your preferences below — takes under a minute. Once you submit, you&apos;ll see the full trip view with courses, lodging, and the group&apos;s picks.
+            </p>
+          </div>
+
+          {notices.error ? (
+            <p className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{notices.error}</p>
+          ) : null}
+
+          <Card>
+            <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Your preferences</h2>
+            <p className="mt-2 text-sm text-charcoal/58">
+              Tell the group your budget, available dates, and what you care about most.
+            </p>
+
+            <form action={submitPreferencesAction} className="mt-5 space-y-4">
+              <input type="hidden" name="outingId" value={detail.outing.id} />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <FieldLabel htmlFor="budgetMin">Budget min ($)</FieldLabel>
+                  <Input id="budgetMin" name="budgetMin" type="number" defaultValue={defaults.budgetMin} />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="budgetMax">Budget max ($)</FieldLabel>
+                  <Input id="budgetMax" name="budgetMax" type="number" defaultValue={defaults.budgetMax} />
+                  <p className="mt-1.5 text-xs text-charcoal/45">Trip target: {currency(detail.outing.budgetTarget)}</p>
+                </div>
+              </div>
+
+              {detail.outing.preferredDateWindows.length > 0 && (
+                <div className="rounded-[22px] bg-cream p-4">
+                  <FieldLabel>Which dates work for you?</FieldLabel>
+                  <div className="mt-2">
+                    <DateAvailabilityPicker
+                      windows={detail.outing.preferredDateWindows}
+                      defaultSelected={[]}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <FieldLabel htmlFor="courseQualityPreference">Course quality (1–10)</FieldLabel>
+                  <Input
+                    id="courseQualityPreference"
+                    name="courseQualityPreference"
+                    type="number"
+                    min="1"
+                    max="10"
+                    defaultValue={defaults.courseQualityPreference}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="walkingPreference">Walking or riding?</FieldLabel>
+                  <Select id="walkingPreference" name="walkingPreference" defaultValue={defaults.walkingPreference}>
+                    <option value="either">Either is fine</option>
+                    <option value="walking">Prefer walking</option>
+                    <option value="riding">Prefer riding</option>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="destinationVotes">Destination preference (optional)</FieldLabel>
+                <Input
+                  id="destinationVotes"
+                  name="destinationVotes"
+                  defaultValue={defaults.destinationVotes}
+                  placeholder="e.g. Scottsdale, Myrtle Beach"
+                />
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="lodgingPreferences">Lodging style (optional)</FieldLabel>
+                <Input
+                  id="lodgingPreferences"
+                  name="lodgingPreferences"
+                  defaultValue={defaults.lodgingPreferences}
+                  placeholder="e.g. house, resort"
+                />
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="preferredRounds">How many rounds do you want to play?</FieldLabel>
+                <Select id="preferredRounds" name="preferredRounds" defaultValue={defaults.preferredRounds ?? ""}>
+                  <option value="">No preference</option>
+                  <option value="1">1 round</option>
+                  <option value="2">2 rounds</option>
+                  <option value="3">3 rounds</option>
+                  <option value="4">4 rounds</option>
+                  <option value="5">5 rounds</option>
+                  <option value="6">6 rounds</option>
+                  <option value="7">7 rounds</option>
+                </Select>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="comments">Anything else?</FieldLabel>
+                <Textarea
+                  id="comments"
+                  name="comments"
+                  defaultValue={defaults.comments}
+                  placeholder="Notes for the organizer..."
+                />
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="homeCity">Where are you traveling from?</FieldLabel>
+                <Input
+                  id="homeCity"
+                  name="homeCity"
+                  defaultValue={defaults.homeCity ?? ""}
+                  placeholder="e.g. Chicago, IL or Grand Rapids, MI"
+                />
+                <p className="mt-1.5 text-xs text-charcoal/45">
+                  Used to show driving and flight options tailored to you.
+                </p>
+              </div>
+
+              <SubmitButton label="Submit preferences →" pendingLabel="Saving..." className="w-full" />
+            </form>
+          </Card>
+        </section>
+      </PageShell>
+    );
+  }
   const shareLink = isOrganizer
     ? notices.shareLink ?? (await getOutingShareLink(detail.outing.id, detail.outing.organizerId)) ?? null
     : null;
