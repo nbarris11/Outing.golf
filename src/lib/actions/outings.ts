@@ -204,10 +204,21 @@ function parseDateWindows(
   const count = Math.min(parsed.dateWindowCount ?? 1, 4);
   const windows: { start: string; end: string }[] = [];
 
+  const MAX_TRIP_NIGHTS = 14;
+
   for (let i = 0; i < count; i++) {
     const start = String(formData.get(`dateStart_${i}`) ?? "").trim();
-    const end = String(formData.get(`dateEnd_${i}`) ?? "").trim();
+    let end = String(formData.get(`dateEnd_${i}`) ?? "").trim();
     if (start && end) {
+      // Cap trips at MAX_TRIP_NIGHTS so a typo can't produce e.g. 61-night windows
+      const nights = Math.round(
+        (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (nights > MAX_TRIP_NIGHTS) {
+        end = new Date(new Date(start).getTime() + MAX_TRIP_NIGHTS * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10);
+      }
       windows.push({ start, end });
     }
   }
