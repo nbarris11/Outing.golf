@@ -1408,6 +1408,34 @@ export async function closeVotingAction(formData: FormData) {
   redirect(`/outings/${outingId}?success=Vote+closed`);
 }
 
+export async function markAsBookedAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  if (!outingId) redirect(`/dashboard?error=Missing+outing`);
+
+  if (isDemoMode) {
+    revalidatePath(`/outings/${outingId}`);
+    redirect(`/outings/${outingId}/trip`);
+  }
+
+  const client = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!client) redirect(`/outings/${outingId}?error=Not+configured`);
+
+  const { data: outing } = await client
+    .from("outings")
+    .select("id,organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing || (outing.organizer_id !== profile.id && !isAdmin(profile))) {
+    redirect(`/outings/${outingId}?error=Only+the+organizer+can+mark+this+as+booked`);
+  }
+
+  await client.from("outings").update({ status: "booked" }).eq("id", outingId);
+  revalidatePath(`/outings/${outingId}`);
+  redirect(`/outings/${outingId}/trip`);
+}
+
 export async function castGroupVoteAction(formData: FormData) {
   const profile = await requireProfile();
   const outingId = String(formData.get("outingId") ?? "").trim();

@@ -13,6 +13,7 @@ import {
   castGroupVoteAction,
   closeVotingAction,
   inviteMemberAction,
+  markAsBookedAction,
   nudgeMemberAction,
   openVotingAction,
   resendInviteAction,
@@ -516,6 +517,16 @@ export default async function OutingDetailPage({
             <Button href={`/outings/${detail.outing.id}/compare`} className="w-full sm:w-auto">
               Compare options
             </Button>
+            {isOrganizer && (
+              <form action={markAsBookedAction}>
+                <input type="hidden" name="outingId" value={detail.outing.id} />
+                <SubmitButton
+                  label="✓ Mark as booked"
+                  pendingLabel="Saving..."
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_4px_14px_rgba(5,150,105,0.25)]"
+                />
+              </form>
+            )}
           </div>
         </div>
 
@@ -600,9 +611,7 @@ export default async function OutingDetailPage({
               {isOrganizer && (
                 <form action={closeVotingAction}>
                   <input type="hidden" name="outingId" value={detail.outing.id} />
-                  <Button type="submit" variant="secondary" className="shrink-0 text-sm">
-                    Close vote
-                  </Button>
+                  <SubmitButton label="Close vote" pendingLabel="Closing..." className="shrink-0 text-sm" />
                 </form>
               )}
             </div>
@@ -1072,9 +1081,7 @@ export default async function OutingDetailPage({
                     </p>
                     <form action={openVotingAction} className="mt-3">
                       <input type="hidden" name="outingId" value={detail.outing.id} />
-                      <Button type="submit" variant="secondary" className="w-full justify-center text-sm">
-                        🗳 Open group vote
-                      </Button>
+                      <SubmitButton label="🗳 Open group vote" pendingLabel="Opening..." className="w-full justify-center text-sm" />
                     </form>
                   </div>
                 )}

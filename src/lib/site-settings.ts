@@ -15,7 +15,7 @@ export const defaultSiteProfileSettings: SiteProfileSettings = {
 export const defaultLandingPageSettings: LandingPageSettings = {
   painPointsTitle: "Golf trips fall apart in the gap between idea and decision",
   painPointsBody:
-    "Most groups do not need more options. They need one clean place to collect the basics, see what overlaps, and make a call.",
+    "Outing.golf is a golf trip planning tool built for the person organizing the trip. Instead of chasing replies across group texts and spreadsheets, you can collect group input, compare options, and move everyone toward one clear plan.",
   painPoints: [
     "The date discussion lives in three different places.",
     "Nobody knows the real budget range until it is too late.",
@@ -48,7 +48,7 @@ export const defaultLandingPageSettings: LandingPageSettings = {
     },
     {
       title: "Spot date overlap instantly",
-      body: "The easiest date window rises to the top so the organizer can move the group forward."
+      body: "The best date window surfaces automatically so you can stop hunting availability across a group chat."
     },
     {
       title: "Compare destinations in one place",
@@ -78,8 +78,8 @@ export const defaultLandingPageSettings: LandingPageSettings = {
       answer: "Yes. The compare view keeps destinations, courses, and lodging together so tradeoffs stay clear."
     },
     {
-      question: "Can I test this before live provider APIs are connected?",
-      answer: "Yes. The product ships with mock provider adapters and seeded data so the full workflow can be tested now."
+      question: "When will full booking be available?",
+      answer: "The current version focuses on planning alignment — collecting group input and narrowing to one clear plan. Booking integrations are on the roadmap."
     },
     {
       question: "Is this trying to replace booking tools?",

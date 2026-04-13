@@ -20,11 +20,11 @@ export default async function LandingPage() {
           <div className="max-w-2xl">
             <Badge className="bg-forest-900/10 text-forest-900">{siteProfile.heroBadge}</Badge>
             <h1 className="mt-5 font-serif text-5xl font-semibold leading-[0.94] tracking-[-0.06em] text-charcoal sm:text-6xl lg:text-7xl">
-              {hero?.title ?? "Plan the golf trip without the group text chaos"}
+              {hero?.title ?? "Golf trip planner for groups"}
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-charcoal/66">
               {hero?.body ??
-                "Collect budgets, dates, courses, and lodging in one place so your group can actually decide and book faster."}
+                "Collect budgets, dates, course preferences, and lodging ideas in one place so your group can align faster and actually book the trip."}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button href={hero?.ctaHref ?? "/sign-up"} className="w-full sm:w-auto">
@@ -43,8 +43,8 @@ export default async function LandingPage() {
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
                 "Collect budgets and dates fast",
-                "See the strongest overlap clearly",
-                "Move the group to a real plan"
+                "Find the date and budget window that fits",
+                "Go from scattered ideas to a confirmed trip"
               ].map((line) => (
                 <div key={line} className="rounded-[22px] bg-white/84 px-4 py-4 text-sm text-charcoal/68 ring-1 ring-charcoal/8">
                   {line}

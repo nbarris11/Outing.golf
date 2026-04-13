@@ -15,8 +15,9 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Outing.golf",
-  description: "Plan golf outings and golf trips without spreadsheet chaos."
+  title: "Golf Trip Planner for Groups | Outing.golf",
+  description:
+    "Plan a golf trip without spreadsheets or group-text chaos. Outing.golf helps organizers collect budgets, dates, course preferences, and lodging ideas in one place."
 };
 
 export default function RootLayout({
