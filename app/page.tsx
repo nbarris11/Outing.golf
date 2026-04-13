@@ -195,6 +195,50 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="max-w-2xl">
+          <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guides</p>
+          <h2 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.04em] text-charcoal">
+            More resources for golf trip organizers
+          </h2>
+        </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              title: "How it works",
+              href: "/how-it-works",
+              body: "See the full planning workflow from outing creation to group decision."
+            },
+            {
+              title: "How to plan a golf trip",
+              href: "/how-to-plan-a-golf-trip",
+              body: "A step-by-step guide for getting your group from idea to booked trip."
+            },
+            {
+              title: "Golf trip budget planner",
+              href: "/golf-trip-budget-planner",
+              body: "Why getting budget ranges from everyone early changes the whole planning process."
+            },
+            {
+              title: "Planner vs. spreadsheet",
+              href: "/golf-trip-planner-vs-spreadsheet",
+              body: "How a purpose-built planning tool compares to a shared doc."
+            }
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="group rounded-[26px] border border-charcoal/8 bg-white/86 p-5 transition hover:bg-white hover:shadow-sm"
+            >
+              <h3 className="text-base font-semibold tracking-[-0.02em] text-charcoal group-hover:text-forest-900">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-charcoal/66">{item.body}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-24">
         <Card className="bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] p-8 text-center text-cream sm:p-10">
           <p className="text-sm uppercase tracking-[0.25em] text-cream/55">{landingPage.finalCtaEyebrow}</p>

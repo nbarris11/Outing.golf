@@ -1,0 +1,156 @@
+import type { Metadata } from "next";
+
+import { PageShell } from "@/components/layout/page-shell";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Golf Trip Budget Planner for Groups | Outing.golf",
+  description:
+    "Stop guessing what everyone can spend. Outing.golf collects individual budget ranges from your group so you can plan a golf trip that actually fits everyone."
+};
+
+export default function GolfTripBudgetPlannerPage() {
+  return (
+    <PageShell>
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="max-w-3xl">
+          <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
+          <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
+            Golf trip budget planner for groups
+          </h1>
+          <p className="mt-5 text-lg leading-8 text-charcoal/68">
+            Budget is the first thing that should get resolved and the last thing most groups actually talk about.
+            When nobody knows the real range, the organizer ends up planning a trip that does not fit — and finding
+            out after they have already spent hours researching it.
+          </p>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="space-y-12">
+          <div>
+            <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+              Why budget comes first
+            </h2>
+            <p className="mt-4 text-base leading-7 text-charcoal/68">
+              Destination options, course quality, and lodging choices all flow from budget. A group aligned on
+              $700 per person plans a different trip than a group aligned on $1,500. If you start planning before
+              you know the real range, you risk building a shortlist the group cannot afford — or undershooting and
+              leaving money on the table.
+            </p>
+            <p className="mt-3 text-base leading-7 text-charcoal/68">
+              The budget conversation should happen before anything else is decided.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+              The problem with budget conversations in group chat
+            </h2>
+            <p className="mt-4 text-base leading-7 text-charcoal/68">
+              When you ask "what is everyone's budget?" in a group text, the first number someone posts becomes the
+              anchor. Everyone else calibrates to it — up or down — based on social dynamics, not their actual
+              range. You end up with a false consensus that falls apart when it is time to actually book.
+            </p>
+            <p className="mt-3 text-base leading-7 text-charcoal/68">
+              Collecting budget ranges privately, before any group discussion, gives you the real distribution.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+              What a real budget range tells you
+            </h2>
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              {[
+                {
+                  title: "Destination tier",
+                  body: "Budget determines whether you are looking at a local drive-to, a regional fly-to, or a bucket-list destination."
+                },
+                {
+                  title: "Course quality",
+                  body: "Greens fees vary widely. Knowing the budget tells you whether the group is looking at public daily-fee courses or private-access resorts."
+                },
+                {
+                  title: "Lodging options",
+                  body: "Budget overlap tells you whether you are splitting a rental house, booking hotel rooms, or staying at a golf resort on property."
+                }
+              ].map((item) => (
+                <Card key={item.title} className="p-5">
+                  <h3 className="text-base font-semibold tracking-[-0.02em] text-charcoal">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-charcoal/68">{item.body}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+              How Outing.golf handles budget collection
+            </h2>
+            <p className="mt-4 text-base leading-7 text-charcoal/68">
+              When you create an outing, each invitee submits their budget range privately. Outing.golf aggregates
+              the responses and shows you where the group actually lines up — the real range, not the number
+              someone shouted first in a group chat.
+            </p>
+            <p className="mt-3 text-base leading-7 text-charcoal/68">
+              That budget window then informs the destination shortlist and course options, so everything you
+              research is already within range for the group.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
+        <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {[
+            {
+              title: "How it works",
+              href: "/how-it-works",
+              body: "See the full workflow Outing.golf uses to collect group input and move toward a decision."
+            },
+            {
+              title: "Back to home",
+              href: "/",
+              body: "See what Outing.golf does and start your first outing."
+            }
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="group rounded-[26px] border border-charcoal/8 bg-white/86 p-5 transition hover:bg-white hover:shadow-sm"
+            >
+              <h3 className="text-base font-semibold tracking-[-0.02em] text-charcoal group-hover:text-forest-900">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-charcoal/66">{item.body}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-24">
+        <Card className="bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] p-8 text-center text-cream sm:p-10">
+          <p className="text-sm uppercase tracking-[0.25em] text-cream/55">Golf trip planning tool</p>
+          <h2 className="mt-4 font-serif text-4xl font-semibold tracking-[-0.04em]">
+            Know the real budget before you plan anything
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-cream/74">
+            Outing.golf collects individual budget ranges, dates, and preferences from your group in one place so
+            you are not guessing what everyone can actually spend.
+          </p>
+          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Button href="/sign-up" className="bg-cream text-charcoal hover:bg-white">
+              Start Planning Free
+            </Button>
+            <Button href="/how-it-works" className="border border-cream/30 bg-transparent text-cream hover:bg-white/10">
+              See How It Works
+            </Button>
+          </div>
+        </Card>
+      </section>
+    </PageShell>
+  );
+}
