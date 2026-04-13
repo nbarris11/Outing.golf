@@ -1535,5 +1535,83 @@ export async function castGroupVoteAction(formData: FormData) {
   }
 
   revalidatePath(`/outings/${outingId}`);
-  redirect(`/outings/${outingId}`);
+}
+
+export async function regenerateOutingInventoryAction(outingId: string) {
+  if (isDemoMode) return;
+
+  const profile = await requireProfile();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  // Only organizer can regenerate
+  const { data: outingRow } = await supabase
+    .from("outings")
+    .select("*")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outingRow || outingRow.organizer_id !== profile.id) return;
+
+  // Delete existing inventory
+  await Promise.all([
+    supabase.from("destination_options").delete().eq("outing_id", outingId),
+    supabase.from("golf_course_options").delete().eq("outing_id", outingId),
+    supabase.from("lodging_options").delete().eq("outing_id", outingId)
+  ]);
+
+  // Re-seed with current providers
+  const outing = {
+    id: outingRow.id,
+    name: outingRow.name,
+    organizerId: outingRow.organizer_id,
+    destinationType: outingRow.destination_type,
+    destinationLabel: outingRow.destination_label,
+    preferredDateWindows: outingRow.preferred_date_windows ?? [],
+    budgetTarget: outingRow.budget_target,
+    tripStyle: outingRow.trip_style,
+    numberOfPlayers: outingRow.number_of_players,
+    golfIntensity: outingRow.golf_intensity,
+    lodgingPreference: outingRow.lodging_preference,
+    notes: outingRow.notes ?? undefined,
+    status: outingRow.status,
+    organizerWeighting: outingRow.organizer_weighting,
+    votingOpen: outingRow.voting_open ?? false,
+    createdAt: outingRow.created_at
+  };
+
+  await seedLiveInventory(outing);
+
+  revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/compare`);
+}
+
+export async function assignCourseScheduleAction(
+  outingId: string,
+  courseId: string,
+  scheduleDay: number | null
+) {
+  if (isDemoMode) return;
+
+  const profile = await requireProfile();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  // Verify organizer
+  const { data: outing } = await supabase
+    .from("outings")
+    .select("organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  await supabase
+    .from("golf_course_options")
+    .update({ schedule_day: scheduleDay })
+    .eq("id", courseId)
+    .eq("outing_id", outingId);
+
+  revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/trip`);
 }

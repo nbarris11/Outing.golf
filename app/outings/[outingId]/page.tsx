@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
+import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
+import { VoteButton } from "@/components/outings/vote-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,12 +12,12 @@ import { Card } from "@/components/ui/card";
 import { FieldLabel, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import {
-  castGroupVoteAction,
   closeVotingAction,
   inviteMemberAction,
   markAsBookedAction,
   nudgeMemberAction,
   openVotingAction,
+  regenerateOutingInventoryAction,
   resendInviteAction,
   sendChatMessageInlineAction,
   submitPreferencesAction
@@ -633,17 +635,12 @@ export default async function OutingDetailPage({
                               <p className={["font-semibold", isMyPick ? "text-cream" : "text-charcoal"].join(" ")}>{course.name}</p>
                               <p className={["text-sm", isMyPick ? "text-cream/60" : "text-charcoal/55"].join(" ")}>{currency(course.averageGreensFee)}/round</p>
                             </div>
-                            <form action={castGroupVoteAction} className="shrink-0">
-                              <input type="hidden" name="outingId" value={detail.outing.id} />
-                              <input type="hidden" name="entityType" value="golf_course" />
-                              <input type="hidden" name="entityId" value={course.id} />
-                              <button
-                                type="submit"
-                                className={["rounded-full px-3 py-1.5 text-xs font-semibold transition-all", isMyPick ? "bg-white/20 text-cream hover:bg-white/30" : "bg-forest-900/10 text-forest-900 hover:bg-forest-900/20"].join(" ")}
-                              >
-                                {isMyPick ? "✓ Your pick" : "Vote"}
-                              </button>
-                            </form>
+                            <VoteButton
+                              outingId={detail.outing.id}
+                              entityType="golf_course"
+                              entityId={course.id}
+                              isMyPick={isMyPick}
+                            />
                           </div>
                           {tally > 0 && (
                             <div className="mt-3">
@@ -684,17 +681,12 @@ export default async function OutingDetailPage({
                                 {currency(stay.nightlyRate)}/night · {currency(Math.round((stay.priceTotal ?? stay.nightlyRate * nights) / players))}/person
                               </p>
                             </div>
-                            <form action={castGroupVoteAction} className="shrink-0">
-                              <input type="hidden" name="outingId" value={detail.outing.id} />
-                              <input type="hidden" name="entityType" value="lodging" />
-                              <input type="hidden" name="entityId" value={stay.id} />
-                              <button
-                                type="submit"
-                                className={["rounded-full px-3 py-1.5 text-xs font-semibold transition-all", isMyPick ? "bg-white/20 text-cream hover:bg-white/30" : "bg-forest-900/10 text-forest-900 hover:bg-forest-900/20"].join(" ")}
-                              >
-                                {isMyPick ? "✓ Your pick" : "Vote"}
-                              </button>
-                            </form>
+                            <VoteButton
+                              outingId={detail.outing.id}
+                              entityType="lodging"
+                              entityId={stay.id}
+                              isMyPick={isMyPick}
+                            />
                           </div>
                           {tally > 0 && (
                             <div className="mt-3">
@@ -735,17 +727,31 @@ export default async function OutingDetailPage({
                     <p className="mt-0.5 text-xs text-forest-900/70">↑ Ranked by group preferences</p>
                   )}
                 </div>
-                <p className="text-sm text-charcoal/50">
-                  {roundsPerPlayer} rounds · {players} players
-                  {detail.recommendation.consensusRounds ? " · group votes" : ""}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-charcoal/50">
+                    {roundsPerPlayer} rounds · {players} players
+                    {detail.recommendation.consensusRounds ? " · group votes" : ""}
+                  </p>
+                  {isOrganizer && (
+                    <form action={regenerateOutingInventoryAction.bind(null, detail.outing.id)}>
+                      <SubmitButton
+                        label="↺ Refresh results"
+                        pendingLabel="Refreshing…"
+                        className="rounded-full bg-charcoal/8 px-3 py-1 text-xs font-medium text-charcoal/60 hover:bg-charcoal/12 hover:text-charcoal shadow-none"
+                      />
+                    </form>
+                  )}
+                </div>
               </div>
 
               {detail.golfCourses.length === 0 ? (
                 <div className="mt-4 rounded-[22px] border border-dashed border-amber-200 bg-amber-50 px-5 py-5 text-center">
-                  <p className="text-sm font-medium text-amber-800">⏳ Finding golf courses…</p>
-                  <p className="mt-1 text-xs text-amber-700/70">Options are being pulled in — refresh in a few seconds.</p>
-                  <a href="" className="mt-3 inline-block rounded-full bg-amber-100 px-4 py-2 text-xs font-medium text-amber-800 hover:bg-amber-200 transition-colors">Refresh now</a>
+                  <p className="text-sm font-medium text-amber-800">⏳ No golf courses found yet</p>
+                  <p className="mt-1 text-xs text-amber-700/70">
+                    {isOrganizer
+                      ? "Try clicking \"↺ Refresh results\" above to pull in options for your destination."
+                      : "Options are being pulled in — check back shortly."}
+                  </p>
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
@@ -772,18 +778,33 @@ export default async function OutingDetailPage({
                           </div>
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
-                          <div className="flex gap-3 text-xs text-charcoal/55">
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-charcoal/55">
                             <span>Quality {course.qualityScore}/100</span>
                             <span>{course.walkingFriendly ? "Walking-friendly" : "Riding"}</span>
+                            {course.scheduleDay && (
+                              <span className="rounded-full bg-forest-900/8 px-2 py-0.5 text-forest-900 font-medium">
+                                Day {course.scheduleDay}
+                              </span>
+                            )}
                           </div>
-                          <a
-                            href={`https://www.google.com/search?q=${encodeURIComponent(course.name + " golf course " + course.locationLabel)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
-                          >
-                            Find tee times →
-                          </a>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isOrganizer && detail.golfCourses.length > 1 && (
+                              <CourseScheduleSelector
+                                outingId={detail.outing.id}
+                                courseId={course.id}
+                                scheduleDay={course.scheduleDay ?? null}
+                                maxDays={detail.golfCourses.filter(c => !c.hidden).length}
+                              />
+                            )}
+                            <a
+                              href={`https://www.google.com/search?q=${encodeURIComponent(course.name + " golf course " + course.locationLabel)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
+                            >
+                              Find tee times →
+                            </a>
+                          </div>
                         </div>
                       </div>
                     );

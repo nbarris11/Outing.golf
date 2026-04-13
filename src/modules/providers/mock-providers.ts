@@ -13,6 +13,7 @@ import type {
   TeeTimeProvider,
   VacationRentalProvider
 } from "./interfaces";
+import { findLocationDestinations, generateGenericDestinations } from "./location-destinations";
 
 const destinationCatalog = [
   {
@@ -433,6 +434,35 @@ function baseDestinations(outing: Outing): DestinationOption[] {
   }));
 }
 
+/**
+ * Adjust base rates from the catalog based on the outing's budget/style settings
+ * so pricing feels appropriately matched to what the organizer is planning.
+ */
+function applyStyleAdjustment(
+  base: number,
+  outing: Outing,
+  type: "nightly" | "round"
+): number {
+  const styleMult: Record<string, number> = {
+    value: 0.85,
+    classic: 1.0,
+    premium: 1.2,
+    bucket_list: 1.45
+  };
+  const intensityMult: Record<string, number> = {
+    light: 0.9,
+    balanced: 1.0,
+    golf_first: 1.12
+  };
+
+  const mult =
+    type === "nightly"
+      ? (styleMult[outing.tripStyle] ?? 1.0)
+      : (styleMult[outing.tripStyle] ?? 1.0) * (intensityMult[outing.golfIntensity] ?? 1.0);
+
+  return Math.round(base * mult);
+}
+
 export const mockDestinationProvider: DestinationSearchProvider = {
   definition: {
     id: "mock",
@@ -440,15 +470,50 @@ export const mockDestinationProvider: DestinationSearchProvider = {
     label: "Mock destination catalog",
     availability: "implemented",
     env: [],
-    notes: "Seeded destination inventory for local product development and QA.",
+    notes: "Seeded destination inventory for local product development and QA. Location-aware when a specific destination is provided.",
     integrationTouchpoints: [
       "src/modules/providers/mock-providers.ts",
       "src/modules/providers/registry.ts",
       "src/modules/providers/inventory-service.ts"
     ]
   },
-  async searchDestinations({ outing }) {
-    return baseDestinations(outing);
+  async searchDestinations({ outing, query }) {
+    const destinationQuery = query ?? outing.destinationLabel ?? "";
+    const isFlexible =
+      !destinationQuery ||
+      destinationQuery === "Flexible location" ||
+      outing.destinationType === "open";
+
+    // For open/flexible outings, return the standard shortlist catalog
+    if (isFlexible) {
+      return baseDestinations(outing);
+    }
+
+    // Try to find curated sub-destinations for this location
+    const curated = findLocationDestinations(destinationQuery);
+    const subDests =
+      curated ??
+      generateGenericDestinations(
+        destinationQuery,
+        Math.round(outing.budgetTarget * 0.35),   // ~35% of budget toward nightly rate
+        Math.round(outing.budgetTarget * 0.18)    // ~18% of budget toward greens fees
+      );
+
+    return subDests.slice(0, 4).map((dest, index) => ({
+      id: generateId("destination"),
+      outingId: outing.id,
+      providerKey: "mock-destination",
+      name: dest.name,
+      region: dest.region,
+      driveHours: dest.driveHours,
+      flightHours: dest.flightHours,
+      averageNightlyRate: applyStyleAdjustment(dest.baseNightlyRate, outing, "nightly"),
+      averageRoundCost: applyStyleAdjustment(dest.baseRoundCost, outing, "round"),
+      tags: [...dest.tags],
+      summary: dest.summary,
+      featured: index < 2,
+      hidden: false
+    }));
   }
 };
 

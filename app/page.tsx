@@ -42,9 +42,9 @@ export default async function LandingPage() {
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
-                "Collect budgets and dates fast",
-                "Find the date and budget window that fits",
-                "Go from scattered ideas to a confirmed trip"
+                "Live courses and hotels matched to your group",
+                "Group voting without the group-text chaos",
+                "One Trip HQ the whole group can see"
               ].map((line) => (
                 <div key={line} className="rounded-[22px] bg-white/84 px-4 py-4 text-sm text-charcoal/68 ring-1 ring-charcoal/8">
                   {line}
@@ -59,9 +59,9 @@ export default async function LandingPage() {
               <div className="border-b border-charcoal/8 bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] px-5 py-5 text-cream sm:px-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.24em] text-cream/55">Subtle product preview</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Phoenix spring foursome</h2>
-                    <p className="mt-2 text-sm text-cream/72">A calm snapshot of what the organizer sees when the group starts aligning.</p>
+                    <p className="text-xs uppercase tracking-[0.24em] text-cream/55">Trip HQ</p>
+                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Myrtle Beach · 4 players · June</h2>
+                    <p className="mt-2 text-sm text-cream/72">The shared home base your whole group can see the moment the plan comes together.</p>
                   </div>
                   <Badge className="bg-white/10 text-cream">{siteProfile.launchStatusLabel}</Badge>
                 </div>
@@ -71,42 +71,42 @@ export default async function LandingPage() {
                 <div className="rounded-[28px] bg-cream p-5">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-sm text-charcoal/48">Decision readiness</p>
-                      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-charcoal">82%</p>
+                      <p className="text-sm text-charcoal/48">Group responses in</p>
+                      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-charcoal">4 / 4</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-charcoal/48">Best date overlap</p>
-                      <p className="mt-2 text-sm font-medium text-charcoal">May 10-13</p>
+                      <p className="mt-2 text-sm font-medium text-charcoal">June 12–15</p>
                     </div>
                   </div>
                   <div className="mt-4 h-2.5 rounded-full bg-white">
-                    <div className="h-2.5 w-[82%] rounded-full bg-forest-900" />
+                    <div className="h-2.5 w-full rounded-full bg-forest-900" />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-[26px] border border-charcoal/8 bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-charcoal/38">Top destination</p>
-                    <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-charcoal">Scottsdale Sun Split</p>
-                    <p className="mt-2 text-sm leading-6 text-charcoal/62">Best weather fit, direct flights, and enough group-friendly lodging options.</p>
+                    <p className="text-xs uppercase tracking-[0.22em] text-charcoal/38">Top-voted course</p>
+                    <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-charcoal">Caledonia Golf &amp; Fish Club</p>
+                    <p className="mt-2 text-sm leading-6 text-charcoal/62">3 votes · Assigned to Day 1 of the schedule.</p>
                   </div>
                   <div className="rounded-[26px] border border-charcoal/8 bg-white p-4">
                     <p className="text-xs uppercase tracking-[0.22em] text-charcoal/38">Budget window</p>
-                    <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-charcoal">$900-$1,400</p>
-                    <p className="mt-2 text-sm leading-6 text-charcoal/62">Most of the group is comfortably aligned inside one realistic budget range.</p>
+                    <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-charcoal">$800–$1,200</p>
+                    <p className="mt-2 text-sm leading-6 text-charcoal/62">All four players fall comfortably inside this range.</p>
                   </div>
                 </div>
 
                 <div className="rounded-[28px] border border-charcoal/8 bg-white p-5">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-charcoal">What the app is doing</p>
-                    <Badge>Simple, not noisy</Badge>
+                    <p className="text-sm font-medium text-charcoal">What's locked in</p>
+                    <Badge>Ready to book</Badge>
                   </div>
                   <div className="mt-4 space-y-3">
                     {[
-                      "Collecting missing inputs from the last two invitees",
-                      "Ranking destination, course, and lodging options together",
-                      "Keeping the whole decision in one thread instead of scattered texts"
+                      "2 courses voted on and assigned to specific days",
+                      "Hotel shortlist with live rates from the lodging API",
+                      "Shared packing list — 6 items checked off, 2 outstanding"
                     ].map((line) => (
                       <div key={line} className="flex items-start gap-3 rounded-[20px] bg-cream px-4 py-3">
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-forest-900" />

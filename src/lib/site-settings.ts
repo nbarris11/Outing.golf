@@ -15,75 +15,75 @@ export const defaultSiteProfileSettings: SiteProfileSettings = {
 export const defaultLandingPageSettings: LandingPageSettings = {
   painPointsTitle: "Golf trips fall apart in the gap between idea and decision",
   painPointsBody:
-    "Outing.golf is a golf trip planning tool built for the person organizing the trip. Instead of chasing replies across group texts and spreadsheets, you can collect group input, compare options, and move everyone toward one clear plan.",
+    "Outing.golf is a golf trip planning tool built for the person organizing the trip. Instead of chasing replies across group texts and spreadsheets, you can collect group input, browse real courses and hotels, vote on favorites, and move everyone toward one confirmed plan.",
   painPoints: [
     "The date discussion lives in three different places.",
     "Nobody knows the real budget range until it is too late.",
     "Course and lodging ideas get buried in the chat.",
     "The organizer ends up rebuilding the whole trip in a spreadsheet."
   ],
-  stepsTitle: "Three simple steps from messy idea to real plan",
+  stepsTitle: "Three steps from scattered idea to confirmed trip",
   steps: [
     {
       step: "1",
-      title: "Start the outing",
-      body: "Set the destination idea, date windows, budget target, and trip style in a minute or two."
+      title: "Create the outing",
+      body: "Set the destination, date window, budget target, and trip style. Invite your group with a link and they fill out their preferences in one short flow."
     },
     {
       step: "2",
-      title: "Collect the group input",
-      body: "Everyone shares budgets, available dates, lodging preferences, and destination lean in one short flow."
+      title: "Browse real options together",
+      body: "See live golf courses and hotels matched to your destination and group budget. Vote on favorites right inside the app — no side texts required."
     },
     {
       step: "3",
-      title: "See the best plan",
-      body: "Outing.golf highlights the strongest overlap so the group can narrow the trip and book faster."
+      title: "Lock the plan in Trip HQ",
+      body: "The group's final destination, course schedule, lodging pick, and packing list all live in one shared Trip HQ every member can see."
     }
   ],
-  outcomesTitle: "The outcomes that actually make planning easier",
+  outcomesTitle: "Everything the group needs, in one place",
   outcomes: [
     {
-      title: "Know the real budget early",
-      body: "See where the group actually lines up before you waste time planning the wrong trip."
+      title: "Real courses and hotels, not placeholders",
+      body: "Golf course and lodging results come from live providers so what you see is actually available and bookable at your destination."
     },
     {
-      title: "Spot date overlap instantly",
-      body: "The best date window surfaces automatically so you can stop hunting availability across a group chat."
+      title: "Group voting without the group chat",
+      body: "Everyone votes on destinations, courses, and lodging right in the app. The organizer sees where the group is landing without running a poll in the text thread."
     },
     {
-      title: "Compare destinations in one place",
-      body: "Courses, lodging, and group votes stay tied to the same shortlist instead of scattered ideas."
+      title: "A course schedule the whole group can see",
+      body: "Assign each course to a specific day and share the full round-by-round schedule inside Trip HQ so everyone arrives knowing the plan."
     },
     {
-      title: "Keep one decision thread",
-      body: "The group stays in one planning flow, which means fewer side texts and fewer repeated questions."
+      title: "A shared packing list for the whole trip",
+      body: "Add gear, check items off as you pack, and let the whole group see what is still outstanding so nobody shows up missing clubs or rain gear."
     }
   ],
   socialProofTitle: "Built for the person who always ends up organizing the trip",
   socialProofBody:
-    "This placeholder is ready for testimonials and launch partners later. For now, it signals the kind of confidence the product is designed to create.",
+    "Outing.golf is designed around one principle: the organizer should spend less time chasing the group and more time actually planning. Every feature — from preference collection to group voting to the shared Trip HQ — exists to close the gap between first message and confirmed trip.",
   socialProofItems: [
-    "People actually fill out their preferences because it feels quick.",
-    "The organizer can immediately see what is still blocking the decision.",
-    "Course and lodging options stay tied to the same shortlist.",
-    "The group gets to a confident next step much faster."
+    "Group members fill out preferences quickly because the flow is short and mobile-friendly.",
+    "The organizer sees budget and date overlap the moment responses come in.",
+    "Live course and hotel results are filtered to the group's actual destination and budget.",
+    "The final plan — schedule, lodging, packing list — lives in one shared Trip HQ."
   ],
   faqs: [
     {
       question: "Do invitees need accounts?",
-      answer: "For the MVP, yes. It keeps outing access private and makes permissions simple."
+      answer: "Yes. Each person signs in to submit their preferences and access the shared Trip HQ. This keeps the outing private and makes sure votes and responses are tied to real group members."
     },
     {
-      question: "Can we compare multiple destinations at once?",
-      answer: "Yes. The compare view keeps destinations, courses, and lodging together so tradeoffs stay clear."
+      question: "How are golf courses and hotels found?",
+      answer: "Course options are sourced via Google Places, filtered to your destination. Hotel options come from a live lodging API. Results are ranked by fit with your group's budget and trip style."
     },
     {
-      question: "When will full booking be available?",
-      answer: "The current version focuses on planning alignment — collecting group input and narrowing to one clear plan. Booking integrations are on the roadmap."
+      question: "Can we schedule multiple courses across different days?",
+      answer: "Yes. Once the group has voted on courses, the organizer can assign each one to a specific day. The full round-by-round schedule is visible to every group member inside Trip HQ."
     },
     {
       question: "Is this trying to replace booking tools?",
-      answer: "Not in version one. The goal is to get the group to a clear plan first, then layer official booking integrations in later."
+      answer: "No. Outing.golf focuses on the planning layer — collecting group input, browsing real options, voting, and building the itinerary. Booking happens directly with the venue or hotel once the group has a clear plan."
     }
   ],
   finalCtaEyebrow: "Start planning",

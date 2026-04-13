@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DEFAULT_PACKING_ITEMS } from "@/lib/trip/packing-defaults";
 
 // Called from server actions only (not during page render)
@@ -44,10 +43,9 @@ export { seedPackingItemsIfEmpty };
 export async function togglePackingItemAction(itemId: string, outingId: string) {
   if (isDemoMode) return;
 
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) return;
-
   const profile = await requireProfile();
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return;
 
   const { data: item } = await supabase
     .from("trip_packing_items")
@@ -77,7 +75,8 @@ export async function togglePackingItemAction(itemId: string, outingId: string) 
 export async function addPackingItemAction(formData: FormData) {
   if (isDemoMode) return;
 
-  const supabase = await createSupabaseServerClient();
+  await requireProfile(); // verify authenticated
+  const supabase = createSupabaseAdminClient();
   if (!supabase) return;
 
   const label = formData.get("label");
@@ -98,7 +97,8 @@ export async function addPackingItemAction(formData: FormData) {
 export async function removePackingItemAction(itemId: string, outingId: string) {
   if (isDemoMode) return;
 
-  const supabase = await createSupabaseServerClient();
+  await requireProfile(); // verify authenticated
+  const supabase = createSupabaseAdminClient();
   if (!supabase) return;
 
   await supabase
