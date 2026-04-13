@@ -1,0 +1,20 @@
+export const DEFAULT_PACKING_ITEMS: string[] = [
+  "Golf clubs & bag",
+  "Golf shoes",
+  "Golf gloves",
+  "Golf balls (extra sleeve or two!)",
+  "Tees",
+  "Divot tool & ball marker",
+  "Rangefinder or GPS watch",
+  "Rain jacket",
+  "Sunscreen SPF 50+",
+  "Sunglasses",
+  "Hat or visor",
+  "Golf attire for each round",
+  "Casual clothes for evenings",
+  "Valid ID",
+  "Credit card for green fees",
+  "Phone charger",
+  "Any prescription meds",
+  "Snacks for the course"
+];

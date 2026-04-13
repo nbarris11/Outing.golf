@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
@@ -116,6 +118,11 @@ export default async function OutingDetailPage({
         </section>
       </PageShell>
     );
+  }
+
+  // Redirect to Trip HQ when outing is booked
+  if (detail.outing.status === "booked" || detail.outing.status === "completed") {
+    redirect(`/outings/${outingId}/trip`);
   }
 
   const profiles = detail.profiles;
@@ -487,8 +494,8 @@ export default async function OutingDetailPage({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={
-                detail.outing.status === "booked" ? "bg-emerald-100 text-emerald-800"
-                : detail.outing.status === "completed" ? "bg-charcoal/8 text-charcoal/50"
+                (detail.outing.status as string) === "booked" ? "bg-emerald-100 text-emerald-800"
+                : (detail.outing.status as string) === "completed" ? "bg-charcoal/8 text-charcoal/50"
                 : "bg-sand text-charcoal/70"
               }>
                 {detail.outing.status === "narrowed_down" ? "Narrowed down" : labelize(detail.outing.status)}

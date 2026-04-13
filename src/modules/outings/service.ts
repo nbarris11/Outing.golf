@@ -424,6 +424,42 @@ export async function getDashboardData(profileId: string) {
   });
 }
 
+export interface TripPackingItem {
+  id: string;
+  outingId: string;
+  label: string;
+  isDefault: boolean;
+  checkedBy: string | null;
+  checkedAt: string | null;
+  sortOrder: number;
+}
+
+export async function getTripPackingItems(outingId: string): Promise<TripPackingItem[]> {
+  if (isDemoMode) {
+    return [];
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data } = await supabase
+    .from("trip_packing_items")
+    .select("id,outing_id,label,is_default,checked_by,checked_at,sort_order")
+    .eq("outing_id", outingId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    outingId: row.outing_id,
+    label: row.label,
+    isDefault: row.is_default,
+    checkedBy: row.checked_by ?? null,
+    checkedAt: row.checked_at ?? null,
+    sortOrder: row.sort_order
+  }));
+}
+
 export async function getOutingDetail(outingId: string, profileId: string) {
   if (!isDemoMode) {
     // Use admin client to bypass RLS for the initial lookup, then enforce
