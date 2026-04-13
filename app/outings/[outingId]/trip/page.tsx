@@ -5,7 +5,7 @@ import { TripCountdown } from "@/components/trip/trip-countdown";
 import { TripLineup } from "@/components/trip/trip-lineup";
 import { TripPackingList } from "@/components/trip/trip-packing-list";
 import { requireProfile } from "@/lib/auth";
-import { seedPackingItemsAction } from "@/lib/actions/trip";
+import { seedPackingItemsIfEmpty } from "@/lib/actions/trip";
 import { getOutingDetail, getTripPackingItems } from "@/modules/outings/service";
 
 export default async function TripHqPage({
@@ -25,12 +25,9 @@ export default async function TripHqPage({
 
   const isOrganizer = detail.outing.organizerId === profile.id;
 
-  // Seed packing items if needed
-  let packingItems = await getTripPackingItems(outingId);
-  if (packingItems.length === 0) {
-    await seedPackingItemsAction(outingId);
-    packingItems = await getTripPackingItems(outingId);
-  }
+  // Seed default packing items on first visit (safe to call during render)
+  await seedPackingItemsIfEmpty(outingId);
+  const packingItems = await getTripPackingItems(outingId);
 
   // Find top course and lodging
   const topCourse =

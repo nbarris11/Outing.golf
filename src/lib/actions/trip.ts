@@ -7,22 +7,25 @@ import { isDemoMode } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DEFAULT_PACKING_ITEMS } from "@/lib/trip/packing-defaults";
 
+// Called from server actions only (not during page render)
 export async function seedPackingItemsAction(outingId: string) {
   if (isDemoMode) return;
+  await seedPackingItemsIfEmpty(outingId);
+  revalidatePath(`/outings/${outingId}/trip`);
+}
 
+// Plain async function safe to call during server component render
+async function seedPackingItemsIfEmpty(outingId: string) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return;
 
-  // Check if items already exist
   const { data: existing } = await supabase
     .from("trip_packing_items")
     .select("id")
     .eq("outing_id", outingId)
     .limit(1);
 
-  if (existing && existing.length > 0) {
-    return;
-  }
+  if (existing && existing.length > 0) return;
 
   const items = DEFAULT_PACKING_ITEMS.map((label, index) => ({
     outing_id: outingId,
@@ -32,9 +35,10 @@ export async function seedPackingItemsAction(outingId: string) {
   }));
 
   await supabase.from("trip_packing_items").insert(items);
-
-  revalidatePath(`/outings/${outingId}/trip`);
 }
+
+// Exported for direct use from server components (no revalidatePath)
+export { seedPackingItemsIfEmpty };
 
 export async function togglePackingItemAction(itemId: string, outingId: string) {
   if (isDemoMode) return;
