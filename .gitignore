@@ -9,3 +9,6 @@ playwright-report
 test-results
 supabase/.temp
 .vercel
+.env.vercel.live
+.env.vercel.production
+.env.vercel.*
