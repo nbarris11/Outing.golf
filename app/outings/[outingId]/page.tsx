@@ -793,7 +793,7 @@ export default async function OutingDetailPage({
                                 outingId={detail.outing.id}
                                 courseId={course.id}
                                 scheduleDay={course.scheduleDay ?? null}
-                                maxDays={detail.golfCourses.filter(c => !c.hidden).length}
+                                maxDays={nights}
                               />
                             )}
                             <a
