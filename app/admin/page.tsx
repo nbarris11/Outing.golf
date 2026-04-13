@@ -51,22 +51,18 @@ export default async function AdminPage({
         ) : null}
 
         <div className="mt-8 grid gap-6 md:grid-cols-4">
-          <Card>
-            <p className="text-sm text-charcoal/50">Users</p>
-            <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">{data.analytics.totalUsers}</p>
-          </Card>
-          <Card>
-            <p className="text-sm text-charcoal/50">Outings</p>
-            <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">{data.analytics.totalOutings}</p>
-          </Card>
-          <Card>
-            <p className="text-sm text-charcoal/50">Pending invites</p>
-            <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">{data.analytics.activeInvites}</p>
-          </Card>
-          <Card>
-            <p className="text-sm text-charcoal/50">Messages</p>
-            <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">{data.analytics.totalMessages}</p>
-          </Card>
+          {[
+            { label: "Users", value: data.analytics.totalUsers, href: "/admin/users" },
+            { label: "Outings", value: data.analytics.totalOutings, href: "/admin/outings" },
+            { label: "Pending invites", value: data.analytics.activeInvites, href: "/admin/invites" },
+            { label: "Messages", value: data.analytics.totalMessages, href: "/admin/messages" }
+          ].map((stat) => (
+            <a key={stat.label} href={stat.href} className="block rounded-[28px] bg-white p-6 shadow-[0_4px_20px_rgba(33,36,35,0.06)] ring-1 ring-charcoal/6 transition hover:shadow-[0_8px_30px_rgba(33,36,35,0.10)] hover:ring-charcoal/12">
+              <p className="text-sm text-charcoal/50">{stat.label}</p>
+              <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">{stat.value}</p>
+              <p className="mt-2 text-xs text-forest-900">View all →</p>
+            </a>
+          ))}
         </div>
 
         <div className="mt-8 grid gap-6 xl:grid-cols-[1fr_0.95fr]">

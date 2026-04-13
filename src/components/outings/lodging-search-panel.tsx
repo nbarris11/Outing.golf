@@ -60,10 +60,22 @@ export function LodgingSearchPanel({
 
   // Deduplicate by hotelId — LiteAPI returns multiple room types per hotel,
   // keep only the cheapest offer per hotel so cards don't repeat.
+  // We normalize the key so that:
+  //  • name:-prefixed fallback IDs (no real hotelId from API) dedup by normalized name
+  //  • minor name variants ("Mt." vs "Mt") still collapse correctly
   const dedupedResults = useMemo(() => {
+    function normalizeKey(result: LodgingSearchResult) {
+      if (!result.hotelId || result.hotelId.startsWith("name:")) {
+        return "name:" + result.hotelName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      }
+      return result.hotelId;
+    }
+
     const seen = new Map<string, LodgingSearchResult>();
     for (const result of results) {
-      const key = result.hotelId ?? result.hotelName;
+      // Skip placeholder / unnamed entries and zero-price results
+      if (result.hotelName === "Unnamed hotel" || result.priceTotal <= 0) continue;
+      const key = normalizeKey(result);
       const existing = seen.get(key);
       if (!existing || result.priceTotal < existing.priceTotal) {
         seen.set(key, result);

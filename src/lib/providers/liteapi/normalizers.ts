@@ -200,7 +200,7 @@ export function normalizeLiteApiSearchResponse(
 
         return {
           provider: "liteapi" as const,
-          hotelId: hotelId ?? `unknown-${Math.random().toString(36).slice(2, 8)}`,
+          hotelId: hotelId ?? `name:${(firstString(hotel.name, hotelRate.hotelName) ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
           hotelName: firstString(hotel.name, hotelRate.hotelName, "Unnamed hotel")!,
           roomName,
           boardType,

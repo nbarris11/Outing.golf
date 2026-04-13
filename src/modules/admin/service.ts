@@ -9,6 +9,123 @@ import {
 } from "@/lib/site-settings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export async function getAdminUsers() {
+  if (!isDemoMode) {
+    const supabase = await createSupabaseServerClient();
+    if (supabase) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,email,full_name,app_role,created_at")
+        .order("created_at", { ascending: false });
+      return (data ?? []).map((u) => ({
+        id: u.id,
+        email: u.email,
+        fullName: u.full_name as string,
+        appRole: u.app_role as string,
+        createdAt: u.created_at as string
+      }));
+    }
+  }
+  const state = await getDemoState();
+  return state.profiles.map((p) => ({
+    id: p.id,
+    email: p.email,
+    fullName: p.fullName,
+    appRole: p.appRole,
+    createdAt: p.createdAt
+  }));
+}
+
+export async function getAdminOutings() {
+  if (!isDemoMode) {
+    const supabase = await createSupabaseServerClient();
+    if (supabase) {
+      const { data } = await supabase
+        .from("outings")
+        .select("id,name,status,number_of_players,budget_target,destination_label,organizer_id,created_at")
+        .order("created_at", { ascending: false });
+      return (data ?? []).map((o) => ({
+        id: o.id,
+        name: o.name as string,
+        status: o.status as string,
+        numberOfPlayers: o.number_of_players as number,
+        budgetTarget: o.budget_target as number | null,
+        destinationLabel: o.destination_label as string | null,
+        organizerId: o.organizer_id as string,
+        createdAt: o.created_at as string
+      }));
+    }
+  }
+  const state = await getDemoState();
+  return state.outings.map((o) => ({
+    id: o.id,
+    name: o.name,
+    status: o.status,
+    numberOfPlayers: o.numberOfPlayers,
+    budgetTarget: o.budgetTarget ?? null,
+    destinationLabel: o.destinationLabel,
+    organizerId: o.organizerId,
+    createdAt: o.createdAt
+  }));
+}
+
+export async function getAdminInvites() {
+  if (!isDemoMode) {
+    const supabase = await createSupabaseServerClient();
+    if (supabase) {
+      const { data } = await supabase
+        .from("invites")
+        .select("id,outing_id,email,invited_by,status,created_at")
+        .order("created_at", { ascending: false });
+      return (data ?? []).map((i) => ({
+        id: i.id,
+        outingId: i.outing_id as string,
+        email: i.email as string,
+        invitedBy: i.invited_by as string,
+        status: i.status as string,
+        createdAt: i.created_at as string
+      }));
+    }
+  }
+  const state = await getDemoState();
+  return state.invites.map((i) => ({
+    id: i.id,
+    outingId: i.outingId,
+    email: i.email,
+    invitedBy: i.invitedBy,
+    status: i.status,
+    createdAt: i.createdAt
+  }));
+}
+
+export async function getAdminMessages() {
+  if (!isDemoMode) {
+    const supabase = await createSupabaseServerClient();
+    if (supabase) {
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("id,outing_id,profile_id,message,created_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      return (data ?? []).map((m) => ({
+        id: m.id,
+        outingId: m.outing_id as string,
+        profileId: m.profile_id as string,
+        message: m.message as string,
+        createdAt: m.created_at as string
+      }));
+    }
+  }
+  const state = await getDemoState();
+  return [...state.chatMessages].reverse().map((m) => ({
+    id: m.id,
+    outingId: m.outingId,
+    profileId: m.profileId,
+    message: m.message,
+    createdAt: m.createdAt
+  }));
+}
+
 const fallbackGateBlock = {
   key: "site_access_gate",
   title: "Website coming soon",
