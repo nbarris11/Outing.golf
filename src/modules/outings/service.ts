@@ -147,7 +147,9 @@ function mapGolfRow(row: Record<string, any>): GolfCourseOption {
     summary: row.summary,
     tags: row.tags ?? [],
     featured: row.featured,
-    hidden: row.hidden
+    hidden: row.hidden,
+    scheduleDay: row.schedule_day ?? null,
+    dayLabel: row.day_label ?? null
   };
 }
 

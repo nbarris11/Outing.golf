@@ -82,3 +82,53 @@ export async function sendInviteEmail(input: {
 
   return response;
 }
+
+export async function sendBookingConfirmedEmail(input: {
+  memberEmail: string;
+  memberName: string;
+  outingName: string;
+  destination: string;
+  tripHqUrl: string;
+}) {
+  const resend = getResendClient();
+  if (!resend || !env.RESEND_FROM_EMAIL) return; // silently skip if not configured
+
+  const subject = `${input.outingName} is officially booked! 🏌️`;
+  const text = [
+    `Great news — ${input.outingName} is booked!`,
+    "",
+    `Destination: ${input.destination}`,
+    "",
+    `Open your Trip HQ to see the countdown, packing list, and full trip details:`,
+    input.tripHqUrl,
+    "",
+    "Outing.golf"
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2423; max-width: 620px; margin: 0 auto; padding: 24px;">
+      <p style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #6b726d;">Outing.golf · Trip confirmed</p>
+      <h1 style="font-size: 28px; line-height: 1.15; margin: 12px 0 8px; font-family: Georgia, serif;">${input.outingName} is officially booked! 🏌️</h1>
+      <p style="font-size: 16px; color: #45504b; margin-bottom: 4px;">Hey ${input.memberName},</p>
+      <p style="font-size: 16px; color: #45504b;">Your golf trip to <strong>${input.destination}</strong> is locked in. Open Trip HQ for the countdown clock, shared packing list, and all the details.</p>
+      <p style="margin: 28px 0;">
+        <a href="${input.tripHqUrl}" style="display: inline-block; background: #143a2c; color: #f7f4ee; text-decoration: none; padding: 14px 22px; border-radius: 999px; font-weight: 600;">
+          Open Trip HQ →
+        </a>
+      </p>
+      <p style="font-size: 13px; color: #7a837e; margin-top: 24px;">
+        If the button does not work, copy and paste this link:<br />
+        <a href="${input.tripHqUrl}" style="color: #143a2c;">${input.tripHqUrl}</a>
+      </p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: env.RESEND_FROM_EMAIL,
+    to: input.memberEmail,
+    replyTo: env.RESEND_REPLY_TO_EMAIL || undefined,
+    subject,
+    html,
+    text
+  });
+}

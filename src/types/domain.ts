@@ -109,6 +109,8 @@ export interface GolfCourseOption {
   tags: string[];
   featured: boolean;
   hidden: boolean;
+  scheduleDay?: number | null;
+  dayLabel?: string | null;
 }
 
 export interface LodgingOption {

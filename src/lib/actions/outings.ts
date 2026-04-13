@@ -1432,6 +1432,42 @@ export async function markAsBookedAction(formData: FormData) {
   }
 
   await client.from("outings").update({ status: "booked" }).eq("id", outingId);
+
+  // Send booking confirmation to all members
+  try {
+    // Get all member profiles for this outing
+    const { data: memberProfiles } = await client
+      .from("outing_members")
+      .select("profile_id, profiles!inner(email, full_name)")
+      .eq("outing_id", outingId);
+
+    const { data: outingData } = await client
+      .from("outings")
+      .select("name, destination_label")
+      .eq("id", outingId)
+      .maybeSingle();
+
+    if (memberProfiles && outingData) {
+      const tripHqUrl = `${publicAppUrl}/outings/${outingId}/trip`;
+      const { sendBookingConfirmedEmail } = await import("@/lib/email/invite-email");
+
+      await Promise.allSettled(
+        memberProfiles.map((mp: any) => {
+          const profile = (mp as any).profiles;
+          return sendBookingConfirmedEmail({
+            memberEmail: profile.email,
+            memberName: profile.full_name ?? profile.email,
+            outingName: outingData.name,
+            destination: outingData.destination_label ?? "your destination",
+            tripHqUrl
+          });
+        })
+      );
+    }
+  } catch {
+    // Email failures should not block the redirect
+  }
+
   revalidatePath(`/outings/${outingId}`);
   redirect(`/outings/${outingId}/trip`);
 }

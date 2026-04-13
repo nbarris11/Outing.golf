@@ -3,7 +3,7 @@ interface Props {
   destination: string;
   startDate: string;
   endDate: string;
-  courseName: string | null;
+  courses: Array<{ name: string; scheduleDay?: number | null; dayLabel?: string | null }>;
   lodgingName: string | null;
   playerCount: number;
   memberNames: string[];
@@ -51,7 +51,7 @@ export function TripBoardingPass({
   destination,
   startDate,
   endDate,
-  courseName,
+  courses,
   lodgingName,
   playerCount,
   memberNames
@@ -99,12 +99,32 @@ export function TripBoardingPass({
           </div>
 
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-charcoal/35">
-              Course
-            </p>
-            <p className="mt-1 text-sm font-medium text-forest-900 leading-snug">
-              {courseName ?? "TBD"}
-            </p>
+            {(() => {
+              const scheduledCourses = courses.filter((c) => c.scheduleDay != null);
+              const showMultiple = scheduledCourses.length > 1;
+              return (
+                <>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-charcoal/35">
+                    {showMultiple ? "Rounds" : "Course"}
+                  </p>
+                  <div className="mt-1 space-y-0.5">
+                    {showMultiple ? (
+                      scheduledCourses
+                        .sort((a, b) => (a.scheduleDay ?? 0) - (b.scheduleDay ?? 0))
+                        .map((c) => (
+                          <p key={c.name} className="text-sm font-medium text-forest-900 leading-snug">
+                            Day {c.scheduleDay} · {c.name}
+                          </p>
+                        ))
+                    ) : (
+                      <p className="text-sm font-medium text-forest-900 leading-snug">
+                        {courses[0]?.name ?? "TBD"}
+                      </p>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           <div>

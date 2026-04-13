@@ -106,7 +106,14 @@ export default async function TripHqPage({
             destination={detail.outing.destinationLabel ?? "TBD"}
             startDate={tripStart ?? ""}
             endDate={tripEnd ?? ""}
-            courseName={topCourse?.name ?? null}
+            courses={detail.golfCourses
+              .filter((c) => !c.hidden)
+              .sort((a, b) => {
+                if (a.scheduleDay == null && b.scheduleDay == null) return 0;
+                if (a.scheduleDay == null) return 1;
+                if (b.scheduleDay == null) return -1;
+                return a.scheduleDay - b.scheduleDay;
+              })}
             lodgingName={topLodging?.name ?? null}
             playerCount={detail.outing.numberOfPlayers}
             memberNames={memberFirstNames}
@@ -131,11 +138,12 @@ export default async function TripHqPage({
               {/* Quick links */}
               <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-charcoal/6">
                 <h3 className="font-serif text-xl font-semibold text-forest-900">Quick links</h3>
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-4 space-y-2">
+                  {/* weather */}
                   {destinationForWeather && (
                     <li>
                       <a
-                        href={`https://weather.com/weather/tenday/l/${encodeURIComponent(destinationForWeather)}`}
+                        href={`https://www.google.com/search?q=${encodeURIComponent(`10 day weather forecast ${destinationForWeather}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
@@ -145,39 +153,61 @@ export default async function TripHqPage({
                       </a>
                     </li>
                   )}
-                  {courseAddress && (
-                    <li>
-                      <a
-                        href={`https://maps.google.com/?q=${encodeURIComponent(courseAddress)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
-                      >
-                        <span className="text-lg">⛳</span>
-                        <span>Directions to {topCourse?.name}</span>
-                      </a>
-                    </li>
-                  )}
-                  {lodgingAddress && (
-                    <li>
-                      <a
-                        href={`https://maps.google.com/?q=${encodeURIComponent(lodgingAddress)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
-                      >
-                        <span className="text-lg">🏠</span>
-                        <span>Directions to {topLodging?.name}</span>
-                      </a>
-                    </li>
-                  )}
+                  {/* each course directions link */}
+                  {(() => {
+                    const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
+                    const scheduledCourses = visibleCourses.filter((c) => c.scheduleDay != null);
+                    const coursesToShow = scheduledCourses.length > 0
+                      ? [...scheduledCourses].sort((a, b) => (a.scheduleDay ?? 0) - (b.scheduleDay ?? 0))
+                      : topCourse ? [topCourse] : [];
+                    return coursesToShow.map((course) => (
+                      <li key={course.id}>
+                        <a
+                          href={`https://www.google.com/maps/search/${encodeURIComponent(`${course.name} ${destinationForWeather}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
+                        >
+                          <span className="text-lg">⛳</span>
+                          <span>Directions to {course.name}</span>
+                        </a>
+                      </li>
+                    ));
+                  })()}
+                  {/* bars & restaurants */}
                   <li>
                     <a
-                      href={`/outings/${outingId}`}
+                      href={`https://www.google.com/maps/search/bars+and+restaurants/${encodeURIComponent(topLodging?.city ?? topLodging?.name ?? destinationForWeather)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
                     >
-                      <span className="text-lg">📋</span>
-                      <span>View planning details</span>
+                      <span className="text-lg">🍺</span>
+                      <span>Bars &amp; restaurants near lodging</span>
+                    </a>
+                  </li>
+                  {/* uber */}
+                  <li>
+                    <a
+                      href="https://m.uber.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
+                    >
+                      <span className="text-lg">🚗</span>
+                      <span>Uber — rides in {destinationForWeather}</span>
+                    </a>
+                  </li>
+                  {/* lyft */}
+                  <li>
+                    <a
+                      href="https://www.lyft.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
+                    >
+                      <span className="text-lg">🚕</span>
+                      <span>Lyft — rides in {destinationForWeather}</span>
                     </a>
                   </li>
                 </ul>

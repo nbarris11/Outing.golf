@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DEFAULT_PACKING_ITEMS } from "@/lib/trip/packing-defaults";
 
@@ -16,7 +17,7 @@ export async function seedPackingItemsAction(outingId: string) {
 
 // Plain async function safe to call during server component render
 async function seedPackingItemsIfEmpty(outingId: string) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient(); // bypasses RLS
   if (!supabase) return;
 
   const { data: existing } = await supabase
