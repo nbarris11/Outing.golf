@@ -39,7 +39,8 @@ export function RentalListingPanel({
   checkOut,
   guests,
   nights,
-  players
+  players,
+  isOrganizer = false
 }: {
   outingId: string;
   destination: string;
@@ -48,6 +49,7 @@ export function RentalListingPanel({
   guests: number;
   nights: number;
   players: number;
+  isOrganizer?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -187,7 +189,9 @@ export function RentalListingPanel({
         Links pre-fill {destination} · {checkIn} – {checkOut} · {guests} guests
       </p>
 
-      {/* Divider */}
+      {/* Divider + manual save form — organizer only */}
+      {isOrganizer && (
+      <>
       <div className="my-6 flex items-center gap-3">
         <span className="h-px flex-1 bg-charcoal/8" />
         <span className="text-xs uppercase tracking-[0.2em] text-charcoal/35">Save a listing</span>
@@ -287,6 +291,8 @@ export function RentalListingPanel({
           </Button>
         </div>
       </div>
+      </>
+      )}
     </Card>
   );
 }

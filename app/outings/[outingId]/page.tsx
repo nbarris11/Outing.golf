@@ -276,12 +276,12 @@ export default async function OutingDetailPage({
               </div>
 
               <div>
-                <FieldLabel htmlFor="homeCity">Where are you traveling from?</FieldLabel>
+                <FieldLabel htmlFor="homeCity">Your home zip code</FieldLabel>
                 <Input
                   id="homeCity"
                   name="homeCity"
                   defaultValue={defaults.homeCity ?? ""}
-                  placeholder="e.g. Chicago, IL or Grand Rapids, MI"
+                  placeholder="e.g. 49503"
                 />
                 <p className="mt-1.5 text-xs text-charcoal/45">
                   Used to show driving and flight options tailored to you.
@@ -323,7 +323,7 @@ export default async function OutingDetailPage({
 
     return (
       <PageShell>
-        <section className="mx-auto max-w-xl px-4 py-12 sm:px-6 lg:px-8">
+        <section id="confirmed-top" className="mx-auto max-w-xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="mb-8 text-center">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-forest-900/10 text-2xl">
               ⛳
@@ -1231,12 +1231,12 @@ function PreferencesFormFields({
       </div>
 
       <div>
-        <FieldLabel htmlFor="homeCity">Where are you traveling from?</FieldLabel>
+        <FieldLabel htmlFor="homeCity">Your home zip code</FieldLabel>
         <Input
           id="homeCity"
           name="homeCity"
           defaultValue={defaults.homeCity ?? ""}
-          placeholder="e.g. Chicago, IL or Grand Rapids, MI"
+          placeholder="e.g. 49503"
         />
         <p className="mt-1.5 text-xs text-charcoal/45">Used to show driving and flight options.</p>
       </div>

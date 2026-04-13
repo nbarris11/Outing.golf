@@ -214,18 +214,17 @@ export default async function ComparePage({
               roundsPerPlayer={roundsPerPlayer}
             />
 
-            {/* ── Airbnb / VRBO + manual listing (organizer only) ── */}
-            {canManageLodging && (
-              <RentalListingPanel
-                outingId={detail.outing.id}
-                destination={detail.outing.destinationLabel}
-                checkIn={defaultWindow?.start ?? new Date().toISOString().slice(0, 10)}
-                checkOut={defaultWindow?.end ?? new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10)}
-                guests={detail.outing.numberOfPlayers}
-                nights={nights}
-                players={players}
-              />
-            )}
+            {/* ── Airbnb / VRBO (everyone) + manual listing (organizer only) ── */}
+            <RentalListingPanel
+              outingId={detail.outing.id}
+              destination={detail.outing.destinationLabel}
+              checkIn={defaultWindow?.start ?? new Date().toISOString().slice(0, 10)}
+              checkOut={defaultWindow?.end ?? new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10)}
+              guests={detail.outing.numberOfPlayers}
+              nights={nights}
+              players={players}
+              isOrganizer={canManageLodging}
+            />
 
             {/* ── Live hotel search (organizer only) ── */}
             {canManageLodging && (

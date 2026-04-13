@@ -1074,7 +1074,7 @@ export async function submitPreferencesAction(formData: FormData) {
     revalidatePath(`/outings/${parsed.data.outingId}`);
     revalidatePath(`/outings/${parsed.data.outingId}/compare`);
     redirect(fromNewMember
-      ? `/outings/${parsed.data.outingId}?confirmed=1`
+      ? `/outings/${parsed.data.outingId}?confirmed=1#confirmed-top`
       : `/outings/${parsed.data.outingId}?success=Preferences%20saved`
     );
   }
@@ -1128,7 +1128,7 @@ export async function submitPreferencesAction(formData: FormData) {
   revalidatePath(`/outings/${parsed.data.outingId}`);
   revalidatePath(`/outings/${parsed.data.outingId}/compare`);
   redirect(fromNewMember
-    ? `/outings/${parsed.data.outingId}?confirmed=1`
+    ? `/outings/${parsed.data.outingId}?confirmed=1#confirmed-top`
     : `/outings/${parsed.data.outingId}?success=Preferences%20saved`
   );
 }
