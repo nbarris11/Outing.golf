@@ -126,7 +126,9 @@ export default async function OutingDetailPage({
   const preferenceSaved = Boolean(detail.currentPreference);
 
   // ── New member welcome screen (Step 2) ──────────────────────────────────────
-  if (notices.newMember === "1" && !detail.currentPreference) {
+  // Show for any member who hasn't submitted preferences yet — not just ?newMember=1
+  // This catches people who signed in via Google, direct nav, email invite, etc.
+  if (!detail.currentPreference && !isOrganizer) {
     return (
       <PageShell>
         <section className="mx-auto max-w-xl px-4 py-10 sm:px-6 lg:px-8">
