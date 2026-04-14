@@ -8,44 +8,55 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DEFAULT_PACKING_ITEMS } from "@/lib/trip/packing-defaults";
 
-// Called from server actions only (not during page render)
-export async function seedPackingItemsAction(outingId: string) {
-  if (isDemoMode) return;
-  await seedPackingItemsIfEmpty(outingId);
-  revalidatePath(`/outings/${outingId}/trip`);
-}
+// ── Seeding ───────────────────────────────────────────────────────────────────
 
-// Plain async function safe to call during server component render
-async function seedPackingItemsIfEmpty(outingId: string) {
-  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
+/**
+ * Seeds default packing items as PERSONAL items for the given user.
+ * Safe to call during server component render (no revalidatePath).
+ * Only seeds if the user has no personal items yet for this outing.
+ */
+async function seedPersonalPackingItems(outingId: string, profileId: string) {
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 
   const { data: existing } = await supabase
     .from("trip_packing_items")
     .select("id")
     .eq("outing_id", outingId)
+    .eq("profile_id", profileId)
     .limit(1);
 
   if (existing && existing.length > 0) return;
 
   const items = DEFAULT_PACKING_ITEMS.map((label, index) => ({
     outing_id: outingId,
+    profile_id: profileId,
     label,
     is_default: true,
     sort_order: index
   }));
 
-  await supabase.from("trip_packing_items").insert(items);
+  const { error } = await supabase.from("trip_packing_items").insert(items);
+  if (error) console.error("[seedPersonalPackingItems]", error);
 }
 
-// Exported for direct use from server components (no revalidatePath)
-export { seedPackingItemsIfEmpty };
+export { seedPersonalPackingItems };
+
+// Server action wrapper (called from client components)
+export async function seedPackingItemsAction(outingId: string) {
+  if (isDemoMode) return;
+  const profile = await requireProfile();
+  await seedPersonalPackingItems(outingId, profile.id);
+  revalidatePath(`/outings/${outingId}/trip`);
+}
+
+// ── Toggle check ──────────────────────────────────────────────────────────────
 
 export async function togglePackingItemAction(itemId: string, outingId: string) {
   if (isDemoMode) return;
 
   const profile = await requireProfile();
-  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 
   const { data: item } = await supabase
@@ -56,57 +67,65 @@ export async function togglePackingItemAction(itemId: string, outingId: string) 
 
   if (!item) return;
 
-  if (item.checked_by) {
-    // Uncheck
-    await supabase
-      .from("trip_packing_items")
-      .update({ checked_by: null, checked_at: null })
-      .eq("id", itemId);
-  } else {
-    // Check
-    await supabase
-      .from("trip_packing_items")
-      .update({ checked_by: profile.id, checked_at: new Date().toISOString() })
-      .eq("id", itemId);
-  }
+  const { error } = item.checked_by
+    ? await supabase
+        .from("trip_packing_items")
+        .update({ checked_by: null, checked_at: null })
+        .eq("id", itemId)
+    : await supabase
+        .from("trip_packing_items")
+        .update({ checked_by: profile.id, checked_at: new Date().toISOString() })
+        .eq("id", itemId);
+
+  if (error) console.error("[togglePackingItemAction]", error);
 
   revalidatePath(`/outings/${outingId}/trip`);
 }
 
+// ── Add item ──────────────────────────────────────────────────────────────────
+
 export async function addPackingItemAction(formData: FormData) {
   if (isDemoMode) return;
 
-  await requireProfile(); // verify authenticated
-  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
+  const profile = await requireProfile();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 
   const label = formData.get("label");
   const outingId = formData.get("outingId");
+  const section = formData.get("section"); // "personal" | "group"
 
   if (typeof label !== "string" || !label.trim() || typeof outingId !== "string") return;
 
-  await supabase.from("trip_packing_items").insert({
+  const { error } = await supabase.from("trip_packing_items").insert({
     outing_id: outingId,
+    profile_id: section === "group" ? null : profile.id,
     label: label.trim(),
     is_default: false,
     sort_order: 999
   });
 
+  if (error) console.error("[addPackingItemAction]", error);
+
   revalidatePath(`/outings/${outingId}/trip`);
 }
+
+// ── Remove item ───────────────────────────────────────────────────────────────
 
 export async function removePackingItemAction(itemId: string, outingId: string) {
   if (isDemoMode) return;
 
-  await requireProfile(); // verify authenticated
-  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
+  await requireProfile();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 
-  await supabase
+  // RLS ensures users can only delete their own personal items or organizer deletes shared
+  const { error } = await supabase
     .from("trip_packing_items")
     .delete()
-    .eq("id", itemId)
-    .eq("is_default", false);
+    .eq("id", itemId);
+
+  if (error) console.error("[removePackingItemAction]", error);
 
   revalidatePath(`/outings/${outingId}/trip`);
 }

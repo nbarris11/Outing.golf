@@ -22,27 +22,19 @@ export function OrganizerPickButton({ outingId, entityType, entityId, isFeatured
     });
   }
 
-  if (optimisticFeatured) {
-    return (
-      <button
-        onClick={handleClick}
-        disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-full bg-forest-900 px-3 py-1 text-xs font-medium text-cream transition-colors hover:bg-forest-900/80 disabled:opacity-50"
-        title="Remove organizer's pick"
-      >
-        ★ Organizer&apos;s pick
-      </button>
-    );
-  }
-
   return (
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="inline-flex items-center gap-1.5 rounded-full border border-charcoal/15 bg-white px-3 py-1 text-xs text-charcoal/55 transition-colors hover:border-forest-900/30 hover:text-forest-900 disabled:opacity-50"
-      title="Mark as organizer's pick"
+      title={optimisticFeatured ? "Remove organizer pick" : "Mark as organizer's pick"}
+      className={[
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+        optimisticFeatured
+          ? "bg-forest-900 text-cream hover:bg-forest-900/80"
+          : "border border-charcoal/15 bg-white text-charcoal/55 hover:border-forest-900/30 hover:text-forest-900"
+      ].join(" ")}
     >
-      ☆ Pick this
+      {optimisticFeatured ? "★ Pick" : "☆ Pick"}
     </button>
   );
 }

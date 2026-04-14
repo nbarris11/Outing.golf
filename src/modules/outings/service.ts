@@ -430,6 +430,7 @@ export async function getDashboardData(profileId: string) {
 export interface TripPackingItem {
   id: string;
   outingId: string;
+  profileId: string | null;  // null = shared/group item
   label: string;
   isDefault: boolean;
   checkedBy: string | null;
@@ -447,7 +448,7 @@ export async function getTripPackingItems(outingId: string): Promise<TripPacking
 
   const { data } = await supabase
     .from("trip_packing_items")
-    .select("id,outing_id,label,is_default,checked_by,checked_at,sort_order")
+    .select("id,outing_id,profile_id,label,is_default,checked_by,checked_at,sort_order")
     .eq("outing_id", outingId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -455,6 +456,7 @@ export async function getTripPackingItems(outingId: string): Promise<TripPacking
   return (data ?? []).map((row) => ({
     id: row.id,
     outingId: row.outing_id,
+    profileId: row.profile_id ?? null,
     label: row.label,
     isDefault: row.is_default,
     checkedBy: row.checked_by ?? null,

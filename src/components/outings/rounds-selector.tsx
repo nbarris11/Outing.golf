@@ -32,7 +32,7 @@ export function RoundsSelector({ outingId, courseId, scheduleRounds }: Props) {
     >
       {[1, 2, 3, 4].map((r) => (
         <option key={r} value={r}>
-          {r} round{r !== 1 ? "s" : ""}
+          {r} rnd
         </option>
       ))}
     </select>

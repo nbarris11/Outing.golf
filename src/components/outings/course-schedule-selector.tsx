@@ -32,7 +32,7 @@ export function CourseScheduleSelector({ outingId, courseId, scheduleDay, maxDay
       disabled={isPending}
       className="rounded-full border border-charcoal/15 bg-white px-3 py-1 text-xs text-charcoal/70 focus:outline-none focus:ring-2 focus:ring-forest-800/20 disabled:opacity-50 cursor-pointer"
     >
-      <option value="">No day assigned</option>
+      <option value="">No day</option>
       {Array.from({ length: maxDays }, (_, i) => (
         <option key={i + 1} value={i + 1}>
           Day {i + 1}
