@@ -53,6 +53,7 @@ async function seedGroupPackingItems(outingId: string) {
     .select("id")
     .eq("outing_id", outingId)
     .is("profile_id", null)
+    .eq("is_default", true)
     .limit(1);
 
   if (existing && existing.length > 0) return;
