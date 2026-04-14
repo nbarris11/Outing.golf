@@ -4,6 +4,7 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
+import { OrganizerPickButton } from "@/components/outings/organizer-pick-button";
 import { VoteButton } from "@/components/outings/vote-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -788,6 +789,14 @@ export default async function OutingDetailPage({
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
+                            {isOrganizer && (
+                              <OrganizerPickButton
+                                outingId={detail.outing.id}
+                                entityType="golf_course"
+                                entityId={course.id}
+                                isFeatured={course.featured ?? false}
+                              />
+                            )}
                             {isOrganizer && detail.golfCourses.length > 1 && (
                               <CourseScheduleSelector
                                 outingId={detail.outing.id}
@@ -859,10 +868,18 @@ export default async function OutingDetailPage({
                           </div>
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
-                          <div className="flex gap-3 text-xs text-charcoal/55">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
                             <span>Sleeps {stay.sleeps}</span>
                             {stay.refundable !== null && stay.refundable !== undefined && (
                               <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
+                            )}
+                            {isOrganizer && (
+                              <OrganizerPickButton
+                                outingId={detail.outing.id}
+                                entityType="lodging"
+                                entityId={stay.id}
+                                isFeatured={stay.featured ?? false}
+                              />
                             )}
                           </div>
                           <a

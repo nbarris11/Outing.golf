@@ -1615,3 +1615,46 @@ export async function assignCourseScheduleAction(
   revalidatePath(`/outings/${outingId}`);
   revalidatePath(`/outings/${outingId}/trip`);
 }
+
+export async function toggleOrganizerPickAction(
+  outingId: string,
+  entityType: "golf_course" | "lodging",
+  entityId: string,
+  currentlyFeatured: boolean
+) {
+  if (isDemoMode) return;
+
+  const profile = await requireProfile();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  // Verify organizer
+  const { data: outing } = await supabase
+    .from("outings")
+    .select("organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  const table = entityType === "golf_course" ? "golf_course_options" : "lodging_options";
+  const newValue = !currentlyFeatured;
+
+  // If marking as pick, clear any other picks first (only one pick per type)
+  if (newValue) {
+    await supabase
+      .from(table as any)
+      .update({ featured: false })
+      .eq("outing_id", outingId)
+      .eq("featured", true);
+  }
+
+  await supabase
+    .from(table as any)
+    .update({ featured: newValue })
+    .eq("id", entityId)
+    .eq("outing_id", outingId);
+
+  revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/trip`);
+}

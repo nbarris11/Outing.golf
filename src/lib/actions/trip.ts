@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DEFAULT_PACKING_ITEMS } from "@/lib/trip/packing-defaults";
 
 // Called from server actions only (not during page render)
@@ -16,7 +17,7 @@ export async function seedPackingItemsAction(outingId: string) {
 
 // Plain async function safe to call during server component render
 async function seedPackingItemsIfEmpty(outingId: string) {
-  const supabase = createSupabaseAdminClient(); // bypasses RLS
+  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
   if (!supabase) return;
 
   const { data: existing } = await supabase
@@ -44,7 +45,7 @@ export async function togglePackingItemAction(itemId: string, outingId: string) 
   if (isDemoMode) return;
 
   const profile = await requireProfile();
-  const supabase = createSupabaseAdminClient();
+  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
   if (!supabase) return;
 
   const { data: item } = await supabase
@@ -76,7 +77,7 @@ export async function addPackingItemAction(formData: FormData) {
   if (isDemoMode) return;
 
   await requireProfile(); // verify authenticated
-  const supabase = createSupabaseAdminClient();
+  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
   if (!supabase) return;
 
   const label = formData.get("label");
@@ -98,7 +99,7 @@ export async function removePackingItemAction(itemId: string, outingId: string) 
   if (isDemoMode) return;
 
   await requireProfile(); // verify authenticated
-  const supabase = createSupabaseAdminClient();
+  const supabase = createSupabaseAdminClient() ?? await createSupabaseServerClient();
   if (!supabase) return;
 
   await supabase
