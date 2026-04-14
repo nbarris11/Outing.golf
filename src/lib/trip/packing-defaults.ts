@@ -1,3 +1,25 @@
+export const DEFAULT_GROUP_PACKING_ITEMS: string[] = [
+  // Lodging / hangout
+  "Air mattress + pump",
+  "Cooler + ice",
+  "Beer & drinks for the house",
+  "Whiskey / bourbon for the 19th hole",
+  "Snacks for the house (chips, pretzels)",
+  "Bluetooth speaker",
+  "Card games / poker chips",
+
+  // On-course group gear
+  "Extra sleeves of balls for the group",
+  "Divot repair tools (grab a few extra)",
+  "Sunscreen for the cart",
+  "Cooler bag for the cart",
+  "Cash for skins / bets",
+
+  // Logistics
+  "Group Venmo / Splitwise set up",
+  "Rental car or van arranged"
+];
+
 export const DEFAULT_PACKING_ITEMS: string[] = [
   // On-course essentials
   "Golf clubs & bag",

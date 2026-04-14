@@ -6,7 +6,7 @@ import { requireProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { DEFAULT_PACKING_ITEMS } from "@/lib/trip/packing-defaults";
+import { DEFAULT_GROUP_PACKING_ITEMS, DEFAULT_PACKING_ITEMS } from "@/lib/trip/packing-defaults";
 
 // ── Seeding ───────────────────────────────────────────────────────────────────
 
@@ -40,13 +40,45 @@ async function seedPersonalPackingItems(outingId: string, profileId: string) {
   if (error) console.error("[seedPersonalPackingItems]", error);
 }
 
-export { seedPersonalPackingItems };
+/**
+ * Seeds default GROUP items once per outing (profile_id = null).
+ * Only runs if no group items exist yet for this outing.
+ */
+async function seedGroupPackingItems(outingId: string) {
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  const { data: existing } = await supabase
+    .from("trip_packing_items")
+    .select("id")
+    .eq("outing_id", outingId)
+    .is("profile_id", null)
+    .limit(1);
+
+  if (existing && existing.length > 0) return;
+
+  const items = DEFAULT_GROUP_PACKING_ITEMS.map((label, index) => ({
+    outing_id: outingId,
+    profile_id: null,
+    label,
+    is_default: true,
+    sort_order: index
+  }));
+
+  const { error } = await supabase.from("trip_packing_items").insert(items);
+  if (error) console.error("[seedGroupPackingItems]", error);
+}
+
+export { seedPersonalPackingItems, seedGroupPackingItems };
 
 // Server action wrapper (called from client components)
 export async function seedPackingItemsAction(outingId: string) {
   if (isDemoMode) return;
   const profile = await requireProfile();
-  await seedPersonalPackingItems(outingId, profile.id);
+  await Promise.all([
+    seedPersonalPackingItems(outingId, profile.id),
+    seedGroupPackingItems(outingId)
+  ]);
   revalidatePath(`/outings/${outingId}/trip`);
 }
 

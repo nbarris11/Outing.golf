@@ -5,7 +5,7 @@ import { TripCountdown } from "@/components/trip/trip-countdown";
 import { TripLineup } from "@/components/trip/trip-lineup";
 import { TripPackingList } from "@/components/trip/trip-packing-list";
 import { requireProfile } from "@/lib/auth";
-import { seedPersonalPackingItems } from "@/lib/actions/trip";
+import { seedPersonalPackingItems, seedGroupPackingItems } from "@/lib/actions/trip";
 import { getOutingDetail, getTripPackingItems } from "@/modules/outings/service";
 
 export default async function TripHqPage({
@@ -25,8 +25,11 @@ export default async function TripHqPage({
 
   const isOrganizer = detail.outing.organizerId === profile.id;
 
-  // Seed personal packing items for this user on first visit
-  await seedPersonalPackingItems(outingId, profile.id);
+  // Seed packing items on first visit (personal per-user, group per-outing)
+  await Promise.all([
+    seedPersonalPackingItems(outingId, profile.id),
+    seedGroupPackingItems(outingId)
+  ]);
   const packingItems = await getTripPackingItems(outingId);
 
   // Find top course and lodging
