@@ -462,6 +462,12 @@ export default async function OutingDetailPage({
     ?? (detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3);
   const players = detail.outing.numberOfPlayers;
 
+  // Group budget consensus — average of every member's stated (budgetMin + budgetMax) / 2
+  // Computed from detail.preferences (typed correctly) rather than insights to avoid TS inference issues
+  const groupBudgetAvg = detail.preferences.length > 0
+    ? Math.round(detail.preferences.reduce((sum, p) => sum + (p.budgetMin + p.budgetMax) / 2, 0) / detail.preferences.length)
+    : null;
+
   // Voting state
   const votingOpen = detail.outing.votingOpen;
   const myVotes = detail.votes.filter((v) => v.profileId === profile.id);
@@ -570,13 +576,13 @@ export default async function OutingDetailPage({
           </div>
 
           {/* Group budget avg — from actual member submissions */}
-          <div className={["rounded-[20px] border px-4 py-3", detail.insights.respondedCount > 0 ? "border-forest-900/15 bg-forest-900/6" : "border-charcoal/8 bg-white"].join(" ")}>
+          <div className={["rounded-[20px] border px-4 py-3", groupBudgetAvg ? "border-forest-900/15 bg-forest-900/6" : "border-charcoal/8 bg-white"].join(" ")}>
             <p className="text-xs uppercase tracking-[0.18em] text-charcoal/42">Group budget</p>
-            <p className={["mt-2 text-xl font-semibold", detail.insights.respondedCount > 0 ? "text-forest-900" : "text-charcoal/30"].join(" ")}>
-              {detail.insights.respondedCount > 0 ? currency(detail.insights.averageBudget) : "—"}
+            <p className={["mt-2 text-xl font-semibold", groupBudgetAvg ? "text-forest-900" : "text-charcoal/30"].join(" ")}>
+              {groupBudgetAvg ? currency(groupBudgetAvg) : "—"}
             </p>
-            {detail.insights.respondedCount > 0 && (
-              <p className="mt-1 text-xs text-charcoal/45">avg of {detail.insights.respondedCount} response{detail.insights.respondedCount !== 1 ? "s" : ""}</p>
+            {groupBudgetAvg && (
+              <p className="mt-1 text-xs text-charcoal/45">avg of {detail.preferences.length} response{detail.preferences.length !== 1 ? "s" : ""}</p>
             )}
           </div>
 
