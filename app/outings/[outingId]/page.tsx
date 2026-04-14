@@ -541,7 +541,7 @@ export default async function OutingDetailPage({
         </div>
 
         {/* ── Stat strip ── */}
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {/* Responses */}
           <div className="rounded-[20px] border border-charcoal/8 bg-white px-4 py-3">
             <p className="text-xs uppercase tracking-[0.18em] text-charcoal/42">Responses</p>
@@ -569,10 +569,21 @@ export default async function OutingDetailPage({
             )}
           </div>
 
+          {/* Group budget avg — from actual member submissions */}
+          <div className={["rounded-[20px] border px-4 py-3", detail.insights.respondedCount > 0 ? "border-forest-900/15 bg-forest-900/6" : "border-charcoal/8 bg-white"].join(" ")}>
+            <p className="text-xs uppercase tracking-[0.18em] text-charcoal/42">Group budget</p>
+            <p className={["mt-2 text-xl font-semibold", detail.insights.respondedCount > 0 ? "text-forest-900" : "text-charcoal/30"].join(" ")}>
+              {detail.insights.respondedCount > 0 ? currency(detail.insights.averageBudget) : "—"}
+            </p>
+            {detail.insights.respondedCount > 0 && (
+              <p className="mt-1 text-xs text-charcoal/45">avg of {detail.insights.respondedCount} response{detail.insights.respondedCount !== 1 ? "s" : ""}</p>
+            )}
+          </div>
+
           {/* Est. per person */}
-          <div className={["rounded-[20px] border px-4 py-3", estimatedPerPerson ? "border-forest-900/15 bg-forest-900/6" : "border-charcoal/8 bg-white"].join(" ")}>
+          <div className={["rounded-[20px] border px-4 py-3", estimatedPerPerson ? "border-charcoal/8 bg-white" : "border-charcoal/8 bg-white"].join(" ")}>
             <p className="text-xs uppercase tracking-[0.18em] text-charcoal/42">Est./person</p>
-            <p className={["mt-2 text-xl font-semibold", estimatedPerPerson ? "text-forest-900" : "text-charcoal/30"].join(" ")}>
+            <p className={["mt-2 text-xl font-semibold", estimatedPerPerson ? "text-charcoal" : "text-charcoal/30"].join(" ")}>
               {estimatedPerPerson ? currency(estimatedPerPerson) : "—"}
             </p>
             {estimatedPerPerson && (
