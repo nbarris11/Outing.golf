@@ -149,6 +149,7 @@ function mapGolfRow(row: Record<string, any>): GolfCourseOption {
     featured: row.featured,
     hidden: row.hidden,
     scheduleDay: row.schedule_day ?? null,
+    scheduleRounds: row.schedule_rounds ?? 1,
     dayLabel: row.day_label ?? null
   };
 }
@@ -289,7 +290,7 @@ async function getLiveOutings(profileId: string) {
         supabase.from("invites").select("id,outing_id,email,invited_by,status,token,created_at").eq("outing_id", outing.id),
         supabase.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,preferred_rounds,home_city,updated_at").eq("outing_id", outing.id),
         supabase.from("destination_options").select("id,outing_id,provider_key,name,region,drive_hours,flight_hours,average_nightly_rate,average_round_cost,tags,summary,featured,hidden").eq("outing_id", outing.id),
-        supabase.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden").eq("outing_id", outing.id),
+        supabase.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden,schedule_day,schedule_rounds,day_label").eq("outing_id", outing.id),
         supabase.from("lodging_options").select(lodgingSelectFields).eq("outing_id", outing.id),
         supabase.from("votes").select("id,outing_id,profile_id,entity_type,entity_id,weight").eq("outing_id", outing.id)
       ]);
@@ -512,7 +513,7 @@ export async function getOutingDetail(outingId: string, profileId: string) {
       queryClient.from("invites").select("id,outing_id,email,invited_by,status,token,created_at").eq("outing_id", outingId),
       queryClient.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,preferred_rounds,home_city,updated_at").eq("outing_id", outingId),
       queryClient.from("destination_options").select("id,outing_id,provider_key,name,region,drive_hours,flight_hours,average_nightly_rate,average_round_cost,tags,summary,featured,hidden").eq("outing_id", outingId),
-      queryClient.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden").eq("outing_id", outingId),
+      queryClient.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden,schedule_day,schedule_rounds,day_label").eq("outing_id", outingId),
       queryClient.from("lodging_options").select(lodgingSelectFields).eq("outing_id", outingId),
       queryClient.from("votes").select("id,outing_id,profile_id,entity_type,entity_id,weight").eq("outing_id", outingId),
       queryClient.from("favorites").select("id,outing_id,profile_id,entity_type,entity_id").eq("outing_id", outingId),

@@ -4,7 +4,9 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
+import { FavoriteButton } from "@/components/outings/favorite-button";
 import { OrganizerPickButton } from "@/components/outings/organizer-pick-button";
+import { RoundsSelector } from "@/components/outings/rounds-selector";
 import { VoteButton } from "@/components/outings/vote-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -468,6 +470,16 @@ export default async function OutingDetailPage({
     ? Math.round(detail.preferences.reduce((sum, p) => sum + (p.budgetMin + p.budgetMax) / 2, 0) / detail.preferences.length)
     : null;
 
+  // ── Favorites helpers ────────────────────────────────────────────────────────
+  const allFavorites = detail.favorites;
+  const myFavorites = allFavorites.filter((f) => f.profileId === profile.id);
+  function isFavoritedByMe(entityType: "golf_course" | "lodging", entityId: string) {
+    return myFavorites.some((f) => f.entityType === entityType && f.entityId === entityId);
+  }
+  function favoriteCount(entityType: "golf_course" | "lodging", entityId: string) {
+    return allFavorites.filter((f) => f.entityType === entityType && f.entityId === entityId).length;
+  }
+
   // Voting state
   const votingOpen = detail.outing.votingOpen;
   const myVotes = detail.votes.filter((v) => v.profileId === profile.id);
@@ -486,9 +498,16 @@ export default async function OutingDetailPage({
   const totalVoters = progressTarget;
 
   // Per-person cost estimate
-  const golfPerPerson = detail.insights.topCourse
-    ? detail.insights.topCourse.averageGreensFee * roundsPerPlayer
+  // If courses have schedule_rounds set, sum those up; otherwise fall back to global rounds estimate
+  const scheduledCoursesWithRounds = detail.golfCourses.filter((c) => !c.hidden && c.scheduleDay != null);
+  const totalScheduledGolfCost = scheduledCoursesWithRounds.length > 0
+    ? scheduledCoursesWithRounds.reduce((sum, c) => sum + c.averageGreensFee * (c.scheduleRounds ?? 1), 0)
     : null;
+  const golfPerPerson = totalScheduledGolfCost !== null
+    ? totalScheduledGolfCost
+    : detail.insights.topCourse
+      ? detail.insights.topCourse.averageGreensFee * roundsPerPlayer
+      : null;
   const lodgingTotal = detail.insights.topLodging
     ? (detail.insights.topLodging.priceTotal ?? detail.insights.topLodging.nightlyRate * nights)
     : null;
@@ -496,6 +515,8 @@ export default async function OutingDetailPage({
   const estimatedPerPerson = golfPerPerson !== null && lodgingPerPerson !== null
     ? golfPerPerson + lodgingPerPerson
     : null;
+  // Total rounds from scheduled courses (for display)
+  const totalScheduledRounds = scheduledCoursesWithRounds.reduce((sum, c) => sum + (c.scheduleRounds ?? 1), 0);
 
   return (
     <PageShell>
@@ -593,7 +614,9 @@ export default async function OutingDetailPage({
               {estimatedPerPerson ? currency(estimatedPerPerson) : "—"}
             </p>
             {estimatedPerPerson && (
-              <p className="mt-1 text-xs text-charcoal/45">{nights}n · {roundsPerPlayer}rnd</p>
+              <p className="mt-1 text-xs text-charcoal/45">
+                {nights}n · {totalScheduledRounds > 0 ? totalScheduledRounds : roundsPerPlayer}rnd
+              </p>
             )}
           </div>
 
@@ -603,7 +626,9 @@ export default async function OutingDetailPage({
             <p className="mt-2 text-xl font-semibold text-charcoal">
               {nights}<span className="text-sm font-normal text-charcoal/40"> nights</span>
             </p>
-            <p className="mt-1 text-xs text-charcoal/45">{roundsPerPlayer} rounds planned</p>
+            <p className="mt-1 text-xs text-charcoal/45">
+              {totalScheduledRounds > 0 ? totalScheduledRounds : roundsPerPlayer} rounds planned
+            </p>
           </div>
         </div>
 
@@ -870,8 +895,11 @@ export default async function OutingDetailPage({
                 <div className="mt-4 space-y-3">
                   {detail.golfCourses.map((course) => {
                     const isTop = course.id === detail.insights.topCourse?.id;
-                    const golfPerPerson = course.averageGreensFee * roundsPerPlayer;
+                    const courseRounds = course.scheduleRounds ?? 1;
+                    const courseGolfCost = course.averageGreensFee * courseRounds;
                     const tally = voteTally("golf_course", course.id);
+                    const favCount = favoriteCount("golf_course", course.id);
+                    const favByMe = isFavoritedByMe("golf_course", course.id);
                     return (
                       <div key={course.id} className="rounded-[22px] border border-charcoal/8 bg-cream p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -879,6 +907,7 @@ export default async function OutingDetailPage({
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-charcoal">{course.name}</p>
                               {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
+                              {course.featured && <Badge className="bg-forest-900 text-cream">★ Pick</Badge>}
                               {tally > 0 && votingOpen && (
                                 <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
                               )}
@@ -886,8 +915,8 @@ export default async function OutingDetailPage({
                             <p className="mt-0.5 text-sm text-charcoal/55">{course.locationLabel}</p>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="font-semibold text-charcoal">{currency(golfPerPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
-                            <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {roundsPerPlayer}rnd</p>
+                            <p className="font-semibold text-charcoal">{currency(courseGolfCost)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
+                            <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {courseRounds}rnd</p>
                           </div>
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
@@ -900,13 +929,27 @@ export default async function OutingDetailPage({
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
+                            <FavoriteButton
+                              outingId={detail.outing.id}
+                              entityType="golf_course"
+                              entityId={course.id}
+                              isFavorited={favByMe}
+                              totalCount={favCount}
+                            />
                             {isOrganizer && (
                               <OrganizerPickButton
                                 outingId={detail.outing.id}
                                 entityType="golf_course"
                                 entityId={course.id}
                                 isFeatured={course.featured ?? false}
+                              />
+                            )}
+                            {isOrganizer && (
+                              <RoundsSelector
+                                outingId={detail.outing.id}
+                                courseId={course.id}
+                                scheduleRounds={course.scheduleRounds ?? 1}
                               />
                             )}
                             {isOrganizer && detail.golfCourses.length > 1 && (
@@ -959,6 +1002,8 @@ export default async function OutingDetailPage({
                     const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
                     const perPerson = Math.round(lodgingTotal / players);
                     const tally = voteTally("lodging", stay.id);
+                    const favCount = favoriteCount("lodging", stay.id);
+                    const favByMe = isFavoritedByMe("lodging", stay.id);
                     return (
                       <div key={stay.id} className="rounded-[22px] border border-charcoal/8 bg-cream p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -966,6 +1011,7 @@ export default async function OutingDetailPage({
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-charcoal">{stay.name}</p>
                               {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
+                              {stay.featured && <Badge className="bg-forest-900 text-cream">★ Pick</Badge>}
                               {tally > 0 && votingOpen && (
                                 <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
                               )}
@@ -985,6 +1031,15 @@ export default async function OutingDetailPage({
                             {stay.refundable !== null && stay.refundable !== undefined && (
                               <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
                             )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <FavoriteButton
+                              outingId={detail.outing.id}
+                              entityType="lodging"
+                              entityId={stay.id}
+                              isFavorited={favByMe}
+                              totalCount={favCount}
+                            />
                             {isOrganizer && (
                               <OrganizerPickButton
                                 outingId={detail.outing.id}
@@ -993,15 +1048,15 @@ export default async function OutingDetailPage({
                                 isFeatured={stay.featured ?? false}
                               />
                             )}
+                            <a
+                              href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
+                            >
+                              View on Maps →
+                            </a>
                           </div>
-                          <a
-                            href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
-                          >
-                            View on Maps →
-                          </a>
                         </div>
                       </div>
                     );
@@ -1020,11 +1075,13 @@ export default async function OutingDetailPage({
                       {currency(golfPerPerson + lodgingPerPerson)}
                     </p>
                     <p className="mt-1 text-sm text-cream/55">
-                      Top-ranked golf &amp; lodging · {nights} nights · {roundsPerPlayer} rounds
+                      {scheduledCoursesWithRounds.length > 0
+                        ? `${scheduledCoursesWithRounds.length} course${scheduledCoursesWithRounds.length !== 1 ? "s" : ""} scheduled · ${totalScheduledRounds} round${totalScheduledRounds !== 1 ? "s" : ""}`
+                        : `Top-ranked golf & lodging · ${nights} nights · ${roundsPerPlayer} rounds`}
                     </p>
                   </div>
                   <div className="space-y-1 text-sm text-cream/65">
-                    <p>{currency(golfPerPerson)} golf ({roundsPerPlayer} rounds)</p>
+                    <p>{currency(golfPerPerson)} golf ({scheduledCoursesWithRounds.length > 0 ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`})</p>
                     <p>{currency(lodgingPerPerson)} lodging (÷ {players} players)</p>
                   </div>
                 </div>

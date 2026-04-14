@@ -1606,11 +1606,13 @@ export async function assignCourseScheduleAction(
 
   if (!outing || outing.organizer_id !== profile.id) return;
 
-  await supabase
+  const { error } = await supabase
     .from("golf_course_options")
     .update({ schedule_day: scheduleDay })
     .eq("id", courseId)
     .eq("outing_id", outingId);
+
+  if (error) console.error("[assignCourseScheduleAction]", error);
 
   revalidatePath(`/outings/${outingId}`);
   revalidatePath(`/outings/${outingId}/trip`);
@@ -1640,15 +1642,7 @@ export async function toggleOrganizerPickAction(
   const table = entityType === "golf_course" ? "golf_course_options" : "lodging_options";
   const newValue = !currentlyFeatured;
 
-  // If marking as pick, clear any other picks first (only one pick per type)
-  if (newValue) {
-    await supabase
-      .from(table as any)
-      .update({ featured: false })
-      .eq("outing_id", outingId)
-      .eq("featured", true);
-  }
-
+  // Allow multiple picks — no exclusivity clear
   await supabase
     .from(table as any)
     .update({ featured: newValue })
@@ -1657,4 +1651,67 @@ export async function toggleOrganizerPickAction(
 
   revalidatePath(`/outings/${outingId}`);
   revalidatePath(`/outings/${outingId}/trip`);
+}
+
+export async function assignCourseRoundsAction(
+  outingId: string,
+  courseId: string,
+  rounds: number
+) {
+  if (isDemoMode) return;
+
+  const profile = await requireProfile();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  const { data: outing } = await supabase
+    .from("outings")
+    .select("organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  const { error } = await supabase
+    .from("golf_course_options")
+    .update({ schedule_rounds: rounds })
+    .eq("id", courseId)
+    .eq("outing_id", outingId);
+
+  if (error) console.error("[assignCourseRoundsAction]", error);
+
+  revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/trip`);
+}
+
+export async function toggleFavoriteAction(
+  outingId: string,
+  entityType: "golf_course" | "lodging",
+  entityId: string,
+  currentlyFavorited: boolean
+) {
+  if (isDemoMode) return;
+
+  const profile = await requireProfile();
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  if (currentlyFavorited) {
+    await supabase
+      .from("favorites")
+      .delete()
+      .eq("outing_id", outingId)
+      .eq("profile_id", profile.id)
+      .eq("entity_type", entityType)
+      .eq("entity_id", entityId);
+  } else {
+    await supabase.from("favorites").insert({
+      outing_id: outingId,
+      profile_id: profile.id,
+      entity_type: entityType,
+      entity_id: entityId
+    });
+  }
+
+  revalidatePath(`/outings/${outingId}`);
 }

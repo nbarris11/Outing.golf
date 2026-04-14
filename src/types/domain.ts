@@ -110,6 +110,7 @@ export interface GolfCourseOption {
   featured: boolean;
   hidden: boolean;
   scheduleDay?: number | null;
+  scheduleRounds?: number | null;
   dayLabel?: string | null;
 }
 
