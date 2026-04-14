@@ -186,30 +186,53 @@ export default async function TripHqPage({
                       <span>Bars &amp; restaurants near lodging</span>
                     </a>
                   </li>
-                  {/* uber */}
-                  <li>
-                    <a
-                      href="https://m.uber.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
-                    >
-                      <span className="text-lg">🚗</span>
-                      <span>Uber — rides in {destinationForWeather}</span>
-                    </a>
-                  </li>
-                  {/* lyft */}
-                  <li>
-                    <a
-                      href="https://www.lyft.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
-                    >
-                      <span className="text-lg">🚕</span>
-                      <span>Lyft — rides in {destinationForWeather}</span>
-                    </a>
-                  </li>
+                  {/* Ride links: one Uber + one Lyft per course, pickup = lodging */}
+                  {(() => {
+                    const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
+                    const scheduledCourses = visibleCourses.filter((c) => c.scheduleDay != null);
+                    const coursesToShow = scheduledCourses.length > 0
+                      ? [...scheduledCourses].sort((a, b) => (a.scheduleDay ?? 0) - (b.scheduleDay ?? 0))
+                      : topCourse ? [topCourse] : [];
+                    const pickup = lodgingAddress ?? destinationForWeather;
+                    return coursesToShow.map((course) => {
+                      const dropoff = `${course.name}${course.locationLabel ? `, ${course.locationLabel}` : ""}`;
+                      const uberUrl = pickup
+                        ? `https://m.uber.com/ul/?action=setPickup&pickup[formatted_address]=${encodeURIComponent(pickup)}&dropoff[formatted_address]=${encodeURIComponent(dropoff)}`
+                        : `https://m.uber.com/ul/?action=setPickup&dropoff[formatted_address]=${encodeURIComponent(dropoff)}`;
+                      const lyftUrl = pickup
+                        ? `https://lyft.com/ride?id=lyft&pickup[address]=${encodeURIComponent(pickup)}&destination[address]=${encodeURIComponent(dropoff)}`
+                        : `https://lyft.com/ride?id=lyft&destination[address]=${encodeURIComponent(dropoff)}`;
+                      const courseLabel = coursesToShow.length > 1
+                        ? `${course.scheduleDay ? `Day ${course.scheduleDay} · ` : ""}${course.name}`
+                        : course.name;
+                      return (
+                        <>
+                          <li key={`uber-${course.id}`}>
+                            <a
+                              href={uberUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
+                            >
+                              <span className="text-lg">🚗</span>
+                              <span>Uber to {courseLabel}</span>
+                            </a>
+                          </li>
+                          <li key={`lyft-${course.id}`}>
+                            <a
+                              href={lyftUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
+                            >
+                              <span className="text-lg">🚕</span>
+                              <span>Lyft to {courseLabel}</span>
+                            </a>
+                          </li>
+                        </>
+                      );
+                    });
+                  })()}
                 </ul>
               </div>
             </div>

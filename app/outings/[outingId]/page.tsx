@@ -124,8 +124,11 @@ export default async function OutingDetailPage({
     );
   }
 
-  // Redirect to Trip HQ when outing is booked
-  if (detail.outing.status === "booked" || detail.outing.status === "completed") {
+  const isOrganizer = detail.outing.organizerId === profile.id;
+
+  // Redirect members (non-organizers) to Trip HQ when outing is booked.
+  // Organizer stays on this page so they can manage settings even after booking.
+  if (!isOrganizer && (detail.outing.status === "booked" || detail.outing.status === "completed")) {
     redirect(`/outings/${outingId}/trip`);
   }
 
@@ -133,7 +136,6 @@ export default async function OutingDetailPage({
   const bestDate = detail.recommendation.bestDates[0];
   const defaults = preferenceDefaults(detail.currentPreference, detail.outing.budgetTarget);
   const progressTarget = detail.insights.respondedCount + detail.insights.pendingCount;
-  const isOrganizer = detail.outing.organizerId === profile.id;
   const preferenceSaved = Boolean(detail.currentPreference);
 
   // ── New member welcome screen (Step 2) ──────────────────────────────────────
@@ -517,10 +519,15 @@ export default async function OutingDetailPage({
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2 sm:items-end sm:min-w-[160px]">
-            <Button href={`/outings/${detail.outing.id}/compare`} className="w-full sm:w-auto">
+            {isOrganizer && (detail.outing.status === "booked" || detail.outing.status === "completed") && (
+              <Button href={`/outings/${detail.outing.id}/trip`} className="w-full sm:w-auto bg-forest-900 text-cream">
+                → View Trip HQ
+              </Button>
+            )}
+            <Button href={`/outings/${detail.outing.id}/compare`} variant="secondary" className="w-full sm:w-auto">
               Compare options
             </Button>
-            {isOrganizer && (
+            {isOrganizer && detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
               <form action={markAsBookedAction}>
                 <input type="hidden" name="outingId" value={detail.outing.id} />
                 <SubmitButton
@@ -597,6 +604,94 @@ export default async function OutingDetailPage({
         {notices.error ? (
           <p className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{notices.error}</p>
         ) : null}
+
+        {/* ── All-in CTA: organizer prompt to start vote ── */}
+        {isOrganizer && !votingOpen && responsePercent === 100 && progressTarget > 0 && allVotes.length === 0 && (
+          <div className="mt-6 rounded-[28px] border-2 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5,#f7f4ee)] p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🎉</span>
+                  <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Everyone&apos;s in!</h2>
+                </div>
+                <p className="mt-1 text-sm text-charcoal/65">
+                  All {progressTarget} members have submitted their preferences. Ready to open the group vote on courses and lodging?
+                </p>
+              </div>
+              <form action={openVotingAction} className="shrink-0">
+                <input type="hidden" name="outingId" value={detail.outing.id} />
+                <SubmitButton
+                  label="🗳 Open group vote"
+                  pendingLabel="Opening…"
+                  className="rounded-full bg-forest-900 px-5 py-2.5 text-sm font-semibold text-cream shadow-[0_4px_14px_rgba(20,58,44,0.25)] hover:bg-forest-900/90 transition-colors"
+                />
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── Vote results: shown after voting closes and votes exist ── */}
+        {!votingOpen && allVotes.length > 0 && (() => {
+          const courseVoteCounts = new Map<string, number>();
+          const lodgingVoteCounts = new Map<string, number>();
+          allVotes.forEach((v) => {
+            if (v.entityType === "golf_course") courseVoteCounts.set(v.entityId, (courseVoteCounts.get(v.entityId) ?? 0) + 1);
+            if (v.entityType === "lodging") lodgingVoteCounts.set(v.entityId, (lodgingVoteCounts.get(v.entityId) ?? 0) + 1);
+          });
+          const winningCourseEntry = [...courseVoteCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+          const winningLodgingEntry = [...lodgingVoteCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+          const winningCourse = winningCourseEntry ? detail.golfCourses.find((c) => c.id === winningCourseEntry[0]) : null;
+          const winningLodging = winningLodgingEntry ? detail.lodging.find((l) => l.id === winningLodgingEntry[0]) : null;
+          const totalCourseVotes = [...courseVoteCounts.values()].reduce((a, b) => a + b, 0);
+          const totalLodgingVotes = [...lodgingVoteCounts.values()].reduce((a, b) => a + b, 0);
+          return (
+            <div className="mt-6 rounded-[28px] border-2 border-forest-900/15 bg-[linear-gradient(135deg,rgba(20,58,44,0.06),rgba(247,244,238,0.8))] p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">📊</span>
+                    <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Vote results</h2>
+                  </div>
+                  <p className="mt-1 text-sm text-charcoal/60">
+                    Voting is closed. These are the group&apos;s top picks.
+                  </p>
+                </div>
+                {isOrganizer && (
+                  <form action={openVotingAction} className="shrink-0">
+                    <input type="hidden" name="outingId" value={detail.outing.id} />
+                    <SubmitButton label="Re-open vote" pendingLabel="Opening…" className="text-sm" />
+                  </form>
+                )}
+              </div>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {winningCourse && (
+                  <div className="rounded-[22px] bg-white p-4 ring-2 ring-forest-900/15">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-charcoal/45">Top course</p>
+                    <p className="mt-2 font-semibold text-charcoal">{winningCourse.name}</p>
+                    <p className="mt-0.5 text-sm text-charcoal/55">{winningCourse.locationLabel}</p>
+                    <p className="mt-2 text-xs text-charcoal/50">
+                      {winningCourseEntry![1]} of {totalCourseVotes} vote{totalCourseVotes !== 1 ? "s" : ""}
+                      {totalCourseVotes > 0 ? ` · ${Math.round((winningCourseEntry![1] / totalCourseVotes) * 100)}%` : ""}
+                    </p>
+                  </div>
+                )}
+                {winningLodging && (
+                  <div className="rounded-[22px] bg-white p-4 ring-2 ring-forest-900/15">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-charcoal/45">Top lodging</p>
+                    <p className="mt-2 font-semibold text-charcoal">{winningLodging.name}</p>
+                    <p className="mt-0.5 text-sm text-charcoal/55">
+                      {currency(winningLodging.nightlyRate)}/night · {winningLodging.city ?? ""}
+                    </p>
+                    <p className="mt-2 text-xs text-charcoal/50">
+                      {winningLodgingEntry![1]} of {totalLodgingVotes} vote{totalLodgingVotes !== 1 ? "s" : ""}
+                      {totalLodgingVotes > 0 ? ` · ${Math.round((winningLodgingEntry![1] / totalLodgingVotes) * 100)}%` : ""}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Group vote zone (full-width, only when open) ── */}
         {votingOpen && (top3Courses.length > 0 || top3Lodging.length > 0) && (
