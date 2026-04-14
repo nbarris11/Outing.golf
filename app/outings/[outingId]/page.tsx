@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
+import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
 import { FavoriteButton } from "@/components/outings/favorite-button";
+import { LodgingRoomRate } from "@/components/outings/lodging-room-rate";
 import { OrganizerPickButton } from "@/components/outings/organizer-pick-button";
 import { RoundsSelector } from "@/components/outings/rounds-selector";
 import { VoteButton } from "@/components/outings/vote-button";
@@ -153,7 +155,7 @@ export default async function OutingDetailPage({
               {detail.outing.name}
             </h1>
             <p className="mt-3 text-base leading-7 text-charcoal/66">
-              Fill in your preferences below — takes under a minute. Once you submit, you&apos;ll see the full trip view with courses, lodging, and the group&apos;s picks.
+              Fill in your preferences below — takes under 5 minutes. Once you submit, you&apos;ll see the full trip view with courses, lodging, and the group&apos;s picks.
             </p>
           </div>
 
@@ -233,7 +235,10 @@ export default async function OutingDetailPage({
                           defaultChecked={(defaults.destinationVotes as string[]).includes(dest.name)}
                           className="h-4 w-4 accent-forest-900"
                         />
-                        <span className="font-medium">{dest.name}</span>
+                        <span className="flex-1 font-medium">{dest.name}</span>
+                        {dest.driveHours != null && (
+                          <span className="shrink-0 text-xs text-charcoal/45">🚗 ~{Math.round(dest.driveHours * 60)} mi</span>
+                        )}
                       </label>
                     ))}
                   </div>
@@ -555,14 +560,17 @@ export default async function OutingDetailPage({
               Compare options
             </Button>
             {isOrganizer && detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
-              <form action={markAsBookedAction}>
-                <input type="hidden" name="outingId" value={detail.outing.id} />
-                <SubmitButton
-                  label="✓ Mark as booked"
-                  pendingLabel="Saving..."
-                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_4px_14px_rgba(5,150,105,0.25)]"
-                />
-              </form>
+              <MarkAsBookedButton
+                outingId={detail.outing.id}
+                markAsBooked={markAsBookedAction}
+                bookingState={
+                  !votingOpen && allVotes.length > 0
+                    ? "ready"
+                    : votingOpen
+                      ? "voting_open"
+                      : "no_vote"
+                }
+              />
             )}
           </div>
         </div>
@@ -1000,8 +1008,6 @@ export default async function OutingDetailPage({
                 <div className="mt-4 space-y-3">
                   {dedupedLodging.map((stay) => {
                     const isTop = stay.id === detail.insights.topLodging?.id;
-                    const lodgingTotal = stay.priceTotal ?? stay.nightlyRate * nights;
-                    const perPerson = Math.round(lodgingTotal / players);
                     const tally = voteTally("lodging", stay.id);
                     const favCount = favoriteCount("lodging", stay.id);
                     const favByMe = isFavoritedByMe("lodging", stay.id);
@@ -1021,10 +1027,7 @@ export default async function OutingDetailPage({
                               {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
                             </p>
                           </div>
-                          <div className="text-right shrink-0">
-                            <p className="font-semibold text-charcoal">{currency(perPerson)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
-                            <p className="mt-0.5 text-xs text-charcoal/45">{currency(stay.nightlyRate)}/night × {nights}n</p>
-                          </div>
+                          <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} />
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
@@ -1280,6 +1283,19 @@ export default async function OutingDetailPage({
             {/* ── Organizer actions ── */}
             {isOrganizer && (
               <div className="space-y-3">
+                {/* Edit trip details */}
+                <div className="rounded-[22px] border border-charcoal/10 bg-white px-5 py-4">
+                  <p className="text-sm font-semibold text-charcoal">Trip details</p>
+                  <p className="mt-1 text-xs text-charcoal/55">
+                    Update the name, dates, budget, destination, or group size.
+                  </p>
+                  <div className="mt-3">
+                    <Button href={`/outings/${detail.outing.id}/edit`} variant="secondary" className="w-full justify-center text-sm">
+                      ✏️ Edit trip details
+                    </Button>
+                  </div>
+                </div>
+
                 {/* Open vote (only when not yet open and there are options to vote on) */}
                 {!votingOpen && (detail.golfCourses.length >= 2 || dedupedLodging.length >= 2) && (
                   <div className="rounded-[22px] border border-charcoal/10 bg-white px-5 py-4">
@@ -1395,7 +1411,10 @@ function PreferencesFormFields({
                   defaultChecked={(defaults.destinationVotes as string[]).includes(dest.name)}
                   className="h-4 w-4 accent-forest-900"
                 />
-                <span className="font-medium">{dest.name}</span>
+                <span className="flex-1 font-medium">{dest.name}</span>
+                {dest.driveHours != null && (
+                  <span className="shrink-0 text-xs text-charcoal/45">🚗 ~{Math.round(dest.driveHours * 60)} mi</span>
+                )}
               </label>
             ))}
           </div>

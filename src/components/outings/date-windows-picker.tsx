@@ -19,8 +19,14 @@ function calcNights(start: string, end: string): number {
   );
 }
 
-export function DateWindowsPicker() {
-  const [windows, setWindows] = useState<DateWindow[]>([{ start: "", end: "" }]);
+interface DateWindowsPickerProps {
+  initialWindows?: { start: string; end: string }[];
+}
+
+export function DateWindowsPicker({ initialWindows }: DateWindowsPickerProps = {}) {
+  const [windows, setWindows] = useState<DateWindow[]>(
+    initialWindows && initialWindows.length > 0 ? initialWindows : [{ start: "", end: "" }]
+  );
 
   const updateWindow = (index: number, field: "start" | "end", value: string) => {
     setWindows((prev) => {

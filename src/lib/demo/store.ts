@@ -375,6 +375,23 @@ export async function resendDemoInvite(inviteId: string, invitedBy: string) {
   return invite;
 }
 
+export async function updateDemoOuting(
+  outingId: string,
+  profileId: string,
+  updates: Partial<Pick<Outing, "name" | "destinationLabel" | "destinationType" | "budgetTarget" | "numberOfPlayers" | "lodgingPreference" | "notes" | "preferredDateWindows">>
+) {
+  const state = await readState();
+  const outing = state.outings.find((item) => item.id === outingId);
+
+  if (!outing || outing.organizerId !== profileId) {
+    return null;
+  }
+
+  Object.assign(outing, updates);
+  await writeState(state);
+  return outing;
+}
+
 export async function deleteDemoOuting(outingId: string, profileId: string) {
   const state = await readState();
   const outing = state.outings.find((item) => item.id === outingId);

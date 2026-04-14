@@ -14,6 +14,7 @@ import {
   createDemoOuting,
   joinDemoOuting,
   resendDemoInvite,
+  updateDemoOuting,
   upsertDemoPreference
 } from "@/lib/demo/store";
 import { isDemoMode, publicAppUrl } from "@/lib/env";
@@ -1348,6 +1349,114 @@ export async function deleteOutingAction(formData: FormData) {
   }
 
   redirect("/dashboard?success=Outing%20deleted");
+}
+
+// ── Update outing (organizer only) ───────────────────────────────────────────
+
+const updateOutingSchema = z.object({
+  outingId: z.string().min(1),
+  name: z.string().min(3),
+  destinationLabel: z.string().trim().optional().transform((v) => v || "Flexible location"),
+  budgetTarget: z.coerce.number().min(300).max(4000),
+  numberOfPlayers: z.coerce.number().min(2).max(24),
+  lodgingPreference: z.enum(["hotel", "resort", "house", "mixed"]).default("mixed"),
+  notes: z.string().optional(),
+  dateWindowCount: z.coerce.number().min(1).max(4).optional()
+});
+
+export async function updateOutingAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+
+  const parsed = updateOutingSchema.safeParse({
+    outingId,
+    name: formData.get("name"),
+    destinationLabel: formData.get("destinationLabel"),
+    budgetTarget: formData.get("budgetTarget"),
+    numberOfPlayers: formData.get("numberOfPlayers"),
+    lodgingPreference: formData.get("lodgingPreference") ?? undefined,
+    notes: formData.get("notes") ?? undefined,
+    dateWindowCount: formData.get("dateWindowCount") ?? undefined
+  });
+
+  if (!parsed.success) {
+    redirect(`/outings/${outingId}/edit?error=Please%20complete%20all%20required%20fields`);
+  }
+
+  const windowCount = Math.min(parsed.data.dateWindowCount ?? 1, 4);
+  const dateWindows: { start: string; end: string }[] = [];
+  for (let i = 0; i < windowCount; i++) {
+    const start = String(formData.get(`dateStart_${i}`) ?? "").trim();
+    const end = String(formData.get(`dateEnd_${i}`) ?? "").trim();
+    if (start && end) dateWindows.push({ start, end });
+  }
+  if (dateWindows.length === 0) {
+    dateWindows.push({ start: new Date().toISOString().slice(0, 10), end: new Date().toISOString().slice(0, 10) });
+  }
+
+  const updates = {
+    name: parsed.data.name,
+    destinationLabel: parsed.data.destinationLabel!,
+    budgetTarget: parsed.data.budgetTarget,
+    numberOfPlayers: parsed.data.numberOfPlayers,
+    lodgingPreference: parsed.data.lodgingPreference,
+    notes: parsed.data.notes ?? undefined,
+    preferredDateWindows: dateWindows
+  };
+
+  if (isDemoMode) {
+    const updated = await updateDemoOuting(outingId, profile.id, updates);
+
+    if (!updated) {
+      redirect(`/outings/${outingId}/edit?error=Unable%20to%20update%20outing`);
+    }
+
+    redirect(`/outings/${outingId}?success=Trip%20updated`);
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const supabase = await createSupabaseServerClient();
+  const readClient = adminClient ?? supabase;
+
+  if (!readClient) {
+    redirect(`/outings/${outingId}/edit?error=Supabase%20not%20configured`);
+  }
+
+  const { data: outing } = await readClient!
+    .from("outings")
+    .select("id,organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+
+  if (!outing) {
+    redirect("/dashboard?error=Outing%20not%20found");
+  }
+
+  if (!isAdmin(profile) && outing.organizer_id !== profile.id) {
+    redirect(`/outings/${outingId}?error=Only%20the%20organizer%20can%20edit%20this%20trip`);
+  }
+
+  const writeClient = adminClient ?? supabase;
+  const { error } = await writeClient!
+    .from("outings")
+    .update({
+      name: updates.name,
+      destination_label: updates.destinationLabel,
+      budget_target: updates.budgetTarget,
+      number_of_players: updates.numberOfPlayers,
+      lodging_preference: updates.lodgingPreference,
+      notes: updates.notes ?? null,
+      preferred_date_windows: updates.preferredDateWindows
+    })
+    .eq("id", outingId);
+
+  if (error) {
+    logError("Failed to update outing", error, { outingId, profileId: profile.id });
+    redirect(`/outings/${outingId}/edit?error=Unable%20to%20update%20trip`);
+  }
+
+  revalidatePath(`/outings/${outingId}`);
+  redirect(`/outings/${outingId}?success=Trip%20updated`);
 }
 
 // ── Group voting actions ──────────────────────────────────────────────────────

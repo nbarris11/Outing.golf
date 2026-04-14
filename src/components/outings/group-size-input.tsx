@@ -2,7 +2,7 @@
 
 import { FieldLabel, Input } from "@/components/ui/field";
 
-export function GroupSizeInput() {
+export function GroupSizeInput({ defaultValue = 8 }: { defaultValue?: number } = {}) {
   return (
     <div className="max-w-sm">
       <FieldLabel htmlFor="groupSize">Group size</FieldLabel>
@@ -12,7 +12,7 @@ export function GroupSizeInput() {
         type="number"
         min="2"
         max="24"
-        defaultValue="8"
+        defaultValue={defaultValue}
         autoComplete="off"
         onWheel={(e) => e.currentTarget.blur()}
         required

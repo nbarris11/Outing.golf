@@ -79,7 +79,7 @@ export default async function DashboardPage({
           <div className="mt-8">
             <EmptyState
               title="Plan your first golf trip"
-              body="Set the frame in under a minute — destination, dates, budget, vibe. Then invite the group and let everyone weigh in."
+              body="Set the frame in under 5 minutes — destination, dates, budget, vibe. Then invite the group and let everyone weigh in."
               cta={{ href: "/outings/new", label: "Plan a trip" }}
             />
           </div>

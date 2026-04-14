@@ -24,7 +24,7 @@ export default async function NewOutingPage({
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Create outing</p>
           <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
-            Set the trip up in under a minute
+            Set the trip up in under 5 minutes
           </h1>
           <p className="mt-4 text-base leading-7 text-charcoal/68">
             Start with the basics, set the vibe, and invite the group. Anything more detailed can come later.
