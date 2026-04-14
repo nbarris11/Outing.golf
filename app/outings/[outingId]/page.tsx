@@ -919,6 +919,7 @@ export default async function OutingDetailPage({
                             <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {courseRounds}rnd</p>
                           </div>
                         </div>
+                        {/* Info row */}
                         <div className="mt-3 flex items-center justify-between gap-3">
                           <div className="flex flex-wrap items-center gap-3 text-xs text-charcoal/55">
                             <span>Quality {course.qualityScore}/100</span>
@@ -929,7 +930,7 @@ export default async function OutingDetailPage({
                               </span>
                             )}
                           </div>
-                          <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
+                          <div className="flex items-center gap-2 shrink-0">
                             <FavoriteButton
                               outingId={detail.outing.id}
                               entityType="golf_course"
@@ -937,29 +938,6 @@ export default async function OutingDetailPage({
                               isFavorited={favByMe}
                               totalCount={favCount}
                             />
-                            {isOrganizer && (
-                              <OrganizerPickButton
-                                outingId={detail.outing.id}
-                                entityType="golf_course"
-                                entityId={course.id}
-                                isFeatured={course.featured ?? false}
-                              />
-                            )}
-                            {isOrganizer && (
-                              <RoundsSelector
-                                outingId={detail.outing.id}
-                                courseId={course.id}
-                                scheduleRounds={course.scheduleRounds ?? 1}
-                              />
-                            )}
-                            {isOrganizer && detail.golfCourses.length > 1 && (
-                              <CourseScheduleSelector
-                                outingId={detail.outing.id}
-                                courseId={course.id}
-                                scheduleDay={course.scheduleDay ?? null}
-                                maxDays={nights}
-                              />
-                            )}
                             <a
                               href={`https://www.google.com/search?q=${encodeURIComponent(course.name + " golf course " + course.locationLabel)}`}
                               target="_blank"
@@ -970,6 +948,30 @@ export default async function OutingDetailPage({
                             </a>
                           </div>
                         </div>
+                        {/* Organizer controls row — separate line so they don't crowd the CTA */}
+                        {isOrganizer && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-charcoal/6 pt-2">
+                            <OrganizerPickButton
+                              outingId={detail.outing.id}
+                              entityType="golf_course"
+                              entityId={course.id}
+                              isFeatured={course.featured ?? false}
+                            />
+                            <RoundsSelector
+                              outingId={detail.outing.id}
+                              courseId={course.id}
+                              scheduleRounds={course.scheduleRounds ?? 1}
+                            />
+                            {detail.golfCourses.length > 1 && (
+                              <CourseScheduleSelector
+                                outingId={detail.outing.id}
+                                courseId={course.id}
+                                scheduleDay={course.scheduleDay ?? null}
+                                maxDays={nights}
+                              />
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

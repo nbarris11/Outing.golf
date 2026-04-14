@@ -143,7 +143,7 @@ export default async function TripHqPage({
                   {destinationForWeather && (
                     <li>
                       <a
-                        href={`https://www.google.com/search?q=${encodeURIComponent(`10 day weather forecast ${destinationForWeather}`)}`}
+                        href={`https://weather.com/weather/tenday/l/${encodeURIComponent(destinationForWeather)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
@@ -176,15 +176,26 @@ export default async function TripHqPage({
                   })()}
                   {/* bars & restaurants */}
                   <li>
-                    <a
-                      href={`https://www.google.com/maps/search/bars+and+restaurants/${encodeURIComponent(topLodging?.city ?? topLodging?.name ?? destinationForWeather)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
-                    >
-                      <span className="text-lg">🍺</span>
-                      <span>Bars &amp; restaurants near lodging</span>
-                    </a>
+                    {(() => {
+                      // Build the most specific address available for the lodging location
+                      const lodgingSearchAddr =
+                        topLodging?.hotelAddress
+                          ? topLodging.hotelAddress
+                          : [topLodging?.name, topLodging?.city, topLodging?.state]
+                              .filter(Boolean)
+                              .join(", ") || destinationForWeather;
+                      return (
+                        <a
+                          href={`https://www.google.com/maps/search/bars+and+restaurants+near+${encodeURIComponent(lodgingSearchAddr)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"
+                        >
+                          <span className="text-lg">🍺</span>
+                          <span>Bars &amp; restaurants near lodging</span>
+                        </a>
+                      );
+                    })()}
                   </li>
                   {/* Ride links: one Uber + one Lyft per course, pickup = lodging */}
                   {(() => {
