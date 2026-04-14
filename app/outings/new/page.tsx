@@ -116,10 +116,11 @@ export default async function NewOutingPage({
                     <Input
                       id="initialInviteEmail"
                       name="initialInviteEmail"
-                      type="email"
-                      placeholder="friend@example.com"
+                      type="text"
+                      placeholder="friend@example.com, buddy@example.com"
+                      autoComplete="off"
                     />
-                    <p className="mt-2 text-xs text-charcoal/48">Optional. You can skip this and invite the group right after creation.</p>
+                    <p className="mt-2 text-xs text-charcoal/48">For multiple invites, separate addresses with a comma. Optional — you can skip and invite from the trip page.</p>
                   </div>
                   <div className="rounded-[24px] bg-cream p-4">
                     <p className="text-xs uppercase tracking-[0.2em] text-charcoal/40">Share link</p>

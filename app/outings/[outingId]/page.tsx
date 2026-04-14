@@ -560,17 +560,22 @@ export default async function OutingDetailPage({
               Compare options
             </Button>
             {isOrganizer && detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
-              <MarkAsBookedButton
-                outingId={detail.outing.id}
-                markAsBooked={markAsBookedAction}
-                bookingState={
-                  !votingOpen && allVotes.length > 0
-                    ? "ready"
-                    : votingOpen
-                      ? "voting_open"
-                      : "no_vote"
-                }
-              />
+              <>
+                <Button href={`/outings/${detail.outing.id}/edit`} variant="secondary" className="w-full sm:w-auto">
+                  ✏️ Edit trip
+                </Button>
+                <MarkAsBookedButton
+                  outingId={detail.outing.id}
+                  markAsBooked={markAsBookedAction}
+                  bookingState={
+                    !votingOpen && allVotes.length > 0
+                      ? "ready"
+                      : votingOpen
+                        ? "voting_open"
+                        : "no_vote"
+                  }
+                />
+              </>
             )}
           </div>
         </div>

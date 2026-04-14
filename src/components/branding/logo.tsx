@@ -4,13 +4,15 @@ import { cn } from "@/lib/utils";
 
 export function BrandLogo({
   className,
-  compact = false
+  compact = false,
+  href = "/"
 }: {
   className?: string;
   compact?: boolean;
+  href?: string;
 }) {
   return (
-    <Link href="/" className={cn("inline-flex items-center gap-3 text-charcoal", className)}>
+    <Link href={href} className={cn("inline-flex items-center gap-3 text-charcoal", className)}>
       <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-forest-900/15 bg-forest-900 text-cream shadow-[0_12px_30px_rgba(20,58,44,0.18)]">
         <span className="font-serif text-xl font-semibold italic">O</span>
       </span>

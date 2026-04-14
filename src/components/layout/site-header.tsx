@@ -13,7 +13,7 @@ export async function SiteHeader({ minimal = false }: { minimal?: boolean }) {
   return (
     <header className="sticky top-0 z-30 border-b border-charcoal/6 bg-cream/80 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <BrandLogo />
+        <BrandLogo href={profile ? "/dashboard" : "/"} />
         {!minimal ? (
           <nav className="hidden items-center gap-6 text-sm text-charcoal/70 md:flex">
             <Link href="/how-it-works">How it works</Link>
