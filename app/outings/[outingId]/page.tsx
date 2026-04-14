@@ -919,8 +919,8 @@ export default async function OutingDetailPage({
                             <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {courseRounds}rnd</p>
                           </div>
                         </div>
-                        {/* Bottom row — info left, all controls right on one line */}
-                        <div className="mt-3 flex items-center justify-between gap-2">
+                        {/* Bottom row — info left, all controls right; wraps on mobile */}
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2 text-xs text-charcoal/55 min-w-0">
                             <span className="shrink-0">Quality {course.qualityScore}/100</span>
                             <span className="shrink-0">{course.walkingFriendly ? "Walking" : "Riding"}</span>
@@ -930,7 +930,7 @@ export default async function OutingDetailPage({
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
                             <FavoriteButton
                               outingId={detail.outing.id}
                               entityType="golf_course"
@@ -1026,14 +1026,14 @@ export default async function OutingDetailPage({
                             <p className="mt-0.5 text-xs text-charcoal/45">{currency(stay.nightlyRate)}/night × {nights}n</p>
                           </div>
                         </div>
-                        <div className="mt-3 flex items-center justify-between gap-3">
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
                             <span>Sleeps {stay.sleeps}</span>
                             {stay.refundable !== null && stay.refundable !== undefined && (
                               <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
                             <FavoriteButton
                               outingId={detail.outing.id}
                               entityType="lodging"
