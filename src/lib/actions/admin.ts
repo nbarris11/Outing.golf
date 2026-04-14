@@ -161,6 +161,65 @@ export async function toggleOptionFlagAction(formData: FormData) {
   redirect("/admin?success=Option%20updated");
 }
 
+export async function setUserRoleAction(formData: FormData) {
+  const profile = await requireProfile();
+
+  if (!isAdmin(profile)) {
+    redirect("/dashboard");
+  }
+
+  const targetId = String(formData.get("targetId") ?? "").trim();
+  const newRole = String(formData.get("newRole") ?? "").trim();
+
+  if (!targetId || !["admin", "member"].includes(newRole)) {
+    redirect("/admin/users?error=Invalid+request");
+  }
+
+  // Prevent self-demotion
+  if (targetId === profile.id && newRole !== "admin") {
+    redirect("/admin/users?error=You+cannot+remove+your+own+admin+role");
+  }
+
+  if (!isDemoMode) {
+    const supabase = await createSupabaseServerClient();
+    await supabase
+      ?.from("profiles")
+      .update({ app_role: newRole })
+      .eq("id", targetId);
+    redirect("/admin/users?success=Role+updated");
+  }
+
+  redirect("/admin/users?success=Role+updated");
+}
+
+export async function removeUserAction(formData: FormData) {
+  const profile = await requireProfile();
+
+  if (!isAdmin(profile)) {
+    redirect("/dashboard");
+  }
+
+  const targetId = String(formData.get("targetId") ?? "").trim();
+
+  if (!targetId) {
+    redirect("/admin/users?error=Invalid+request");
+  }
+
+  // Prevent self-deletion
+  if (targetId === profile.id) {
+    redirect("/admin/users?error=You+cannot+remove+your+own+account+from+here");
+  }
+
+  if (!isDemoMode) {
+    const supabase = await createSupabaseServerClient();
+    // Calls SECURITY DEFINER function — handles profile + auth.users deletion
+    await supabase?.rpc("admin_delete_user", { target_user_id: targetId });
+    redirect("/admin/users?success=User+removed");
+  }
+
+  redirect("/admin/users?success=User+removed");
+}
+
 export async function runLiteApiSandboxTestAction(formData: FormData) {
   const profile = await requireProfile();
 
