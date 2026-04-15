@@ -25,6 +25,46 @@ function inferDestinationOptionId(outingDetail: Awaited<ReturnType<typeof getOut
   return outingDetail?.destinations[0]?.id ?? null;
 }
 
+function normalizeHotelName(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\b(hotel|the|inn|suites?|resort|and|&|by|at|a)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function deduplicateLodgingResults(results: LodgingSearchResult[]): LodgingSearchResult[] {
+  // Key: normalized name, or lat/lng bucket (0.01 degree ≈ 1km) if coordinates exist
+  const seen = new Map<string, LodgingSearchResult>();
+
+  for (const result of results) {
+    const nameBucket = normalizeHotelName(result.hotelName);
+    const geoKey =
+      result.latitude != null && result.longitude != null
+        ? `geo:${result.latitude.toFixed(2)},${result.longitude.toFixed(2)}`
+        : null;
+
+    const keys = [nameBucket, geoKey].filter(Boolean) as string[];
+    const existingKey = keys.find((k) => seen.has(k));
+
+    if (existingKey) {
+      const existing = seen.get(existingKey)!;
+      // Keep the lower-priced result
+      if (result.priceTotal < existing.priceTotal) {
+        seen.set(existingKey, result);
+        // Update all keys to point to the new winner
+        keys.forEach((k) => seen.set(k, result));
+      }
+    } else {
+      keys.forEach((k) => seen.set(k, result));
+    }
+  }
+
+  // Return unique values only
+  return Array.from(new Set(seen.values()));
+}
+
 async function createFallbackResults(input: LodgingSearchInput, outingDetail: Awaited<ReturnType<typeof getOutingDetail>>) {
   if (!outingDetail) {
     return [];
@@ -172,13 +212,12 @@ export async function searchLodgingForUi(input: LodgingSearchInput) {
       searchLiteApiHotels(input),
       searchHotelBedsHotels(input) // already returns [] on failure
     ]);
-    let results: LodgingSearchResult[] = [
-      ...liteApiResponse.results,
-      ...hotelBedsResults
-    ].map((item) => ({
-      ...item,
-      destinationOptionId: item.destinationOptionId ?? inferDestinationOptionId(outingDetail) ?? null
-    }));
+    let results: LodgingSearchResult[] = deduplicateLodgingResults(
+      [...liteApiResponse.results, ...hotelBedsResults].map((item) => ({
+        ...item,
+        destinationOptionId: item.destinationOptionId ?? inferDestinationOptionId(outingDetail) ?? null
+      }))
+    );
     let usedFallback = false;
 
     if (!results.length && await isDevelopmentFallbackEnabled()) {
