@@ -26,15 +26,15 @@ export function OrganizerPickButton({ outingId, entityType, entityId, isFeatured
     <button
       onClick={handleClick}
       disabled={isPending}
-      title={optimisticFeatured ? "Remove organizer pick" : "Mark as organizer's pick"}
+      title={optimisticFeatured ? "Remove from trip plan" : "Add to trip plan"}
       className={[
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50",
         optimisticFeatured
-          ? "bg-forest-900 text-cream hover:bg-forest-900/80"
-          : "border border-charcoal/15 bg-white text-charcoal/55 hover:border-forest-900/30 hover:text-forest-900"
+          ? "bg-emerald-600 text-white hover:bg-emerald-700"
+          : "border border-charcoal/15 bg-white text-charcoal/60 hover:border-emerald-400 hover:text-emerald-700"
       ].join(" ")}
     >
-      {optimisticFeatured ? "★ Pick" : "☆ Pick"}
+      {optimisticFeatured ? "✓ In the trip" : "+ Add to trip"}
     </button>
   );
 }

@@ -17,6 +17,7 @@ import {
   deleteDemoTeeTime,
   joinDemoOuting,
   resendDemoInvite,
+  setDemoOptionFeatured,
   updateDemoOuting,
   updateOptionFlags,
   upsertDemoPreference
@@ -1741,9 +1742,19 @@ export async function toggleOrganizerPickAction(
   entityId: string,
   currentlyFeatured: boolean
 ) {
-  if (isDemoMode) return;
-
   const profile = await requireProfile();
+  const newValue = !currentlyFeatured;
+  // Lodging is exclusive (one stay per trip); courses are multi-select (multi-day trips)
+  const exclusive = entityType === "lodging";
+
+  if (isDemoMode) {
+    const collection = entityType === "golf_course" ? "golfCourseOptions" : "lodgingOptions";
+    await setDemoOptionFeatured({ collection, id: entityId, value: newValue, exclusive });
+    revalidatePath(`/outings/${outingId}`);
+    revalidatePath(`/outings/${outingId}/trip`);
+    return;
+  }
+
   const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 
@@ -1757,9 +1768,16 @@ export async function toggleOrganizerPickAction(
   if (!outing || outing.organizer_id !== profile.id) return;
 
   const table = entityType === "golf_course" ? "golf_course_options" : "lodging_options";
-  const newValue = !currentlyFeatured;
 
-  // Allow multiple picks — no exclusivity clear
+  // For lodging: exclusive — clear all other selections first
+  if (exclusive && newValue) {
+    await supabase
+      .from("lodging_options")
+      .update({ featured: false })
+      .eq("outing_id", outingId)
+      .neq("id", entityId);
+  }
+
   await supabase
     .from(table as any)
     .update({ featured: newValue })

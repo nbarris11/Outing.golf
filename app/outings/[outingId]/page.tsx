@@ -481,6 +481,14 @@ export default async function OutingDetailPage({
   // First destination for linking custom courses/lodging
   const primaryDestinationId = detail.destinations[0]?.id ?? "";
 
+  // "In the trip" selections — float selected items to the top, preserve score order within each group
+  const selectedCourses = visibleCourses.filter((c) => c.featured);
+  const selectedLodgingOption = visibleLodging.find((l) => l.featured) ?? null;
+  const sortedVisibleCourses = [...selectedCourses, ...visibleCourses.filter((c) => !c.featured)];
+  const sortedVisibleLodging = selectedLodgingOption
+    ? [selectedLodgingOption, ...visibleLodging.filter((l) => !l.featured)]
+    : visibleLodging;
+
   // Cost estimates
   const tripWindow = detail.outing.preferredDateWindows[0];
   const nights = tripWindow
@@ -927,7 +935,7 @@ export default async function OutingDetailPage({
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {visibleCourses.map((course) => {
+                  {sortedVisibleCourses.map((course) => {
                     const isTop = course.id === detail.insights.topCourse?.id;
                     const courseRounds = course.scheduleRounds ?? 1;
                     const courseGolfCost = course.averageGreensFee * courseRounds;
@@ -935,13 +943,13 @@ export default async function OutingDetailPage({
                     const favCount = favoriteCount("golf_course", course.id);
                     const favByMe = isFavoritedByMe("golf_course", course.id);
                     return (
-                      <div key={course.id} className="rounded-[22px] border border-charcoal/8 bg-cream p-4">
+                      <div key={course.id} className={`rounded-[22px] border p-4 transition-colors ${course.featured ? "border-emerald-200 bg-emerald-50/40" : "border-charcoal/8 bg-cream"}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-charcoal">{course.name}</p>
+                              {course.featured && <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>}
                               {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
-                              {course.featured && <Badge className="bg-forest-900 text-cream">★ Pick</Badge>}
                               {course.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
                               {tally > 0 && votingOpen && (
                                 <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
@@ -1076,19 +1084,19 @@ export default async function OutingDetailPage({
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {visibleLodging.map((stay) => {
+                  {sortedVisibleLodging.map((stay) => {
                     const isTop = stay.id === detail.insights.topLodging?.id;
                     const tally = voteTally("lodging", stay.id);
                     const favCount = favoriteCount("lodging", stay.id);
                     const favByMe = isFavoritedByMe("lodging", stay.id);
                     return (
-                      <div key={stay.id} className="rounded-[22px] border border-charcoal/8 bg-cream p-4">
+                      <div key={stay.id} className={`rounded-[22px] border p-4 transition-colors ${stay.featured ? "border-emerald-200 bg-emerald-50/40" : "border-charcoal/8 bg-cream"}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-charcoal">{stay.name}</p>
+                              {stay.featured && <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>}
                               {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
-                              {stay.featured && <Badge className="bg-forest-900 text-cream">★ Pick</Badge>}
                               {stay.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
                               {tally > 0 && votingOpen && (
                                 <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
@@ -1223,6 +1231,54 @@ export default async function OutingDetailPage({
           {/* ── Right column ── */}
           <div className="space-y-6">
 
+            {/* ── Trip plan (visible to everyone) ── */}
+            {(selectedCourses.length > 0 || selectedLodgingOption || isOrganizer) && (
+              <div className="rounded-[22px] border border-charcoal/8 bg-white px-5 py-4">
+                <p className="text-sm font-semibold text-charcoal">📋 Trip plan</p>
+
+                {/* Courses */}
+                <div className="mt-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-charcoal/40">
+                    Course{selectedCourses.length !== 1 ? "s" : ""}
+                  </p>
+                  {selectedCourses.length > 0 ? (
+                    <div className="mt-1.5 space-y-1">
+                      {selectedCourses.map((c) => (
+                        <div key={c.id} className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2">
+                          <span className="text-xs font-bold text-emerald-600">✓</span>
+                          <span className="text-xs font-medium text-charcoal">{c.name}</span>
+                          {c.scheduleDay != null && (
+                            <span className="ml-auto shrink-0 text-[11px] text-charcoal/40">Day {c.scheduleDay}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-1.5 text-xs italic text-charcoal/35">Not selected yet</p>
+                  )}
+                </div>
+
+                {/* Lodging */}
+                <div className="mt-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-charcoal/40">Lodging</p>
+                  {selectedLodgingOption ? (
+                    <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2">
+                      <span className="text-xs font-bold text-emerald-600">✓</span>
+                      <span className="text-xs font-medium text-charcoal">{selectedLodgingOption.name}</span>
+                    </div>
+                  ) : (
+                    <p className="mt-1.5 text-xs italic text-charcoal/35">Not selected yet</p>
+                  )}
+                </div>
+
+                {isOrganizer && (selectedCourses.length === 0 || !selectedLodgingOption) && (
+                  <p className="mt-3 text-[11px] text-charcoal/40">
+                    Use "+ Add to trip" on the options below to lock in your picks.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* ── Organizer checklist ── */}
             {isOrganizer && (
               <OrganizerChecklist
@@ -1232,6 +1288,8 @@ export default async function OutingDetailPage({
                 votingEverOpened={votingOpen || allVotes.length > 0}
                 votingOpen={votingOpen}
                 hasVotes={allVotes.length > 0}
+                selectedCoursesCount={selectedCourses.length}
+                hasSelectedLodging={selectedLodgingOption !== null}
                 teeTimesCount={(detail.outing.teeTimeBookings ?? []).length}
                 isBooked={detail.outing.status === "booked"}
               />

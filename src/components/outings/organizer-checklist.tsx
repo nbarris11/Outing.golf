@@ -10,6 +10,8 @@ interface OrganizerChecklistProps {
   votingEverOpened: boolean; // true once a vote has been opened
   votingOpen: boolean;
   hasVotes: boolean;      // at least one group vote cast
+  selectedCoursesCount: number; // courses marked "in the trip"
+  hasSelectedLodging: boolean;  // lodging marked "in the trip"
   teeTimesCount: number;  // number of confirmed tee times entered
   isBooked: boolean;      // status === "booked"
 }
@@ -21,6 +23,8 @@ export function OrganizerChecklist({
   votingEverOpened,
   votingOpen,
   hasVotes,
+  selectedCoursesCount,
+  hasSelectedLodging,
   teeTimesCount,
   isBooked
 }: OrganizerChecklistProps) {
@@ -71,6 +75,17 @@ export function OrganizerChecklist({
           ? "Close when everyone has voted"
           : "Open a vote first",
       done: voteClosed
+    },
+    {
+      label: "Select course & lodging",
+      detail: selectedCoursesCount > 0 && hasSelectedLodging
+        ? `${selectedCoursesCount} course${selectedCoursesCount !== 1 ? "s" : ""} · lodging chosen`
+        : selectedCoursesCount > 0
+          ? `${selectedCoursesCount} course${selectedCoursesCount !== 1 ? "s" : ""} selected — pick lodging`
+          : hasSelectedLodging
+            ? "Lodging chosen — select a course"
+            : "Mark your course & lodging picks below",
+      done: selectedCoursesCount > 0 && hasSelectedLodging
     },
     {
       label: "Book tee times",

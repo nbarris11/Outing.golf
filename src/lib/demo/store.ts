@@ -528,6 +528,26 @@ export async function updateOptionFlags(input: {
   return option;
 }
 
+export async function setDemoOptionFeatured(input: {
+  collection: "destinationOptions" | "golfCourseOptions" | "lodgingOptions";
+  id: string;
+  value: boolean;
+  exclusive?: boolean; // if true, clear featured on all other items in the collection first
+}) {
+  const state = await readState();
+  const collection = state[input.collection] as Array<
+    DestinationOption | GolfCourseOption | LodgingOption
+  >;
+  if (input.exclusive && input.value) {
+    collection.forEach((item) => { item.featured = false; });
+  }
+  const option = collection.find((item) => item.id === input.id);
+  if (!option) return null;
+  option.featured = input.value;
+  await writeState(state);
+  return option;
+}
+
 export async function addDemoOption(
   collection: "destinationOptions" | "golfCourseOptions" | "lodgingOptions",
   option: DestinationOption | GolfCourseOption | LodgingOption,
