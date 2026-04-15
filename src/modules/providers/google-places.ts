@@ -411,13 +411,18 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
     for (const destination of destinations) {
       const metadata = decodeDestinationId(destination.id);
 
+      // Strip fabricated sub-region suffixes added by generateGenericDestinations
+      // (e.g. "Mount Pleasant, MI — Coastal & Resort Area" → "Mount Pleasant, MI")
+      // so that text search uses the real place name.
+      const searchName = destination.name.replace(/\s+[—–-]+\s+.+$/, "").trim() || destination.region;
+
       // Detect state/region-level destinations — the destination name won't contain
       // a comma and will match a broad administrative area. For these we skip nearby
       // search (which only covers a 50km radius around the centroid) and go straight
       // to a text search so we get courses spread across the whole state.
       const isBroadArea =
-        !destination.name.includes(",") &&
-        (destination.region === destination.name || destination.name.split(" ").length <= 3);
+        !searchName.includes(",") &&
+        (destination.region === searchName || searchName.split(" ").length <= 3);
 
       try {
         let places: GooglePlace[] = [];
@@ -443,7 +448,7 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
 
         if (!places.length) {
           places = await textSearch({
-            textQuery: `best golf courses in ${destination.name}`,
+            textQuery: `best golf courses in ${searchName}`,
             includedType: "golf_course",
             strictTypeFiltering: true,
             languageCode: "en",
@@ -455,7 +460,7 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
         // If still not enough, do a second search for more variety
         if (places.length < safeLimit / 2) {
           const more = await textSearch({
-            textQuery: `public golf courses ${destination.name}`,
+            textQuery: `public golf courses ${searchName}`,
             includedType: "golf_course",
             strictTypeFiltering: true,
             languageCode: "en",
