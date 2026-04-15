@@ -18,10 +18,12 @@ export async function SiteFooter() {
             </a>
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <Link href="/how-it-works">How it works</Link>
           <Link href="/legal/privacy">Privacy</Link>
           <Link href="/legal/terms">Terms</Link>
+          <Link href="/advertise">Advertise with us</Link>
+          <Link href="/contact">Feedback &amp; questions</Link>
         </div>
       </div>
     </footer>
