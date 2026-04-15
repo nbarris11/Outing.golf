@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "Best Golf Trip Destinations for Groups | Outing.golf",
   description:
-    "A guide to top golf trip destinations for groups — what makes a destination work for a golf outing and how to compare options without losing the thread."
+    "The best golf trip destinations for groups — Scottsdale, Myrtle Beach, Pinehurst, Bandon, and more. What makes each destination work, who it's right for, and how to compare options based on your group's actual budget."
 };
 
 const destinations = [
@@ -121,23 +121,28 @@ export default function BestGolfTripDestinationsPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
-        <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related destination guides</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
               title: "Scottsdale golf trip planner",
               href: "/scottsdale-golf-trip-planner",
-              body: "A closer look at planning a group golf trip to Scottsdale specifically."
+              body: "Courses, budget ranges, and what to know before you organize a Scottsdale trip."
             },
             {
-              title: "How to plan a golf trip",
-              href: "/how-to-plan-a-golf-trip",
-              body: "The full step-by-step guide for taking a group from scattered idea to booked trip."
+              title: "Myrtle Beach golf trip planner",
+              href: "/myrtle-beach-golf-trip-planner",
+              body: "How to navigate 100+ courses and build the right shortlist for your group."
             },
             {
-              title: "Back to home",
-              href: "/",
-              body: "See how Outing.golf helps organizers compare destinations and get groups aligned."
+              title: "Pinehurst golf trip planner",
+              href: "/pinehurst-golf-trip-planner",
+              body: "What makes Pinehurst different and which version of the trip fits your group."
+            },
+            {
+              title: "Palm Springs golf trip planner",
+              href: "/palm-springs-golf-trip-planner",
+              body: "Coachella Valley course guide, budget ranges, and best time to go."
             }
           ].map((item) => (
             <a

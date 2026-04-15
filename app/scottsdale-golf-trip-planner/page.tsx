@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Scottsdale Golf Trip Planner | Outing.golf",
+  title: "Scottsdale Golf Trip Planner for Groups | Outing.golf",
   description:
-    "Scottsdale is one of the top group golf trip destinations. Outing.golf helps you get your group aligned on dates, budget, and courses before you start shopping rates."
+    "Planning a group golf trip to Scottsdale? A guide to courses, budget ranges, and what to know before you organize a trip to the Phoenix area — including when to go and what the destination supports across different budget tiers."
 };
 
 export default function ScottsdaleGolfTripPlannerPage() {
@@ -138,17 +138,27 @@ export default function ScottsdaleGolfTripPlannerPage() {
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
-              title: "Best golf trip destinations for groups",
-              href: "/best-golf-trip-destinations-for-groups",
-              body: "Compare Scottsdale to other top group golf destinations across the US."
+              title: "Best golf trip destinations",
+              href: "/best-golf-trip-destinations",
+              body: "How Scottsdale compares to Myrtle Beach, Palm Springs, Pinehurst, and other top destinations."
             },
             {
-              title: "How to plan a golf trip",
-              href: "/how-to-plan-a-golf-trip",
-              body: "A full step-by-step guide for getting your group from idea to booked trip."
+              title: "Golf trip budget breakdown",
+              href: "/golf-trip-budget-breakdown",
+              body: "How to break down greens fees, lodging, travel, and food before you commit."
+            },
+            {
+              title: "Golf trip planning checklist",
+              href: "/golf-trip-planning-checklist",
+              body: "Phase-by-phase checklist from first message to final itinerary."
+            },
+            {
+              title: "Golf trip cost per person",
+              href: "/golf-trip-cost-per-person",
+              body: "Realistic cost ranges by destination tier so you can set a real budget window."
             }
           ].map((item) => (
             <a

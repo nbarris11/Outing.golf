@@ -220,9 +220,19 @@ export default async function LandingPage() {
               body: "A phase-by-phase checklist so nothing gets skipped and decisions happen in the right order."
             },
             {
-              title: "Golf trip budget planner",
-              href: "/golf-trip-budget-planner",
-              body: "Why getting budget ranges from everyone early changes the whole planning process."
+              title: "Golf trip itinerary template",
+              href: "/golf-trip-itinerary-template",
+              body: "A day-by-day trip template with time slots, pre-trip checklist, and a 2-day weekend version."
+            },
+            {
+              title: "Golf trip cost per person",
+              href: "/golf-trip-cost-per-person",
+              body: "Realistic per-person cost ranges by destination tier — from drive-to to bucket-list."
+            },
+            {
+              title: "Golf trip budget breakdown",
+              href: "/golf-trip-budget-breakdown",
+              body: "How greens fees, lodging, travel, food, and extras break down across a full trip."
             },
             {
               title: "Best golf trip destinations",
@@ -230,9 +240,29 @@ export default async function LandingPage() {
               body: "What each major destination costs and what to know before you plan there."
             },
             {
+              title: "Best budget destinations",
+              href: "/best-budget-golf-trip-destinations",
+              body: "Strong courses and real trip experiences without the premium price tag."
+            },
+            {
               title: "Bachelor golf trip planner",
               href: "/bachelor-golf-trip-planner",
               body: "How to organize a bachelor golf trip when the group has mixed budgets and a hard deadline."
+            },
+            {
+              title: "Bachelor golf trip itinerary",
+              href: "/bachelor-golf-trip-itinerary",
+              body: "A 4-day day-by-day itinerary template built specifically for a bachelor golf trip."
+            },
+            {
+              title: "Organize a trip with friends",
+              href: "/organize-a-golf-trip-with-friends",
+              body: "What to collect from the group, in what order, to move from scattered interest to a confirmed plan."
+            },
+            {
+              title: "Annual golf trip checklist",
+              href: "/annual-golf-trip-checklist",
+              body: "Built for recurring trip organizers — how to build on what worked year over year."
             },
             {
               title: "Planner for large groups",
@@ -243,6 +273,16 @@ export default async function LandingPage() {
               title: "Planner vs. spreadsheet",
               href: "/golf-trip-planner-vs-spreadsheet",
               body: "How a purpose-built planning tool compares to a shared doc."
+            },
+            {
+              title: "Scottsdale golf trip planner",
+              href: "/scottsdale-golf-trip-planner",
+              body: "Courses, budget ranges, and what to know before organizing a Scottsdale group trip."
+            },
+            {
+              title: "Myrtle Beach golf trip planner",
+              href: "/myrtle-beach-golf-trip-planner",
+              body: "How to navigate 100+ courses and build the right shortlist for your group."
             }
           ].map((item) => (
             <a

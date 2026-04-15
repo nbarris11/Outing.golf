@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Buddies Golf Trip Planner | Outing.golf",
+  title: "Buddies Golf Trip Planner for Annual Group Trips | Outing.golf",
   description:
-    "Plan the annual buddies golf trip without the usual back-and-forth. Outing.golf collects group input so you can stop herding cats and start booking."
+    "A buddies golf trip planner built for the organizer who always ends up doing all the work — collect budgets, align on dates, and get everyone to a decision without the endless group chat."
 };
 
 export default function BuddiesGolfTripPlannerPage() {
@@ -109,17 +109,27 @@ export default function BuddiesGolfTripPlannerPage() {
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
-              title: "How to plan a golf trip",
-              href: "/how-to-plan-a-golf-trip",
-              body: "A full step-by-step guide for getting a group from scattered idea to confirmed trip."
+              title: "How to organize a golf trip with friends",
+              href: "/organize-a-golf-trip-with-friends",
+              body: "The five-step process for getting a group from scattered interest to a confirmed plan."
             },
             {
-              title: "Back to home",
-              href: "/",
-              body: "See how Outing.golf collects group input and moves everyone toward one plan."
+              title: "Golf trip planning checklist",
+              href: "/golf-trip-planning-checklist",
+              body: "Phase-by-phase checklist from first message to final itinerary."
+            },
+            {
+              title: "Annual golf trip checklist",
+              href: "/annual-golf-trip-checklist",
+              body: "Built for organizers running the same trip every year — what to do differently once it repeats."
+            },
+            {
+              title: "Golf trip cost per person",
+              href: "/golf-trip-cost-per-person",
+              body: "Realistic cost ranges by destination tier so you can set a real budget window."
             }
           ].map((item) => (
             <a
