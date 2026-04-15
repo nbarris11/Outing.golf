@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -13,11 +14,22 @@ function fmt(n: number) {
 interface LodgingRoomRateProps {
   nightlyRate: number;
   nights: number;
-  defaultPersonsPerRoom?: number;
+  personsPerRoom: number;
 }
 
-export function LodgingRoomRate({ nightlyRate, nights, defaultPersonsPerRoom = 2 }: LodgingRoomRateProps) {
-  const [personsPerRoom, setPersonsPerRoom] = useState(defaultPersonsPerRoom);
+export function LodgingRoomRate({ nightlyRate, nights, personsPerRoom }: LodgingRoomRateProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  function handleChange(n: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("personsPerRoom", String(n));
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    });
+  }
 
   const perPersonPerNight = Math.round(nightlyRate / personsPerRoom);
   const totalPerPerson = perPersonPerNight * nights;
@@ -25,7 +37,7 @@ export function LodgingRoomRate({ nightlyRate, nights, defaultPersonsPerRoom = 2
   return (
     <div className="text-right shrink-0">
       <div className="flex items-baseline justify-end gap-1.5">
-        <p className="font-semibold text-charcoal">
+        <p className={`font-semibold text-charcoal transition-opacity ${isPending ? "opacity-50" : ""}`}>
           {fmt(perPersonPerNight)}
           <span className="ml-1 text-xs font-normal text-charcoal/50">/person/night</span>
         </p>
@@ -40,9 +52,10 @@ export function LodgingRoomRate({ nightlyRate, nights, defaultPersonsPerRoom = 2
             <button
               key={n}
               type="button"
-              onClick={() => setPersonsPerRoom(n)}
+              onClick={() => handleChange(n)}
+              disabled={isPending}
               className={[
-                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors",
+                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors disabled:opacity-50",
                 personsPerRoom === n
                   ? "bg-forest-900 text-cream"
                   : "bg-charcoal/8 text-charcoal/60 hover:bg-charcoal/15"

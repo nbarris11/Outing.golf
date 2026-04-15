@@ -111,11 +111,12 @@ export default async function OutingDetailPage({
   searchParams
 }: {
   params: Promise<{ outingId: string }>;
-  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string; newMember?: string; confirmed?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string; newMember?: string; confirmed?: string; personsPerRoom?: string }>;
 }) {
   const profile = await requireProfile();
   const { outingId } = await params;
   const notices = await searchParams;
+  const personsPerRoom = Math.min(4, Math.max(1, parseInt(notices.personsPerRoom ?? "2", 10) || 2));
   const detail = await getOutingDetail(outingId, profile.id);
 
   if (!detail) {
@@ -555,11 +556,11 @@ export default async function OutingDetailPage({
       : null;
 
   // Use selected lodging if any, then algorithm top pick
+  // nightlyRate is per room; cost per person = (nightlyRate / personsPerRoom) × nights
   const lodgingSource = selectedLodgingOption ?? detail.insights.topLodging ?? null;
-  const lodgingTotal = lodgingSource
-    ? (lodgingSource.priceTotal ?? lodgingSource.nightlyRate * nights)
+  const lodgingPerPerson = lodgingSource
+    ? Math.round((lodgingSource.nightlyRate / personsPerRoom) * nights)
     : null;
-  const lodgingPerPerson = lodgingTotal !== null ? Math.round(lodgingTotal / players) : null;
   const estimatedPerPerson = golfPerPerson !== null && lodgingPerPerson !== null
     ? golfPerPerson + lodgingPerPerson
     : null;
@@ -1119,7 +1120,7 @@ export default async function OutingDetailPage({
                               {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
                             </p>
                           </div>
-                          <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} />
+                          <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} personsPerRoom={personsPerRoom} />
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
@@ -1225,7 +1226,7 @@ export default async function OutingDetailPage({
                   </div>
                   <div className="space-y-1 text-sm text-cream/65">
                     <p>{currency(golfPerPerson)} golf ({golfCostCourses ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`})</p>
-                    <p>{currency(lodgingPerPerson)} lodging (÷ {players} players)</p>
+                    <p>{currency(lodgingPerPerson)} lodging ({personsPerRoom}/room × {nights}n)</p>
                   </div>
                 </div>
               </div>
