@@ -53,7 +53,11 @@ const envSchema = z.object({
             .map((item) => item.trim().toLowerCase())
             .filter(Boolean)
         : []
-    )
+    ),
+  // HotelBeds credentials — set HOTELBEDS_API_KEY and HOTELBEDS_SECRET in .env
+  HOTELBEDS_API_KEY: z.string().optional(),
+  HOTELBEDS_SECRET: z.string().optional(),
+  HOTELBEDS_BASE_URL: z.string().url().default("https://api.hotelbeds.com")
 });
 
 const parsed = envSchema.safeParse(process.env);

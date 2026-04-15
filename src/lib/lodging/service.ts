@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { getCurrentProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
 import { logError } from "@/lib/logger";
+import { searchHotelBedsHotels } from "@/lib/providers/hotelbeds/hotels";
 import {
   bookLiteApiOffer,
   prebookLiteApiOffer,
@@ -167,8 +168,14 @@ export async function searchLodgingForUi(input: LodgingSearchInput) {
   }
 
   try {
-    const response = await searchLiteApiHotels(input);
-    let results: LodgingSearchResult[] = response.results.map((item) => ({
+    const [liteApiResponse, hotelBedsResults] = await Promise.all([
+      searchLiteApiHotels(input),
+      searchHotelBedsHotels(input) // already returns [] on failure
+    ]);
+    let results: LodgingSearchResult[] = [
+      ...liteApiResponse.results,
+      ...hotelBedsResults
+    ].map((item) => ({
       ...item,
       destinationOptionId: item.destinationOptionId ?? inferDestinationOptionId(outingDetail) ?? null
     }));

@@ -165,7 +165,7 @@ export interface LodgingOption {
 }
 
 export interface LodgingSearchResult {
-  provider: "liteapi";
+  provider: "liteapi" | "hotelbeds";
   hotelId: string;
   hotelName: string;
   roomName: string;
