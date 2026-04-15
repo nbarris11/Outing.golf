@@ -5,7 +5,7 @@ import { Resend } from "resend";
 import { env } from "@/lib/env";
 import { logError, logInfo } from "@/lib/logger";
 
-export async function sendContactMessage(formData: FormData): Promise<{ success: boolean; error?: string }> {
+export async function sendContactMessage(_prevState: unknown, formData: FormData): Promise<{ success: boolean; error?: string }> {
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const message = String(formData.get("message") ?? "").trim();
@@ -38,7 +38,7 @@ export async function sendContactMessage(formData: FormData): Promise<{ success:
   return { success: true };
 }
 
-export async function sendAdvertiseInquiry(formData: FormData): Promise<{ success: boolean; error?: string }> {
+export async function sendAdvertiseInquiry(_prevState: unknown, formData: FormData): Promise<{ success: boolean; error?: string }> {
   const name = String(formData.get("name") ?? "").trim();
   const organization = String(formData.get("organization") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
