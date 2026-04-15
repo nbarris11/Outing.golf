@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FieldLabel, Input, Select, Textarea } from "@/components/ui/field";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { SubmitButton } from "@/components/ui/submit-button";
 import {
   addCustomDestinationAction,
@@ -120,6 +121,7 @@ export default async function OutingDetailPage({
   if (!detail) {
     return (
       <PageShell>
+        <ScrollToTop />
         <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
           <Card className="text-center">
             <h1 className="font-serif text-4xl font-semibold tracking-[-0.05em]">
@@ -161,6 +163,7 @@ export default async function OutingDetailPage({
   if (!detail.currentPreference && !isOrganizer) {
     return (
       <PageShell>
+        <ScrollToTop />
         <section className="mx-auto max-w-xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="mb-8">
             <Badge className="bg-forest-900/10 text-forest-900">You&apos;re in</Badge>
@@ -356,6 +359,7 @@ export default async function OutingDetailPage({
 
     return (
       <PageShell>
+        <ScrollToTop />
         <section id="confirmed-top" className="mx-auto max-w-xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="mb-8 text-center">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-forest-900/10 text-2xl">
@@ -562,6 +566,7 @@ export default async function OutingDetailPage({
 
   return (
     <PageShell>
+      <ScrollToTop />
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
 
         {/* ── Trip header ── */}
