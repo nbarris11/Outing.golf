@@ -472,7 +472,11 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
         }
 
         if (!places.length) {
-          allCourses.push(...(await fallbackGolfCourses(outing, destination, safeLimit)));
+          logInfo("Google Places golf search returned no results — skipping destination", {
+            outingId: outing.id,
+            destinationId: destination.id,
+            searchName
+          });
           continue;
         }
 
@@ -495,12 +499,12 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
           }))
         );
       } catch (error) {
-        logError("Google Places golf search failed", error, {
+        logError("Google Places golf search failed — skipping destination", error, {
           outingId: outing.id,
           destinationId: destination.id,
           destinationName: destination.name
         });
-        allCourses.push(...(await fallbackGolfCourses(outing, destination, safeLimit)));
+        // Do not fall back to mock courses — return real results only when using Google Places
       }
     }
 
