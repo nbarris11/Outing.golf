@@ -91,30 +91,38 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    // PKCE verifier mismatch — this happens when a stale code verifier cookie
-    // is lying around from a prior incomplete auth attempt. Clearing the cookies
-    // and sending the user back to sign-in with a gentle notice (not an error)
-    // means the next click of "Continue with Google" will succeed cleanly.
     const isPkceError =
       error.message.toLowerCase().includes("code verifier") ||
       error.message.toLowerCase().includes("code_challenge") ||
       error.message.toLowerCase().includes("code challenge");
-
-    const errorResponse = isPkceError
-      ? NextResponse.redirect(
-          `${redirectBase}/sign-in?notice=${encodeURIComponent("Your sign-in session expired — please try again.")}&next=${encodeURIComponent(next)}`
-        )
-      : NextResponse.redirect(
-          `${redirectBase}/sign-in?error=${encodeURIComponent("Sign-in failed: " + error.message)}`
-        );
-
-    clearSupabaseVerifierCookies(errorResponse, request, requestHost);
 
     logError("Google callback exchange failed", error, {
       host: requestHost,
       next,
       isPkceError
     });
+
+    // PKCE verifier mismatch — the code verifier cookie was lost during the
+    // Google redirect (common on mobile Safari / ITP). Clear the stale cookie
+    // and silently re-initiate Google sign-in so the user never sees an error.
+    // We append _r=1 so that if it fails a second time we don't loop forever.
+    if (isPkceError) {
+      const alreadyRetried = searchParams.get("_r") === "1";
+      const retryTarget = alreadyRetried
+        ? NextResponse.redirect(
+            `${redirectBase}/sign-in?notice=${encodeURIComponent("Your sign-in session expired — please try again.")}&next=${encodeURIComponent(next)}`
+          )
+        : NextResponse.redirect(
+            `${redirectBase}/api/auth/google?next=${encodeURIComponent(next)}&_r=1`
+          );
+      clearSupabaseVerifierCookies(retryTarget, request, requestHost);
+      return retryTarget;
+    }
+
+    const errorResponse = NextResponse.redirect(
+      `${redirectBase}/sign-in?error=${encodeURIComponent("Sign-in failed: " + error.message)}`
+    );
+    clearSupabaseVerifierCookies(errorResponse, request, requestHost);
     return errorResponse;
   }
 

@@ -15,6 +15,7 @@ export function getSupabaseCookieOverrides(host?: string | null): CookieOptions 
 
   return {
     path: "/",
+    sameSite: "lax",
     ...(useSharedProductionDomain
       ? {
           domain: SHARED_PRODUCTION_AUTH_DOMAIN,

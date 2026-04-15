@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const next = searchParams.get("next") ?? "/dashboard";
   const destination = next.startsWith("/") ? next : "/dashboard";
+  const retryFlag = searchParams.get("_r") === "1" ? "&_r=1" : "";
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey =
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       ? `https://${requestHost}`
       : new URL(request.url).origin;
 
-  const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(destination)}`;
+  const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(destination)}${retryFlag}`;
 
   // Collect cookies that Supabase wants to set (the PKCE code verifier).
   // We apply them directly to the redirect response so the browser receives them
