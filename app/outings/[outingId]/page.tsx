@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { AddDestinationForm, AddGolfCourseForm, AddLodgingForm } from "@/components/outings/add-option-form";
 import { OrganizerChecklist } from "@/components/outings/organizer-checklist";
+import { TeeTimeManager } from "@/components/outings/tee-time-manager";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
@@ -22,7 +23,9 @@ import {
   addCustomDestinationAction,
   addCustomGolfCourseAction,
   addCustomLodgingAction,
+  addTeeTimeAction,
   closeVotingAction,
+  deleteTeeTimeAction,
   hideOptionAction,
   inviteMemberAction,
   markAsBookedAction,
@@ -1229,6 +1232,7 @@ export default async function OutingDetailPage({
                 votingEverOpened={votingOpen || allVotes.length > 0}
                 votingOpen={votingOpen}
                 hasVotes={allVotes.length > 0}
+                teeTimesCount={(detail.outing.teeTimeBookings ?? []).length}
                 isBooked={detail.outing.status === "booked"}
               />
             )}
@@ -1522,6 +1526,15 @@ export default async function OutingDetailPage({
                     </Button>
                   </div>
                 </div>
+
+                {/* Tee times */}
+                <TeeTimeManager
+                  outingId={detail.outing.id}
+                  bookings={detail.outing.teeTimeBookings ?? []}
+                  addAction={addTeeTimeAction}
+                  deleteAction={deleteTeeTimeAction}
+                  courseNames={visibleCourses.map((c) => c.name)}
+                />
 
                 {/* Open vote (only when not yet open and there are options to vote on) */}
                 {!votingOpen && (visibleCourses.length >= 2 || visibleLodging.length >= 2) && (

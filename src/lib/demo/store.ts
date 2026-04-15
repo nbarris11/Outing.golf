@@ -18,6 +18,7 @@ import type {
   OutingMember,
   PreferenceSubmission,
   Profile,
+  TeeTimeBooking,
   Vote
 } from "@/types/domain";
 
@@ -75,6 +76,7 @@ const seedOuting: Outing = {
   status: "planning",
   organizerWeighting: 7,
   votingOpen: false,
+  teeTimeBookings: [],
   createdAt: now.toISOString()
 };
 
@@ -538,4 +540,32 @@ export async function addDemoOption(
   (state[collection] as Array<DestinationOption | GolfCourseOption | LodgingOption>).push(option);
   await writeState(state);
   return option;
+}
+
+export async function addDemoTeeTime(
+  outingId: string,
+  organizerId: string,
+  booking: TeeTimeBooking
+) {
+  const state = await readState();
+  const outing = state.outings.find((o) => o.id === outingId);
+  if (!outing || outing.organizerId !== organizerId) return null;
+  if (!Array.isArray(outing.teeTimeBookings)) outing.teeTimeBookings = [];
+  outing.teeTimeBookings.push(booking);
+  await writeState(state);
+  return booking;
+}
+
+export async function deleteDemoTeeTime(
+  outingId: string,
+  organizerId: string,
+  bookingId: string
+) {
+  const state = await readState();
+  const outing = state.outings.find((o) => o.id === outingId);
+  if (!outing || outing.organizerId !== organizerId) return false;
+  if (!Array.isArray(outing.teeTimeBookings)) return false;
+  outing.teeTimeBookings = outing.teeTimeBookings.filter((b) => b.id !== bookingId);
+  await writeState(state);
+  return true;
 }

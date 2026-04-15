@@ -11,8 +11,10 @@ import { requireProfile } from "@/lib/auth";
 import {
   addDemoChatMessage,
   addDemoOption,
+  addDemoTeeTime,
   createDemoInvite,
   createDemoOuting,
+  deleteDemoTeeTime,
   joinDemoOuting,
   resendDemoInvite,
   updateDemoOuting,
@@ -28,7 +30,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canManageOuting, isAdmin } from "@/modules/outings/permissions";
 import { fetchOutingInventory } from "@/modules/providers/inventory-service";
 import { generateId } from "@/lib/utils";
-import type { ChatMessage, DestinationOption, GolfCourseOption, LodgingOption, LodgingType, Outing } from "@/types/domain";
+import type { ChatMessage, DestinationOption, GolfCourseOption, LodgingOption, LodgingType, Outing, TeeTimeBooking } from "@/types/domain";
 
 const createOutingSchema = z
   .object({
@@ -276,6 +278,7 @@ function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerI
     notes: input.notes,
     status: "planning",
     organizerWeighting: input.organizerWeighting,
+    teeTimeBookings: [],
     votingOpen: false
   };
 }
@@ -563,6 +566,7 @@ export async function createOutingAction(formData: FormData) {
         lodgingPreference: outingDraft.lodgingPreference,
         notes: outingDraft.notes,
         organizerWeighting: outingDraft.organizerWeighting,
+        teeTimeBookings: [],
         votingOpen: false
       });
 
@@ -1688,6 +1692,7 @@ export async function regenerateOutingInventoryAction(outingId: string) {
     notes: outingRow.notes ?? undefined,
     status: outingRow.status,
     organizerWeighting: outingRow.organizer_weighting,
+    teeTimeBookings: Array.isArray(outingRow.tee_time_bookings) ? outingRow.tee_time_bookings : [],
     votingOpen: outingRow.voting_open ?? false,
     createdAt: outingRow.created_at
   };
@@ -2045,5 +2050,95 @@ export async function addCustomLodgingAction(formData: FormData) {
     hidden: false
   });
   revalidatePath(`/outings/${outingId}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tee time bookings — organizer-only entry
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function addTeeTimeAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = formData.get("outingId")?.toString() ?? "";
+  const courseName = formData.get("courseName")?.toString().trim() ?? "";
+  const date = formData.get("date")?.toString() ?? "";
+  const teeTime = formData.get("teeTime")?.toString().trim() ?? "";
+  const players = Math.max(1, Number(formData.get("players") ?? 4));
+  const confirmationNumber = formData.get("confirmationNumber")?.toString().trim() || undefined;
+  const notes = formData.get("notes")?.toString().trim() || undefined;
+
+  if (!outingId || !courseName || !date || !teeTime) return;
+
+  const booking: TeeTimeBooking = {
+    id: generateId("tee"),
+    courseName,
+    date,
+    teeTime,
+    players,
+    confirmationNumber,
+    notes
+  };
+
+  if (isDemoMode) {
+    await addDemoTeeTime(outingId, profile.id, booking);
+    revalidatePath(`/outings/${outingId}`);
+    revalidatePath(`/outings/${outingId}/trip`);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  const { data: outing } = await supabase
+    .from("outings")
+    .select("organizer_id,tee_time_bookings")
+    .eq("id", outingId)
+    .maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  const existing: TeeTimeBooking[] = Array.isArray(outing.tee_time_bookings)
+    ? outing.tee_time_bookings
+    : [];
+
+  await supabase
+    .from("outings")
+    .update({ tee_time_bookings: [...existing, booking] })
+    .eq("id", outingId);
+
+  revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/trip`);
+}
+
+export async function deleteTeeTimeAction(outingId: string, bookingId: string) {
+  const profile = await requireProfile();
+  if (!outingId || !bookingId) return;
+
+  if (isDemoMode) {
+    await deleteDemoTeeTime(outingId, profile.id, bookingId);
+    revalidatePath(`/outings/${outingId}`);
+    revalidatePath(`/outings/${outingId}/trip`);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  const { data: outing } = await supabase
+    .from("outings")
+    .select("organizer_id,tee_time_bookings")
+    .eq("id", outingId)
+    .maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  const existing: TeeTimeBooking[] = Array.isArray(outing.tee_time_bookings)
+    ? outing.tee_time_bookings
+    : [];
+
+  await supabase
+    .from("outings")
+    .update({ tee_time_bookings: existing.filter((b) => b.id !== bookingId) })
+    .eq("id", outingId);
+
+  revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/trip`);
 }
 

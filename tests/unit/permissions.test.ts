@@ -30,6 +30,7 @@ describe("permissions", () => {
           lodgingPreference: "house",
           status: "planning",
           organizerWeighting: 5, votingOpen: false,
+          teeTimeBookings: [],
           createdAt: ""
         },
         {

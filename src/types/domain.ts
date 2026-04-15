@@ -24,6 +24,16 @@ export interface DateWindow {
   end: string;
 }
 
+export interface TeeTimeBooking {
+  id: string;
+  courseName: string;
+  date: string;               // YYYY-MM-DD
+  teeTime: string;            // e.g. "8:30 AM"
+  players: number;
+  confirmationNumber?: string;
+  notes?: string;
+}
+
 export interface Outing {
   id: string;
   name: string;
@@ -40,6 +50,7 @@ export interface Outing {
   status: OutingStatus;
   organizerWeighting: number;
   votingOpen: boolean;
+  teeTimeBookings: TeeTimeBooking[];
   createdAt: string;
 }
 

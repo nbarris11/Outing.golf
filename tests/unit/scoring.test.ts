@@ -25,6 +25,7 @@ const outing: Outing = {
   notes: "",
   status: "planning",
   organizerWeighting: 7, votingOpen: false,
+  teeTimeBookings: [],
   createdAt: new Date().toISOString()
 };
 

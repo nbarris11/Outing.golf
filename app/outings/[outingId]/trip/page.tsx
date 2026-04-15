@@ -4,6 +4,7 @@ import { TripBoardingPass } from "@/components/trip/trip-boarding-pass";
 import { TripCountdown } from "@/components/trip/trip-countdown";
 import { TripLineup } from "@/components/trip/trip-lineup";
 import { TripPackingList } from "@/components/trip/trip-packing-list";
+import { TripTeeTimes } from "@/components/trip/trip-tee-times";
 import { requireProfile } from "@/lib/auth";
 import { seedPersonalPackingItems, seedGroupPackingItems } from "@/lib/actions/trip";
 import { getOutingDetail, getTripPackingItems } from "@/modules/outings/service";
@@ -137,6 +138,9 @@ export default async function TripHqPage({
             <div className="space-y-6">
               {/* Lineup */}
               <TripLineup members={memberList} />
+
+              {/* Tee times */}
+              <TripTeeTimes bookings={detail.outing.teeTimeBookings ?? []} />
 
               {/* Quick links */}
               <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-charcoal/6">

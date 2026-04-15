@@ -10,6 +10,7 @@ interface OrganizerChecklistProps {
   votingEverOpened: boolean; // true once a vote has been opened
   votingOpen: boolean;
   hasVotes: boolean;      // at least one group vote cast
+  teeTimesCount: number;  // number of confirmed tee times entered
   isBooked: boolean;      // status === "booked"
 }
 
@@ -20,6 +21,7 @@ export function OrganizerChecklist({
   votingEverOpened,
   votingOpen,
   hasVotes,
+  teeTimesCount,
   isBooked
 }: OrganizerChecklistProps) {
   const nonOrganizerMembers = Math.max(0, memberCount - 1);
@@ -69,6 +71,13 @@ export function OrganizerChecklist({
           ? "Close when everyone has voted"
           : "Open a vote first",
       done: voteClosed
+    },
+    {
+      label: "Book tee times",
+      detail: teeTimesCount > 0
+        ? `${teeTimesCount} tee time${teeTimesCount !== 1 ? "s" : ""} added`
+        : "Enter confirmed tee times above",
+      done: teeTimesCount > 0
     },
     {
       label: "Mark trip as booked",
