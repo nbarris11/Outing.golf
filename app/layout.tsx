@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 
-import { LogRocketInit } from "@/src/components/logrocket-init";
+import { LogRocketInit } from "@/components/logrocket-init";
 import { getCurrentProfile } from "@/lib/auth";
 import "./globals.css";
 
