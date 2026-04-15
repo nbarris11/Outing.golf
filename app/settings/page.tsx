@@ -4,12 +4,20 @@ import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FieldLabel, Input } from "@/components/ui/field";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { updateProfileAction, updatePasswordAction } from "@/lib/actions/profile";
 import { requireProfile } from "@/lib/auth";
 import { adminEmails } from "@/lib/env";
 import { isAdmin } from "@/modules/outings/permissions";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
   const profile = await requireProfile();
+  const { success, error } = await searchParams;
 
   return (
     <PageShell>
@@ -20,25 +28,114 @@ export default async function SettingsPage() {
             Profile settings
           </h1>
         </div>
+
+        {success ? (
+          <p className="mt-6 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</p>
+        ) : null}
+        {error ? (
+          <p className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        ) : null}
+
+        {/* Profile info form */}
         <Card className="mt-8">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-semibold tracking-[-0.04em]">{profile.fullName}</h2>
+            <h2 className="text-2xl font-semibold tracking-[-0.04em]">Your profile</h2>
             <Badge>{profile.appRole}</Badge>
           </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-[24px] bg-cream p-4">
-              <p className="text-sm text-charcoal/50">Email</p>
-              <p className="mt-2 font-medium">{profile.email}</p>
-            </div>
-            <div className="rounded-[24px] bg-cream p-4">
-              <p className="text-sm text-charcoal/50">Home airport</p>
-              <p className="mt-2 font-medium">{profile.homeAirport ?? "Add later"}</p>
-            </div>
-          </div>
-          <p className="mt-5 text-sm leading-6 text-charcoal/65">
-            This settings surface is intentionally small in MVP. It’s ready for profile edits, notification preferences,
-            and connected-account management once Supabase-backed profile writes are enabled.
+          <p className="mt-2 text-sm text-charcoal/55">
+            This information follows you into any outing you join.
           </p>
+          <form action={updateProfileAction} className="mt-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  defaultValue={profile.fullName}
+                  placeholder="Taylor Brooks"
+                  required
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={profile.email}
+                  readOnly
+                  className="cursor-not-allowed opacity-60"
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="homeCity">Home city</FieldLabel>
+                <Input
+                  id="homeCity"
+                  name="homeCity"
+                  defaultValue={profile.homeCity ?? ""}
+                  placeholder="Chicago, IL"
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="homeAirport">Home airport (IATA code)</FieldLabel>
+                <Input
+                  id="homeAirport"
+                  name="homeAirport"
+                  defaultValue={profile.homeAirport ?? ""}
+                  placeholder="ORD"
+                  maxLength={3}
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="handicap">Golf handicap</FieldLabel>
+                <Input
+                  id="handicap"
+                  name="handicap"
+                  defaultValue={profile.handicap ?? ""}
+                  placeholder="e.g. 12.4"
+                />
+              </div>
+            </div>
+            <div className="pt-2">
+              <SubmitButton label="Save profile" pendingLabel="Saving..." />
+            </div>
+          </form>
+        </Card>
+
+        {/* Change password (only for non-OAuth accounts) */}
+        <Card className="mt-6">
+          <h2 className="text-2xl font-semibold tracking-[-0.04em]">Change password</h2>
+          <p className="mt-2 text-sm text-charcoal/55">
+            Must be at least 8 characters and include a number and a special character.
+          </p>
+          <form action={updatePasswordAction} className="mt-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <FieldLabel htmlFor="password">New password</FieldLabel>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="New password"
+                  required
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="confirmPassword">Confirm new password</FieldLabel>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Repeat password"
+                  required
+                />
+              </div>
+            </div>
+            <div className="pt-2">
+              <SubmitButton label="Update password" pendingLabel="Updating..." />
+            </div>
+          </form>
         </Card>
 
         {isAdmin(profile) ? (

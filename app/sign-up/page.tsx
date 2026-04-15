@@ -1,10 +1,11 @@
 import { AuthCard } from "@/components/auth/auth-card";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { RecaptchaForm } from "@/components/auth/recaptcha-form";
 import { PageShell } from "@/components/layout/page-shell";
 import { FieldLabel, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { signUpAction } from "@/lib/actions/auth";
-import { isDemoMode } from "@/lib/env";
+import { isDemoMode, recaptchaSiteKey } from "@/lib/env";
 
 export default async function SignUpPage({
   searchParams
@@ -14,7 +15,37 @@ export default async function SignUpPage({
   const params = await searchParams;
   const next = params.next?.startsWith("/") ? params.next : "/dashboard";
 
-  const formAction = isDemoMode ? "/api/demo/auth/sign-up" : signUpAction;
+  const formContents = (
+    <>
+      <input type="hidden" name="next" value={next} />
+      <div>
+        <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+        <Input id="fullName" name="fullName" placeholder="Taylor Brooks" required />
+      </div>
+      <div>
+        <FieldLabel htmlFor="email">Email</FieldLabel>
+        <Input id="email" name="email" type="email" placeholder="taylor@example.com" required />
+      </div>
+      <div>
+        <FieldLabel htmlFor="password">Password</FieldLabel>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Create a password"
+          required
+          minLength={8}
+        />
+        <p className="mt-1.5 text-xs text-charcoal/45">
+          At least 8 characters, including a number and a special character.
+        </p>
+      </div>
+      {params.error ? (
+        <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{params.error}</p>
+      ) : null}
+      <SubmitButton label="Create account" pendingLabel="Creating..." className="w-full" />
+    </>
+  );
 
   return (
     <PageShell>
@@ -33,25 +64,21 @@ export default async function SignUpPage({
             </div>
           </>
         ) : null}
-        <form action={formAction} method={isDemoMode ? "post" : undefined} className="space-y-4">
-          <input type="hidden" name="next" value={next} />
-          <div>
-            <FieldLabel htmlFor="fullName">Full name</FieldLabel>
-            <Input id="fullName" name="fullName" placeholder="Taylor Brooks" required />
-          </div>
-          <div>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input id="email" name="email" type="email" placeholder="taylor@example.com" required />
-          </div>
-          <div>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input id="password" name="password" type="password" placeholder="Create a password" required />
-          </div>
-          {params.error ? (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{params.error}</p>
-          ) : null}
-          <SubmitButton label="Create account" pendingLabel="Creating..." className="w-full" />
-        </form>
+
+        {isDemoMode ? (
+          <form action="/api/demo/auth/sign-up" method="post" className="space-y-4">
+            {formContents}
+          </form>
+        ) : (
+          <RecaptchaForm
+            action={signUpAction}
+            recaptchaAction="sign_up"
+            siteKey={recaptchaSiteKey ?? ""}
+            className="space-y-4"
+          >
+            {formContents}
+          </RecaptchaForm>
+        )}
       </AuthCard>
     </PageShell>
   );

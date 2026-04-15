@@ -32,6 +32,8 @@ const envSchema = z.object({
   VRBO_API_BASE_URL: z.string().url().optional(),
   GOLFNOW_API_KEY: z.string().optional(),
   GOLFNOW_API_BASE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_RECAPTCHA_SITE_KEY: z.string().optional(),
+  RECAPTCHA_SECRET_KEY: z.string().optional(),
   NEXT_PUBLIC_ENABLE_DEMO: z
     .string()
     .optional()
@@ -72,6 +74,9 @@ export const isDemoMode = env.NEXT_PUBLIC_ENABLE_DEMO || !isSupabaseConfigured;
 export const isSiteAccessEnabled = env.SITE_ACCESS_ENABLED;
 export const siteAccessPassword = env.SITE_ACCESS_PASSWORD;
 export const adminEmails = env.ADMIN_EMAILS;
+export const recaptchaSiteKey = env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+export const recaptchaSecretKey = env.RECAPTCHA_SECRET_KEY;
+export const isRecaptchaConfigured = Boolean(env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) && Boolean(env.RECAPTCHA_SECRET_KEY);
 
 function normalizeDeploymentUrl(value?: string) {
   if (!value) {

@@ -1,5 +1,5 @@
 export type AppRole = "member" | "admin";
-export type OutingRole = "organizer" | "participant";
+export type OutingRole = "organizer" | "co_organizer" | "participant";
 export type OutingStatus = "planning" | "narrowed_down" | "booked" | "completed";
 export type InviteStatus = "pending" | "accepted" | "declined";
 export type DestinationType = "open" | "city" | "state" | "region" | "international";
@@ -14,6 +14,7 @@ export interface Profile {
   fullName: string;
   avatarUrl?: string | null;
   homeAirport?: string | null;
+  homeCity?: string | null;
   handicap?: string | null;
   appRole: AppRole;
   createdAt: string;
@@ -50,6 +51,7 @@ export interface Outing {
   status: OutingStatus;
   organizerWeighting: number;
   votingOpen: boolean;
+  golfOnly: boolean;
   teeTimeBookings: TeeTimeBooking[];
   createdAt: string;
 }

@@ -170,7 +170,7 @@ describe("lodging save permissions", () => {
           golfIntensity: "balanced",
           lodgingPreference: "resort",
           status: "planning",
-          organizerWeighting: 3, votingOpen: false,
+          organizerWeighting: 3, votingOpen: false, golfOnly: false,
           teeTimeBookings: [],
           createdAt: "2026-04-10T00:00:00Z"
         },
@@ -201,7 +201,7 @@ describe("lodging save permissions", () => {
           golfIntensity: "balanced",
           lodgingPreference: "resort",
           status: "planning",
-          organizerWeighting: 3, votingOpen: false,
+          organizerWeighting: 3, votingOpen: false, golfOnly: false,
           teeTimeBookings: [],
           createdAt: "2026-04-10T00:00:00Z"
         },

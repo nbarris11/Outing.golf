@@ -36,7 +36,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   const configuredAdmin = adminEmails.includes(email);
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("id,email,full_name,avatar_url,home_airport,handicap,app_role,created_at")
+    .select("id,email,full_name,avatar_url,home_airport,home_city,handicap,app_role,created_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -92,6 +92,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
       fullName: profileRow.full_name,
       avatarUrl: profileRow.avatar_url ?? null,
       homeAirport: profileRow.home_airport ?? null,
+      homeCity: profileRow.home_city ?? null,
       handicap: profileRow.handicap ?? null,
       appRole: desiredRole,
       createdAt: profileRow.created_at

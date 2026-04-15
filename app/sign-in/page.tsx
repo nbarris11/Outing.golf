@@ -1,10 +1,11 @@
 import { AuthCard } from "@/components/auth/auth-card";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { RecaptchaForm } from "@/components/auth/recaptcha-form";
 import { PageShell } from "@/components/layout/page-shell";
 import { FieldLabel, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { signInAction } from "@/lib/actions/auth";
-import { isDemoMode } from "@/lib/env";
+import { isDemoMode, recaptchaSiteKey } from "@/lib/env";
 import { logInfo } from "@/lib/logger";
 
 export default async function SignInPage({
@@ -23,7 +24,32 @@ export default async function SignInPage({
     });
   }
 
-  const formAction = isDemoMode ? "/api/demo/auth/sign-in" : signInAction;
+  const formContents = (
+    <>
+      <input type="hidden" name="next" value={next} />
+      {params.notice ? (
+        <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{params.notice}</p>
+      ) : null}
+      <div>
+        <FieldLabel htmlFor="email">Email</FieldLabel>
+        <Input id="email" name="email" type="email" placeholder="host@outing.golf" required />
+      </div>
+      <div>
+        <FieldLabel htmlFor="password">Password</FieldLabel>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Your password"
+          required
+        />
+      </div>
+      {params.error ? (
+        <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{params.error}</p>
+      ) : null}
+      <SubmitButton label="Sign in" pendingLabel="Signing in..." className="w-full" />
+    </>
+  );
 
   return (
     <PageShell>
@@ -42,30 +68,21 @@ export default async function SignInPage({
             </div>
           </>
         ) : null}
-        <form action={formAction} method={isDemoMode ? "post" : undefined} className="space-y-4">
-          <input type="hidden" name="next" value={next} />
-          {params.notice ? (
-            <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{params.notice}</p>
-          ) : null}
-          <div>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input id="email" name="email" type="email" placeholder="host@outing.golf" required />
-          </div>
-          <div>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Use any password in demo mode"
-              required
-            />
-          </div>
-          {params.error ? (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{params.error}</p>
-          ) : null}
-          <SubmitButton label="Sign in" pendingLabel="Signing in..." className="w-full" />
-        </form>
+
+        {isDemoMode ? (
+          <form action="/api/demo/auth/sign-in" method="post" className="space-y-4">
+            {formContents}
+          </form>
+        ) : (
+          <RecaptchaForm
+            action={signInAction}
+            recaptchaAction="sign_in"
+            siteKey={recaptchaSiteKey ?? ""}
+            className="space-y-4"
+          >
+            {formContents}
+          </RecaptchaForm>
+        )}
       </AuthCard>
     </PageShell>
   );

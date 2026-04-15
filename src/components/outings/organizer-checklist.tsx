@@ -14,6 +14,7 @@ interface OrganizerChecklistProps {
   hasSelectedLodging: boolean;  // lodging marked "in the trip"
   teeTimesCount: number;  // number of confirmed tee times entered
   isBooked: boolean;      // status === "booked"
+  golfOnly?: boolean;     // hotel opted out — skip lodging step
 }
 
 export function OrganizerChecklist({
@@ -26,7 +27,8 @@ export function OrganizerChecklist({
   selectedCoursesCount,
   hasSelectedLodging,
   teeTimesCount,
-  isBooked
+  isBooked,
+  golfOnly = false
 }: OrganizerChecklistProps) {
   const nonOrganizerMembers = Math.max(0, memberCount - 1);
   const groupJoined = nonOrganizerMembers > 0 || inviteCount > 0;
@@ -77,15 +79,19 @@ export function OrganizerChecklist({
       done: voteClosed
     },
     {
-      label: "Select course & lodging",
-      detail: selectedCoursesCount > 0 && hasSelectedLodging
-        ? `${selectedCoursesCount} course${selectedCoursesCount !== 1 ? "s" : ""} · lodging chosen`
-        : selectedCoursesCount > 0
-          ? `${selectedCoursesCount} course${selectedCoursesCount !== 1 ? "s" : ""} selected — pick lodging`
-          : hasSelectedLodging
-            ? "Lodging chosen — select a course"
-            : "Mark your course & lodging picks below",
-      done: selectedCoursesCount > 0 && hasSelectedLodging
+      label: golfOnly ? "Select course" : "Select course & lodging",
+      detail: golfOnly
+        ? selectedCoursesCount > 0
+          ? `${selectedCoursesCount} course${selectedCoursesCount !== 1 ? "s" : ""} selected`
+          : "Mark your course pick below"
+        : selectedCoursesCount > 0 && hasSelectedLodging
+          ? `${selectedCoursesCount} course${selectedCoursesCount !== 1 ? "s" : ""} · lodging chosen`
+          : selectedCoursesCount > 0
+            ? `${selectedCoursesCount} course${selectedCoursesCount !== 1 ? "s" : ""} selected — pick lodging`
+            : hasSelectedLodging
+              ? "Lodging chosen — select a course"
+              : "Mark your course & lodging picks below",
+      done: golfOnly ? selectedCoursesCount > 0 : selectedCoursesCount > 0 && hasSelectedLodging
     },
     {
       label: "Book tee times",

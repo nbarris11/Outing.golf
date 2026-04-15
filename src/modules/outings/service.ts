@@ -69,6 +69,7 @@ function mapOutingRow(row: Record<string, any>): Outing {
     status: row.status,
     organizerWeighting: row.organizer_weighting,
     votingOpen: row.voting_open ?? false,
+    golfOnly: row.golf_only ?? false,
     teeTimeBookings: Array.isArray(row.tee_time_bookings) ? row.tee_time_bookings : [],
     createdAt: row.created_at
   };

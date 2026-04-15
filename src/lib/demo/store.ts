@@ -76,6 +76,7 @@ const seedOuting: Outing = {
   status: "planning",
   organizerWeighting: 7,
   votingOpen: false,
+  golfOnly: false,
   teeTimeBookings: [],
   createdAt: now.toISOString()
 };

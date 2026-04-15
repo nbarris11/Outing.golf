@@ -29,7 +29,7 @@ describe("permissions", () => {
           golfIntensity: "balanced",
           lodgingPreference: "house",
           status: "planning",
-          organizerWeighting: 5, votingOpen: false,
+          organizerWeighting: 5, votingOpen: false, golfOnly: false,
           teeTimeBookings: [],
           createdAt: ""
         },

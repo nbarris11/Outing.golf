@@ -37,7 +37,10 @@ import {
   regenerateOutingInventoryAction,
   resendInviteAction,
   sendChatMessageInlineAction,
-  submitPreferencesAction
+  submitPreferencesAction,
+  toggleGolfOnlyAction,
+  assignCoOrganizerAction,
+  removeCoOrganizerAction
 } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
 import { getOutingShareLink } from "@/lib/outing-share-links";
@@ -141,7 +144,10 @@ export default async function OutingDetailPage({
     );
   }
 
-  const isOrganizer = detail.outing.organizerId === profile.id;
+  const isPrimaryOrganizer = detail.outing.organizerId === profile.id;
+  const isCoOrg = detail.members.some((m) => m.profileId === profile.id && m.role === "co_organizer");
+  // isOrganizer covers both the primary organizer and any co-organizer
+  const isOrganizer = isPrimaryOrganizer || isCoOrg;
 
   // Destination split is needed in both early-return preference forms and the main page
   const visibleDestinations = detail.destinations.filter((d) => !d.hidden);
@@ -558,11 +564,16 @@ export default async function OutingDetailPage({
 
   // Use selected lodging if any, then algorithm top pick
   // nightlyRate is per room — personsPerRoom is managed client-side via context
+  const golfOnly = detail.outing.golfOnly ?? false;
   const lodgingSource = selectedLodgingOption ?? detail.insights.topLodging ?? null;
   const lodgingNightlyRate = lodgingSource?.nightlyRate ?? null;
   // Server-side estimate uses 2 persons/room default (for the quick stats tile)
-  const estimatedPerPerson = golfPerPerson !== null && lodgingNightlyRate !== null
-    ? golfPerPerson + Math.round((lodgingNightlyRate / 2) * nights)
+  const estimatedPerPerson = golfPerPerson !== null
+    ? golfOnly
+      ? golfPerPerson
+      : lodgingNightlyRate !== null
+        ? golfPerPerson + Math.round((lodgingNightlyRate / 2) * nights)
+        : null
     : null;
 
   return (
@@ -1226,20 +1237,50 @@ export default async function OutingDetailPage({
             </Card>
 
             {/* Combined cost estimate — client component so personsPerRoom updates instantly */}
-            {golfPerPerson !== null && lodgingNightlyRate !== null && (
+            {golfPerPerson !== null && (golfOnly || lodgingNightlyRate !== null) && (
               <TripCostEstimate
                 golfPerPerson={golfPerPerson}
-                lodgingNightlyRate={lodgingNightlyRate}
+                lodgingNightlyRate={lodgingNightlyRate ?? 0}
                 nights={nights}
+                golfOnly={golfOnly}
                 golfLabel={
-                  selectedCourses.length > 0 && selectedLodgingOption
-                    ? `${selectedCourses.length} selected course${selectedCourses.length !== 1 ? "s" : ""} · ${selectedLodgingOption.name}`
+                  selectedCourses.length > 0 && (golfOnly || selectedLodgingOption)
+                    ? `${selectedCourses.length} selected course${selectedCourses.length !== 1 ? "s" : ""}${golfOnly ? " · golf only" : ` · ${selectedLodgingOption?.name}`}`
                     : golfCostCourses
                       ? `${golfCostCourses.length} course${golfCostCourses.length !== 1 ? "s" : ""} scheduled · ${totalScheduledRounds} round${totalScheduledRounds !== 1 ? "s" : ""}`
-                      : `Top-ranked golf & lodging · ${nights} nights · ${roundsPerPlayer} rounds`
+                      : `Top-ranked golf${golfOnly ? "" : " & lodging"} · ${nights} nights · ${roundsPerPlayer} rounds`
                 }
                 golfRoundsLabel={golfCostCourses ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`}
               />
+            )}
+
+            {/* Golf-only toggle — organizer only */}
+            {isOrganizer && (
+              <form action={toggleGolfOnlyAction} className="flex items-center gap-3 rounded-2xl border border-charcoal/8 bg-white px-4 py-3">
+                <input type="hidden" name="outingId" value={detail.outing.id} />
+                <input type="hidden" name="golfOnly" value={golfOnly ? "false" : "true"} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-charcoal">Golf only — no hotel</p>
+                  <p className="text-xs text-charcoal/50">
+                    {golfOnly ? "Hotel is excluded from the cost estimate." : "Toggle on to remove lodging from the cost estimate."}
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  className={[
+                    "relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors focus:outline-none",
+                    golfOnly ? "bg-forest-900" : "bg-charcoal/20"
+                  ].join(" ")}
+                  aria-label="Toggle golf-only mode"
+                >
+                  <span
+                    className={[
+                      "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-[left]",
+                      golfOnly ? "left-5" : "left-0.5"
+                    ].join(" ")}
+                  />
+                </button>
+              </form>
             )}
 
             {/* Chat — compact */}
@@ -1318,6 +1359,7 @@ export default async function OutingDetailPage({
                 hasSelectedLodging={selectedLodgingOption !== null}
                 teeTimesCount={(detail.outing.teeTimeBookings ?? []).length}
                 isBooked={detail.outing.status === "booked"}
+                golfOnly={golfOnly}
               />
             )}
 
@@ -1347,24 +1389,48 @@ export default async function OutingDetailPage({
               <div className="mt-4">
                 {detail.memberSnapshots.map((snapshot) => {
                   const person = profiles.find((item) => item.id === snapshot.member.profileId);
+                  const isThisOrganizer = snapshot.member.profileId === detail.outing.organizerId;
+                  const isCoOrganizer = snapshot.member.role === "co_organizer";
+                  const isParticipant = snapshot.member.role === "participant";
+                  const isCurrentUser = snapshot.member.profileId === profile.id;
                   return (
                     <div key={snapshot.member.id}>
                       <MemberRow
                         person={person}
                         responded={snapshot.responded}
-                        role={labelize(snapshot.member.role)}
+                        role={isCoOrganizer ? "Co-organizer" : labelize(snapshot.member.role)}
                         homeCity={snapshot.preference?.homeCity}
                       />
-                      {!snapshot.responded && snapshot.member.profileId !== profile.id && isOrganizer && (
-                        <div className="mb-1 flex justify-end">
-                          <form action={nudgeMemberAction}>
-                            <input type="hidden" name="outingId" value={detail.outing.id} />
-                            <input type="hidden" name="memberProfileId" value={snapshot.member.profileId} />
-                            <input type="hidden" name="memberEmail" value={person?.email ?? ""} />
-                            <Button type="submit" variant="secondary" className="px-3 py-1.5 text-xs">
-                              Send reminder
-                            </Button>
-                          </form>
+                      {/* Organizer controls: nudge + co-organizer assignment (primary organizer only for role changes) */}
+                      {isOrganizer && !isCurrentUser && !isThisOrganizer && (
+                        <div className="mb-1 flex flex-wrap justify-end gap-2">
+                          {!snapshot.responded && (
+                            <form action={nudgeMemberAction}>
+                              <input type="hidden" name="outingId" value={detail.outing.id} />
+                              <input type="hidden" name="memberProfileId" value={snapshot.member.profileId} />
+                              <input type="hidden" name="memberEmail" value={person?.email ?? ""} />
+                              <Button type="submit" variant="secondary" className="px-3 py-1.5 text-xs">
+                                Send reminder
+                              </Button>
+                            </form>
+                          )}
+                          {isPrimaryOrganizer && isCoOrganizer ? (
+                            <form action={removeCoOrganizerAction}>
+                              <input type="hidden" name="outingId" value={detail.outing.id} />
+                              <input type="hidden" name="memberId" value={snapshot.member.id} />
+                              <Button type="submit" variant="secondary" className="px-3 py-1.5 text-xs text-charcoal/60">
+                                Remove co-organizer
+                              </Button>
+                            </form>
+                          ) : isPrimaryOrganizer && isParticipant ? (
+                            <form action={assignCoOrganizerAction}>
+                              <input type="hidden" name="outingId" value={detail.outing.id} />
+                              <input type="hidden" name="memberId" value={snapshot.member.id} />
+                              <Button type="submit" variant="secondary" className="px-3 py-1.5 text-xs">
+                                Make co-organizer
+                              </Button>
+                            </form>
+                          ) : null}
                         </div>
                       )}
                     </div>

@@ -55,6 +55,10 @@ const createOutingSchema = z
   // Multi-window support: dateStart_0 / dateEnd_0, dateStart_1 / dateEnd_1, …
   dateWindowCount: z.coerce.number().min(1).max(4).optional(),
   organizerWeighting: z.coerce.number().min(1).max(10).default(7),
+  golfOnly: z
+    .string()
+    .optional()
+    .transform((value) => value === "true"),
   initialInviteEmail: z
     .string()
     .trim()
@@ -279,6 +283,7 @@ function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerI
     notes: input.notes,
     status: "planning",
     organizerWeighting: input.organizerWeighting,
+    golfOnly: input.golfOnly ?? false,
     teeTimeBookings: [],
     votingOpen: false
   };
@@ -567,6 +572,7 @@ export async function createOutingAction(formData: FormData) {
         lodgingPreference: outingDraft.lodgingPreference,
         notes: outingDraft.notes,
         organizerWeighting: outingDraft.organizerWeighting,
+        golfOnly: outingDraft.golfOnly ?? false,
         teeTimeBookings: [],
         votingOpen: false
       });
@@ -611,7 +617,8 @@ export async function createOutingAction(formData: FormData) {
         golf_intensity: outing.golfIntensity,
         lodging_preference: outing.lodgingPreference,
         notes: outing.notes ?? null,
-        organizer_weighting: outing.organizerWeighting
+        organizer_weighting: outing.organizerWeighting,
+        golf_only: outing.golfOnly ?? false
       });
 
       if (outingError) {
@@ -1467,6 +1474,68 @@ export async function updateOutingAction(formData: FormData) {
   redirect(`/outings/${outingId}?success=Trip%20updated`);
 }
 
+// ── Golf-only toggle ─────────────────────────────────────────────────────────
+
+export async function toggleGolfOnlyAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  const golfOnly = formData.get("golfOnly") === "true";
+
+  if (isDemoMode) {
+    await updateDemoOuting(outingId, profile.id, { golfOnly } as any);
+    revalidatePath(`/outings/${outingId}`);
+    return;
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const supabase = await createSupabaseServerClient();
+  const client = adminClient ?? supabase;
+  if (!client) return;
+
+  const { data: outing } = await client.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
+  if (!outing || (outing.organizer_id !== profile.id && !isAdmin(profile))) return;
+
+  await client.from("outings").update({ golf_only: golfOnly }).eq("id", outingId);
+  revalidatePath(`/outings/${outingId}`);
+}
+
+// ── Co-organizer management ───────────────────────────────────────────────────
+
+export async function assignCoOrganizerAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  const memberId = String(formData.get("memberId") ?? "").trim(); // outing_members.id
+
+  const adminClient = createSupabaseAdminClient();
+  const supabase = await createSupabaseServerClient();
+  const client = adminClient ?? supabase;
+  if (!client) return;
+
+  // Only the organizer (not even co-organizer) can assign a co-organizer
+  const { data: outing } = await client.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  await client.from("outing_members").update({ role: "co_organizer" }).eq("id", memberId).eq("outing_id", outingId);
+  revalidatePath(`/outings/${outingId}`);
+}
+
+export async function removeCoOrganizerAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = String(formData.get("outingId") ?? "").trim();
+  const memberId = String(formData.get("memberId") ?? "").trim();
+
+  const adminClient = createSupabaseAdminClient();
+  const supabase = await createSupabaseServerClient();
+  const client = adminClient ?? supabase;
+  if (!client) return;
+
+  const { data: outing } = await client.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  await client.from("outing_members").update({ role: "participant" }).eq("id", memberId).eq("outing_id", outingId);
+  revalidatePath(`/outings/${outingId}`);
+}
+
 // ── Group voting actions ──────────────────────────────────────────────────────
 
 export async function openVotingAction(formData: FormData) {
@@ -1695,6 +1764,7 @@ export async function regenerateOutingInventoryAction(outingId: string) {
     organizerWeighting: outingRow.organizer_weighting,
     teeTimeBookings: Array.isArray(outingRow.tee_time_bookings) ? outingRow.tee_time_bookings : [],
     votingOpen: outingRow.voting_open ?? false,
+    golfOnly: outingRow.golf_only ?? false,
     createdAt: outingRow.created_at
   };
 

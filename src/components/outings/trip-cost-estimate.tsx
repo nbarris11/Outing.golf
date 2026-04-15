@@ -16,6 +16,7 @@ interface TripCostEstimateProps {
   nights: number;
   golfLabel: string;
   golfRoundsLabel: string;
+  golfOnly?: boolean;
 }
 
 export function TripCostEstimate({
@@ -23,11 +24,12 @@ export function TripCostEstimate({
   lodgingNightlyRate,
   nights,
   golfLabel,
-  golfRoundsLabel
+  golfRoundsLabel,
+  golfOnly = false
 }: TripCostEstimateProps) {
   const { personsPerRoom, setPersonsPerRoom } = usePersonsPerRoom();
 
-  const lodgingPerPerson = Math.round((lodgingNightlyRate / personsPerRoom) * nights);
+  const lodgingPerPerson = golfOnly ? 0 : Math.round((lodgingNightlyRate / personsPerRoom) * nights);
   const total = golfPerPerson + lodgingPerPerson;
 
   return (
@@ -39,34 +41,41 @@ export function TripCostEstimate({
             {currency(total)}
           </p>
           <p className="mt-1 text-sm text-cream/55">{golfLabel}</p>
+          {golfOnly && (
+            <p className="mt-1 text-xs text-cream/40">Golf only — no lodging included</p>
+          )}
         </div>
         <div className="space-y-2 text-sm text-cream/65">
           <p>{currency(golfPerPerson)} golf ({golfRoundsLabel})</p>
-          <div className="flex items-center gap-2">
-            <span>{currency(lodgingPerPerson)} lodging</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-cream/40">({nights}n ÷</span>
-              <div className="flex gap-0.5">
-                {[1, 2, 3, 4].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setPersonsPerRoom(n)}
-                    title={`${n} person${n !== 1 ? "s" : ""} per room`}
-                    className={[
-                      "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold transition-colors",
-                      personsPerRoom === n
-                        ? "bg-cream text-forest-950"
-                        : "bg-cream/15 text-cream/60 hover:bg-cream/25"
-                    ].join(" ")}
-                  >
-                    {n}
-                  </button>
-                ))}
+          {golfOnly ? (
+            <p className="text-xs text-cream/40 italic">Lodging not included for this trip</p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span>{currency(lodgingPerPerson)} lodging</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-cream/40">({nights}n ÷</span>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setPersonsPerRoom(n)}
+                      title={`${n} person${n !== 1 ? "s" : ""} per room`}
+                      className={[
+                        "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold transition-colors",
+                        personsPerRoom === n
+                          ? "bg-cream text-forest-950"
+                          : "bg-cream/15 text-cream/60 hover:bg-cream/25"
+                      ].join(" ")}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-cream/40">pp)</span>
               </div>
-              <span className="text-xs text-cream/40">pp)</span>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

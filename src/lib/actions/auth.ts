@@ -8,6 +8,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { getDemoProfileByEmail, createDemoUser } from "@/lib/demo/store";
 import { clearDemoSession, setDemoSession } from "@/lib/demo/session";
 import { isDemoMode, isProductionEnvironment, publicAppUrl } from "@/lib/env";
+import { verifyRecaptcha } from "@/lib/recaptcha";
 import { logError } from "@/lib/logger";
 import {
   getExpiredSupabaseCookieOptions,
@@ -19,10 +20,16 @@ export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "").trim();
+  const recaptchaToken = formData.get("recaptchaToken") as string | null;
   let destination = next.startsWith("/") ? next : "/dashboard";
 
   if (!email) {
     redirect("/sign-in?error=Missing%20email");
+  }
+
+  const recaptchaOk = await verifyRecaptcha(recaptchaToken);
+  if (!recaptchaOk) {
+    redirect("/sign-in?error=Security+check+failed.+Please+try+again.");
   }
 
   try {
@@ -65,10 +72,27 @@ export async function signUpAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("fullName") ?? "").trim();
   const next = String(formData.get("next") ?? "").trim();
+  const recaptchaToken = formData.get("recaptchaToken") as string | null;
   let destination = next.startsWith("/") ? next : "/dashboard";
 
   if (!email || !fullName) {
     redirect("/sign-up?error=Missing%20required%20fields");
+  }
+
+  const recaptchaOk = await verifyRecaptcha(recaptchaToken);
+  if (!recaptchaOk) {
+    redirect("/sign-up?error=Security+check+failed.+Please+try+again.");
+  }
+
+  // Password strength validation (skip in demo mode)
+  if (!isDemoMode) {
+    const pwErrors: string[] = [];
+    if (password.length < 8) pwErrors.push("at least 8 characters");
+    if (!/\d/.test(password)) pwErrors.push("a number");
+    if (!/[!@#$%^&*()\-_=+[\]{};:'",.<>?/\\|`~]/.test(password)) pwErrors.push("a special character");
+    if (pwErrors.length > 0) {
+      redirect(`/sign-up?error=${encodeURIComponent("Password must include " + pwErrors.join(", "))}`);
+    }
   }
 
   try {
