@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { AddDestinationForm, AddGolfCourseForm, AddLodgingForm } from "@/components/outings/add-option-form";
+import { OrganizerChecklist } from "@/components/outings/organizer-checklist";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
@@ -1218,6 +1219,19 @@ export default async function OutingDetailPage({
 
           {/* ── Right column ── */}
           <div className="space-y-6">
+
+            {/* ── Organizer checklist ── */}
+            {isOrganizer && (
+              <OrganizerChecklist
+                memberCount={detail.members.length}
+                inviteCount={detail.invites.length}
+                respondedCount={detail.insights.respondedCount}
+                votingEverOpened={votingOpen || allVotes.length > 0}
+                votingOpen={votingOpen}
+                hasVotes={allVotes.length > 0}
+                isBooked={detail.outing.status === "booked"}
+              />
+            )}
 
             {/* ── Group: single combined section ── */}
             <Card id="group">
