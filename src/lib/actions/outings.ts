@@ -10,11 +10,13 @@ import { z } from "zod";
 import { requireProfile } from "@/lib/auth";
 import {
   addDemoChatMessage,
+  addDemoOption,
   createDemoInvite,
   createDemoOuting,
   joinDemoOuting,
   resendDemoInvite,
   updateDemoOuting,
+  updateOptionFlags,
   upsertDemoPreference
 } from "@/lib/demo/store";
 import { isDemoMode, publicAppUrl } from "@/lib/env";
@@ -25,7 +27,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canManageOuting, isAdmin } from "@/modules/outings/permissions";
 import { fetchOutingInventory } from "@/modules/providers/inventory-service";
-import type { ChatMessage, Outing } from "@/types/domain";
+import { generateId } from "@/lib/utils";
+import type { ChatMessage, DestinationOption, GolfCourseOption, LodgingOption, LodgingType, Outing } from "@/types/domain";
 
 const createOutingSchema = z
   .object({
@@ -1824,3 +1827,223 @@ export async function toggleFavoriteAction(
 
   revalidatePath(`/outings/${outingId}`);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Option management — organizer hide/restore + add custom options
+// ─────────────────────────────────────────────────────────────────────────────
+
+const OPTION_TABLE_MAP: Record<string, string> = {
+  destinationOptions: "destination_options",
+  golfCourseOptions: "golf_course_options",
+  lodgingOptions: "lodging_options"
+};
+
+export async function hideOptionAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = formData.get("outingId")?.toString() ?? "";
+  const collection = formData.get("collection")?.toString() as
+    "destinationOptions" | "golfCourseOptions" | "lodgingOptions";
+  const optionId = formData.get("optionId")?.toString() ?? "";
+
+  if (!outingId || !collection || !optionId) return;
+
+  if (isDemoMode) {
+    const { getDemoState } = await import("@/lib/demo/store");
+    const state = await getDemoState();
+    const outing = state.outings.find((o) => o.id === outingId);
+    if (!outing || outing.organizerId !== profile.id) return;
+    await updateOptionFlags({ collection, id: optionId, field: "hidden" });
+    revalidatePath(`/outings/${outingId}`);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  const { data: outing } = await supabase
+    .from("outings")
+    .select("organizer_id")
+    .eq("id", outingId)
+    .maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  const table = OPTION_TABLE_MAP[collection];
+  if (!table) return;
+
+  const { data: row } = await (supabase as any).from(table).select("hidden").eq("id", optionId).maybeSingle();
+  if (!row) return;
+
+  await (supabase as any).from(table).update({ hidden: !row.hidden }).eq("id", optionId).eq("outing_id", outingId);
+  revalidatePath(`/outings/${outingId}`);
+}
+
+export async function addCustomDestinationAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = formData.get("outingId")?.toString() ?? "";
+  const name = formData.get("name")?.toString().trim() ?? "";
+  const region = formData.get("region")?.toString().trim() ?? "";
+
+  if (!outingId || !name) return;
+
+  const newOption: DestinationOption = {
+    id: generateId("dest"),
+    outingId,
+    providerKey: "custom",
+    name,
+    region: region || name,
+    driveHours: null,
+    flightHours: null,
+    averageNightlyRate: 0,
+    averageRoundCost: 0,
+    tags: ["custom"],
+    summary: `${name} — added by organizer`,
+    featured: false,
+    hidden: false
+  };
+
+  if (isDemoMode) {
+    await addDemoOption("destinationOptions", newOption, outingId, profile.id);
+    revalidatePath(`/outings/${outingId}`);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+  const { data: outing } = await supabase.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  await supabase.from("destination_options").insert({
+    id: newOption.id,
+    outing_id: outingId,
+    provider_key: "custom",
+    name: newOption.name,
+    region: newOption.region,
+    drive_hours: null,
+    flight_hours: null,
+    average_nightly_rate: 0,
+    average_round_cost: 0,
+    tags: ["custom"],
+    summary: newOption.summary,
+    featured: false,
+    hidden: false
+  });
+  revalidatePath(`/outings/${outingId}`);
+}
+
+export async function addCustomGolfCourseAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = formData.get("outingId")?.toString() ?? "";
+  const name = formData.get("name")?.toString().trim() ?? "";
+  const locationLabel = formData.get("locationLabel")?.toString().trim() ?? "";
+  const averageGreensFee = Math.max(0, Number(formData.get("averageGreensFee") ?? 0));
+  const destinationOptionId = formData.get("destinationOptionId")?.toString() ?? "";
+
+  if (!outingId || !name) return;
+
+  const newOption: GolfCourseOption = {
+    id: generateId("course"),
+    outingId,
+    destinationOptionId,
+    providerKey: "custom",
+    name,
+    locationLabel: locationLabel || name,
+    averageGreensFee,
+    qualityScore: 70,
+    rideFriendly: true,
+    walkingFriendly: true,
+    summary: `${name} — added by organizer`,
+    tags: ["custom"],
+    featured: false,
+    hidden: false,
+    scheduleDay: null,
+    scheduleRounds: 1,
+    dayLabel: null
+  };
+
+  if (isDemoMode) {
+    await addDemoOption("golfCourseOptions", newOption, outingId, profile.id);
+    revalidatePath(`/outings/${outingId}`);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+  const { data: outing } = await supabase.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  await supabase.from("golf_course_options").insert({
+    id: newOption.id,
+    outing_id: outingId,
+    destination_option_id: destinationOptionId || null,
+    provider_key: "custom",
+    name: newOption.name,
+    location_label: newOption.locationLabel,
+    average_greens_fee: newOption.averageGreensFee,
+    quality_score: 70,
+    ride_friendly: true,
+    walking_friendly: true,
+    summary: newOption.summary,
+    tags: ["custom"],
+    featured: false,
+    hidden: false,
+    schedule_day: null,
+    schedule_rounds: 1,
+    day_label: null
+  });
+  revalidatePath(`/outings/${outingId}`);
+}
+
+export async function addCustomLodgingAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = formData.get("outingId")?.toString() ?? "";
+  const name = formData.get("name")?.toString().trim() ?? "";
+  const nightlyRate = Math.max(0, Number(formData.get("nightlyRate") ?? 0));
+  const lodgingType = (formData.get("lodgingType")?.toString() ?? "hotel") as LodgingType;
+  const destinationOptionId = formData.get("destinationOptionId")?.toString() ?? "";
+  const sleeps = Math.max(1, Number(formData.get("sleeps") ?? 8));
+
+  if (!outingId || !name) return;
+
+  const newOption: LodgingOption = {
+    id: generateId("lodging"),
+    outingId,
+    destinationOptionId,
+    providerKey: "custom",
+    name,
+    nightlyRate,
+    lodgingType,
+    sleeps,
+    summary: `${name} — added by organizer`,
+    tags: ["custom"],
+    featured: false,
+    hidden: false
+  };
+
+  if (isDemoMode) {
+    await addDemoOption("lodgingOptions", newOption, outingId, profile.id);
+    revalidatePath(`/outings/${outingId}`);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+  const { data: outing } = await supabase.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  await supabase.from("lodging_options").insert({
+    id: newOption.id,
+    outing_id: outingId,
+    destination_option_id: destinationOptionId || null,
+    provider_key: "custom",
+    name: newOption.name,
+    nightly_rate: newOption.nightlyRate,
+    lodging_type: newOption.lodgingType,
+    sleeps: newOption.sleeps,
+    summary: newOption.summary,
+    tags: ["custom"],
+    featured: false,
+    hidden: false
+  });
+  revalidatePath(`/outings/${outingId}`);
+}
+

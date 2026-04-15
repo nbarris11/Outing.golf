@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
+import { AddDestinationForm, AddGolfCourseForm, AddLodgingForm } from "@/components/outings/add-option-form";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
@@ -17,7 +18,11 @@ import { Card } from "@/components/ui/card";
 import { FieldLabel, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import {
+  addCustomDestinationAction,
+  addCustomGolfCourseAction,
+  addCustomLodgingAction,
   closeVotingAction,
+  hideOptionAction,
   inviteMemberAction,
   markAsBookedAction,
   nudgeMemberAction,
@@ -130,6 +135,10 @@ export default async function OutingDetailPage({
 
   const isOrganizer = detail.outing.organizerId === profile.id;
 
+  // Destination split is needed in both early-return preference forms and the main page
+  const visibleDestinations = detail.destinations.filter((d) => !d.hidden);
+  const hiddenDestinations = isOrganizer ? detail.destinations.filter((d) => d.hidden) : [];
+
   // Redirect members (non-organizers) to Trip HQ when outing is booked.
   // Organizer stays on this page so they can manage settings even after booking.
   if (!isOrganizer && (detail.outing.status === "booked" || detail.outing.status === "completed")) {
@@ -219,11 +228,11 @@ export default async function OutingDetailPage({
                 </div>
               </div>
 
-              {detail.destinations.length > 0 ? (
+              {visibleDestinations.length > 0 ? (
                 <div>
                   <FieldLabel>Destination lean (optional)</FieldLabel>
                   <div className="mt-2 space-y-2">
-                    {detail.destinations.map((dest) => (
+                    {visibleDestinations.map((dest) => (
                       <label
                         key={dest.id}
                         className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"
@@ -460,6 +469,14 @@ export default async function OutingDetailPage({
     return true;
   });
 
+  // Split visible / hidden options (organizer sees both; members only see visible)
+  const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
+  const hiddenCourses = isOrganizer ? detail.golfCourses.filter((c) => c.hidden) : [];
+  const visibleLodging = dedupedLodging.filter((s) => !s.hidden);
+  const hiddenLodging = isOrganizer ? dedupedLodging.filter((s) => s.hidden) : [];
+  // First destination for linking custom courses/lodging
+  const primaryDestinationId = detail.destinations[0]?.id ?? "";
+
   // Cost estimates
   const tripWindow = detail.outing.preferredDateWindows[0];
   const nights = tripWindow
@@ -497,9 +514,9 @@ export default async function OutingDetailPage({
     return allVotes.filter((v) => v.entityType === entityType && v.entityId === entityId).length;
   }
 
-  // Top 3 courses and lodging for the voting zone
-  const top3Courses = detail.golfCourses.slice(0, 3);
-  const top3Lodging = dedupedLodging.slice(0, 3);
+  // Top 3 visible courses and lodging for the voting zone
+  const top3Courses = visibleCourses.slice(0, 3);
+  const top3Lodging = visibleLodging.slice(0, 3);
   const totalVoters = progressTarget;
 
   // Per-person cost estimate
@@ -895,7 +912,7 @@ export default async function OutingDetailPage({
                 </div>
               </div>
 
-              {detail.golfCourses.length === 0 ? (
+              {visibleCourses.length === 0 && hiddenCourses.length === 0 ? (
                 <div className="mt-4 rounded-[22px] border border-dashed border-amber-200 bg-amber-50 px-5 py-5 text-center">
                   <p className="text-sm font-medium text-amber-800">⏳ No golf courses found yet</p>
                   <p className="mt-1 text-xs text-amber-700/70">
@@ -906,7 +923,7 @@ export default async function OutingDetailPage({
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {detail.golfCourses.map((course) => {
+                  {visibleCourses.map((course) => {
                     const isTop = course.id === detail.insights.topCourse?.id;
                     const courseRounds = course.scheduleRounds ?? 1;
                     const courseGolfCost = course.averageGreensFee * courseRounds;
@@ -921,6 +938,7 @@ export default async function OutingDetailPage({
                               <p className="font-semibold text-charcoal">{course.name}</p>
                               {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
                               {course.featured && <Badge className="bg-forest-900 text-cream">★ Pick</Badge>}
+                              {course.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
                               {tally > 0 && votingOpen && (
                                 <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
                               )}
@@ -966,7 +984,7 @@ export default async function OutingDetailPage({
                                 scheduleRounds={course.scheduleRounds ?? 1}
                               />
                             )}
-                            {isOrganizer && detail.golfCourses.length > 1 && (
+                            {isOrganizer && visibleCourses.length > 1 && (
                               <CourseScheduleSelector
                                 outingId={detail.outing.id}
                                 courseId={course.id}
@@ -982,11 +1000,54 @@ export default async function OutingDetailPage({
                             >
                               Find tee times →
                             </a>
+                            {isOrganizer && (
+                              <form action={hideOptionAction}>
+                                <input type="hidden" name="outingId" value={detail.outing.id} />
+                                <input type="hidden" name="collection" value="golfCourseOptions" />
+                                <input type="hidden" name="optionId" value={course.id} />
+                                <button type="submit" className="rounded-full px-2.5 py-1.5 text-xs text-charcoal/35 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hide this option">
+                                  × Hide
+                                </button>
+                              </form>
+                            )}
                           </div>
                         </div>
                       </div>
                     );
                   })}
+
+                  {/* Hidden courses — restore section (organizer only) */}
+                  {isOrganizer && hiddenCourses.length > 0 && (
+                    <details className="rounded-[18px] border border-dashed border-charcoal/12 px-4 py-2">
+                      <summary className="cursor-pointer list-none text-xs text-charcoal/40 hover:text-charcoal/60">
+                        {hiddenCourses.length} hidden course{hiddenCourses.length !== 1 ? "s" : ""} — click to restore
+                      </summary>
+                      <div className="mt-2 space-y-1.5">
+                        {hiddenCourses.map((course) => (
+                          <div key={course.id} className="flex items-center justify-between rounded-xl bg-charcoal/4 px-3 py-2">
+                            <span className="text-xs text-charcoal/50 line-through">{course.name}</span>
+                            <form action={hideOptionAction}>
+                              <input type="hidden" name="outingId" value={detail.outing.id} />
+                              <input type="hidden" name="collection" value="golfCourseOptions" />
+                              <input type="hidden" name="optionId" value={course.id} />
+                              <button type="submit" className="rounded-full px-3 py-1 text-xs font-medium text-forest-900 hover:bg-forest-900/10 transition-colors">
+                                ↩ Restore
+                              </button>
+                            </form>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+
+                  {/* Add custom course */}
+                  {isOrganizer && (
+                    <AddGolfCourseForm
+                      outingId={detail.outing.id}
+                      destinationOptionId={primaryDestinationId}
+                      addAction={addCustomGolfCourseAction}
+                    />
+                  )}
                 </div>
               )}
             </Card>
@@ -1003,7 +1064,7 @@ export default async function OutingDetailPage({
                 <p className="text-sm text-charcoal/50">{nights} nights · {players} players</p>
               </div>
 
-              {dedupedLodging.length === 0 ? (
+              {visibleLodging.length === 0 && hiddenLodging.length === 0 ? (
                 <div className="mt-4 rounded-[22px] border border-dashed border-amber-200 bg-amber-50 px-5 py-5 text-center">
                   <p className="text-sm font-medium text-amber-800">⏳ Finding lodging options…</p>
                   <p className="mt-1 text-xs text-amber-700/70">Lodging options are being pulled in — refresh in a few seconds.</p>
@@ -1011,7 +1072,7 @@ export default async function OutingDetailPage({
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {dedupedLodging.map((stay) => {
+                  {visibleLodging.map((stay) => {
                     const isTop = stay.id === detail.insights.topLodging?.id;
                     const tally = voteTally("lodging", stay.id);
                     const favCount = favoriteCount("lodging", stay.id);
@@ -1024,6 +1085,7 @@ export default async function OutingDetailPage({
                               <p className="font-semibold text-charcoal">{stay.name}</p>
                               {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
                               {stay.featured && <Badge className="bg-forest-900 text-cream">★ Pick</Badge>}
+                              {stay.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
                               {tally > 0 && votingOpen && (
                                 <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
                               )}
@@ -1065,11 +1127,55 @@ export default async function OutingDetailPage({
                             >
                               View on Maps →
                             </a>
+                            {isOrganizer && (
+                              <form action={hideOptionAction}>
+                                <input type="hidden" name="outingId" value={detail.outing.id} />
+                                <input type="hidden" name="collection" value="lodgingOptions" />
+                                <input type="hidden" name="optionId" value={stay.id} />
+                                <button type="submit" className="rounded-full px-2.5 py-1.5 text-xs text-charcoal/35 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hide this option">
+                                  × Hide
+                                </button>
+                              </form>
+                            )}
                           </div>
                         </div>
                       </div>
                     );
                   })}
+
+                  {/* Hidden lodging — restore section (organizer only) */}
+                  {isOrganizer && hiddenLodging.length > 0 && (
+                    <details className="rounded-[18px] border border-dashed border-charcoal/12 px-4 py-2">
+                      <summary className="cursor-pointer list-none text-xs text-charcoal/40 hover:text-charcoal/60">
+                        {hiddenLodging.length} hidden option{hiddenLodging.length !== 1 ? "s" : ""} — click to restore
+                      </summary>
+                      <div className="mt-2 space-y-1.5">
+                        {hiddenLodging.map((stay) => (
+                          <div key={stay.id} className="flex items-center justify-between rounded-xl bg-charcoal/4 px-3 py-2">
+                            <span className="text-xs text-charcoal/50 line-through">{stay.name}</span>
+                            <form action={hideOptionAction}>
+                              <input type="hidden" name="outingId" value={detail.outing.id} />
+                              <input type="hidden" name="collection" value="lodgingOptions" />
+                              <input type="hidden" name="optionId" value={stay.id} />
+                              <button type="submit" className="rounded-full px-3 py-1 text-xs font-medium text-forest-900 hover:bg-forest-900/10 transition-colors">
+                                ↩ Restore
+                              </button>
+                            </form>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+
+                  {/* Add custom lodging */}
+                  {isOrganizer && (
+                    <AddLodgingForm
+                      outingId={detail.outing.id}
+                      destinationOptionId={primaryDestinationId}
+                      defaultSleeps={players}
+                      addAction={addCustomLodgingAction}
+                    />
+                  )}
                 </div>
               )}
 
@@ -1339,6 +1445,54 @@ export default async function OutingDetailPage({
               </div>
             ) : null}
 
+            {/* ── Destination management (organizer only) ── */}
+            {isOrganizer && (
+              <div className="rounded-[22px] border border-charcoal/8 bg-white px-5 py-4">
+                <p className="text-sm font-semibold text-charcoal">📍 Destination options</p>
+                <p className="mt-0.5 text-xs text-charcoal/50">
+                  These appear as vote choices for the group.
+                </p>
+                <div className="mt-3 space-y-1.5">
+                  {visibleDestinations.map((dest) => (
+                    <div key={dest.id} className="flex items-center justify-between rounded-xl bg-cream px-3 py-2">
+                      <span className="text-xs font-medium text-charcoal">{dest.name}</span>
+                      <form action={hideOptionAction}>
+                        <input type="hidden" name="outingId" value={detail.outing.id} />
+                        <input type="hidden" name="collection" value="destinationOptions" />
+                        <input type="hidden" name="optionId" value={dest.id} />
+                        <button type="submit" className="rounded-full px-2 py-0.5 text-xs text-charcoal/35 hover:bg-red-50 hover:text-red-500 transition-colors">
+                          × Hide
+                        </button>
+                      </form>
+                    </div>
+                  ))}
+                  {hiddenDestinations.length > 0 && (
+                    <details className="rounded-xl border border-dashed border-charcoal/12 px-3 py-1.5">
+                      <summary className="cursor-pointer list-none text-xs text-charcoal/40">
+                        {hiddenDestinations.length} hidden — restore
+                      </summary>
+                      <div className="mt-1.5 space-y-1">
+                        {hiddenDestinations.map((dest) => (
+                          <div key={dest.id} className="flex items-center justify-between rounded-xl bg-charcoal/4 px-2 py-1.5">
+                            <span className="text-xs text-charcoal/45 line-through">{dest.name}</span>
+                            <form action={hideOptionAction}>
+                              <input type="hidden" name="outingId" value={detail.outing.id} />
+                              <input type="hidden" name="collection" value="destinationOptions" />
+                              <input type="hidden" name="optionId" value={dest.id} />
+                              <button type="submit" className="text-xs font-medium text-forest-900 hover:underline">
+                                ↩ Restore
+                              </button>
+                            </form>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+                <AddDestinationForm outingId={detail.outing.id} addAction={addCustomDestinationAction} />
+              </div>
+            )}
+
             {/* ── Organizer actions ── */}
             {isOrganizer && (
               <div className="space-y-3">
@@ -1356,7 +1510,7 @@ export default async function OutingDetailPage({
                 </div>
 
                 {/* Open vote (only when not yet open and there are options to vote on) */}
-                {!votingOpen && (detail.golfCourses.length >= 2 || dedupedLodging.length >= 2) && (
+                {!votingOpen && (visibleCourses.length >= 2 || visibleLodging.length >= 2) && (
                   <div className="rounded-[22px] border border-charcoal/10 bg-white px-5 py-4">
                     <p className="text-sm font-semibold text-charcoal">Ready to let the group vote?</p>
                     <p className="mt-1 text-xs text-charcoal/55">
@@ -1370,7 +1524,7 @@ export default async function OutingDetailPage({
                 )}
 
                 {/* Compare & finalize CTA */}
-                {(detail.destinations.length > 0 || detail.golfCourses.length > 0) && detail.insights.respondedCount >= 1 && (
+                {(visibleDestinations.length > 0 || visibleCourses.length > 0) && detail.insights.respondedCount >= 1 && (
                   <div className="rounded-[22px] border-2 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)] px-5 py-4">
                     <p className="text-xs uppercase tracking-[0.2em] text-emerald-800/60">Next step</p>
                     <h2 className="mt-1.5 text-base font-semibold tracking-[-0.02em] text-charcoal">
@@ -1454,11 +1608,11 @@ function PreferencesFormFields({
         </div>
       </div>
 
-      {detail.destinations.length > 0 && (
+      {detail.destinations.filter((d) => !d.hidden).length > 0 && (
         <div>
           <FieldLabel>Destination lean (optional)</FieldLabel>
           <div className="mt-2 space-y-2">
-            {detail.destinations.map((dest) => (
+            {detail.destinations.filter((d) => !d.hidden).map((dest) => (
               <label
                 key={dest.id}
                 className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"

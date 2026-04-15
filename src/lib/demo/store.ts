@@ -525,3 +525,17 @@ export async function updateOptionFlags(input: {
   await writeState(state);
   return option;
 }
+
+export async function addDemoOption(
+  collection: "destinationOptions" | "golfCourseOptions" | "lodgingOptions",
+  option: DestinationOption | GolfCourseOption | LodgingOption,
+  outingId: string,
+  organizerId: string
+) {
+  const state = await readState();
+  const outing = state.outings.find((o) => o.id === outingId);
+  if (!outing || outing.organizerId !== organizerId) return null;
+  (state[collection] as Array<DestinationOption | GolfCourseOption | LodgingOption>).push(option);
+  await writeState(state);
+  return option;
+}
