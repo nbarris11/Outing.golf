@@ -1035,6 +1035,15 @@ export default async function OutingDetailPage({
                             >
                               Find tee times →
                             </a>
+                            <a
+                              href={`https://www.google.com/search?q=${encodeURIComponent(`${course.name}${course.locationLabel ? " " + course.locationLabel : ""} phone number`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Look up phone number"
+                              className="inline-flex items-center gap-1 rounded-full border border-charcoal/15 bg-white px-3 py-1.5 text-xs font-medium text-charcoal/60 hover:border-charcoal/30 hover:text-charcoal transition-colors"
+                            >
+                              📞 Call
+                            </a>
                             {isOrganizer && (
                               <form action={hideOptionAction}>
                                 <input type="hidden" name="outingId" value={detail.outing.id} />
