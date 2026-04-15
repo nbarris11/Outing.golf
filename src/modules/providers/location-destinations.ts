@@ -1117,6 +1117,216 @@ const CATALOG: Record<string, SubDestination[]> = {
       summary: "Branson's golf market has quietly grown — strong resort infrastructure, lake views, and entertainment options that keep the whole group happy.",
       driveHours: null, flightHours: 3.0, baseNightlyRate: 210, baseRoundCost: 80
     }
+  ],
+
+  // ── INTERNATIONAL ──────────────────────────────────────────────────────────
+
+  scotland: [
+    {
+      name: "St Andrews & Fife, Scotland",
+      region: "Fife, Scotland",
+      tags: ["bucket list", "links", "historic"],
+      summary: "St Andrews is the home of golf — the Old Course, Kingsbarns, Carnoustie, and the Castle Course are all within reach. No golf trip is more iconic.",
+      driveHours: null, flightHours: 8.5, baseNightlyRate: 320, baseRoundCost: 220
+    },
+    {
+      name: "Ayrshire & Turnberry, Scotland",
+      region: "South Ayrshire, Scotland",
+      tags: ["bucket list", "links", "coastal"],
+      summary: "Royal Troon, Prestwick, and Trump Turnberry anchor one of the world's great golf corridors — rugged links golf with the Ailsa Craig as your backdrop.",
+      driveHours: null, flightHours: 8.5, baseNightlyRate: 300, baseRoundCost: 195
+    },
+    {
+      name: "East Lothian, Scotland",
+      region: "East Lothian, Scotland",
+      tags: ["links", "historic", "Edinburgh"],
+      summary: "East Lothian's \"Golf Coast\" puts Muirfield, Gullane, and North Berwick within 30 minutes of Edinburgh — world-class links with easy city access.",
+      driveHours: null, flightHours: 8.5, baseNightlyRate: 275, baseRoundCost: 175
+    },
+    {
+      name: "Royal Dornoch & the Highlands, Scotland",
+      region: "Highland, Scotland",
+      tags: ["remote", "links", "bucket list"],
+      summary: "Royal Dornoch is widely considered the best links course most golfers will ever play — remote Highland scenery and a warm clubhouse welcome make it unforgettable.",
+      driveHours: null, flightHours: 9.0, baseNightlyRate: 255, baseRoundCost: 165
+    }
+  ],
+
+  ireland: [
+    {
+      name: "Kerry & Southwest Ireland",
+      region: "County Kerry, Ireland",
+      tags: ["bucket list", "links", "coastal"],
+      summary: "Ballybunion, Waterville, and Tralee form one of golf's great pilgrimages — wild Atlantic links, stunning scenery, and Irish hospitality at its best.",
+      driveHours: null, flightHours: 9.5, baseNightlyRate: 280, baseRoundCost: 185
+    },
+    {
+      name: "County Clare & The Burren, Ireland",
+      region: "County Clare, Ireland",
+      tags: ["links", "scenic", "unique"],
+      summary: "Lahinch Golf Club sits beside one of Ireland's most dramatic coastlines — old Tom Morris links golf with the Cliffs of Moher just down the road.",
+      driveHours: null, flightHours: 9.5, baseNightlyRate: 255, baseRoundCost: 160
+    },
+    {
+      name: "Dublin & County Wicklow, Ireland",
+      region: "Leinster, Ireland",
+      tags: ["resort", "parkland", "city access"],
+      summary: "The K Club, Mount Juliet, and Portmarnock put world-class parkland and links golf minutes from Dublin — easy international access with strong resort lodging.",
+      driveHours: null, flightHours: 9.0, baseNightlyRate: 295, baseRoundCost: 170
+    },
+    {
+      name: "Northern Ireland — Royal County Down & Portrush",
+      region: "Northern Ireland",
+      tags: ["bucket list", "links", "coastal"],
+      summary: "Royal County Down and Royal Portrush are two of the top-ranked courses in the world — dramatic links golf on the Causeway Coast with stunning scenery.",
+      driveHours: null, flightHours: 9.0, baseNightlyRate: 270, baseRoundCost: 190
+    }
+  ],
+
+  england: [
+    {
+      name: "Lancashire & Royal Birkdale, England",
+      region: "Lancashire, England",
+      tags: ["links", "Open Championship", "coastal"],
+      summary: "Royal Birkdale, Royal Lytham & St Annes, and Southport's championship links corridor is England's answer to Scotland's great links routes.",
+      driveHours: null, flightHours: 8.5, baseNightlyRate: 270, baseRoundCost: 175
+    },
+    {
+      name: "Kent & Royal St George's, England",
+      region: "Kent, England",
+      tags: ["links", "historic", "Open Championship"],
+      summary: "Royal St George's and Prince's Golf Club anchor the Sandwich Bay links stretch — proper English links golf with easy access from London.",
+      driveHours: null, flightHours: 8.0, baseNightlyRate: 265, baseRoundCost: 165
+    },
+    {
+      name: "Surrey & Berkshire, England",
+      region: "Home Counties, England",
+      tags: ["parkland", "heathland", "historic"],
+      summary: "Sunningdale, Wentworth, and the Surrey heathland belt rival anywhere in the world for parkland and heathland golf — 90 minutes from Heathrow.",
+      driveHours: null, flightHours: 8.0, baseNightlyRate: 285, baseRoundCost: 180
+    }
+  ],
+
+  portugal: [
+    {
+      name: "Algarve, Portugal",
+      region: "Algarve, Portugal",
+      tags: ["resort", "sunny", "value"],
+      summary: "The Algarve is Europe's premier golf destination — Quinta do Lago, Vale do Lobo, and Vilamoura offer resort-quality courses with consistent sunshine and strong value vs. the UK.",
+      driveHours: null, flightHours: 9.5, baseNightlyRate: 260, baseRoundCost: 130
+    },
+    {
+      name: "Lisbon & Sintra, Portugal",
+      region: "Estremadura, Portugal",
+      tags: ["city access", "historic", "coastal"],
+      summary: "Lisbon pairs exceptional golf (Penha Longa, Oitavos Dunes) with one of Europe's most exciting city scenes — a great add-on for groups who want culture alongside fairways.",
+      driveHours: null, flightHours: 9.0, baseNightlyRate: 245, baseRoundCost: 115
+    }
+  ],
+
+  spain: [
+    {
+      name: "Costa del Sol & Marbella, Spain",
+      region: "Andalusia, Spain",
+      tags: ["resort", "sunny", "variety"],
+      summary: "The Costa del Sol packs more golf courses per square mile than almost anywhere in Europe — Valderrama, Real Club de Golf Sotogrande, and dozens of resort tracks in a sunny corridor.",
+      driveHours: null, flightHours: 9.5, baseNightlyRate: 255, baseRoundCost: 120
+    },
+    {
+      name: "Seville & Andalusia, Spain",
+      region: "Andalusia, Spain",
+      tags: ["historic", "parkland", "unique"],
+      summary: "Andalusia's inland golf — Valderrama, Montecastillo, and Real Betis — pairs with one of Spain's most extraordinary cities for a trip that goes beyond the typical beach resort.",
+      driveHours: null, flightHours: 9.5, baseNightlyRate: 240, baseRoundCost: 105
+    }
+  ],
+
+  "new zealand": [
+    {
+      name: "Queenstown & Otago, New Zealand",
+      region: "South Island, New Zealand",
+      tags: ["bucket list", "mountain", "scenic"],
+      summary: "Queenstown's dramatic alpine scenery frames some of the southern hemisphere's most spectacular golf — Jack's Point and Millbrook are world-class, and the adventure lifestyle is unmatched.",
+      driveHours: null, flightHours: 17.0, baseNightlyRate: 310, baseRoundCost: 150
+    },
+    {
+      name: "Auckland & Northland, New Zealand",
+      region: "North Island, New Zealand",
+      tags: ["coastal", "scenic", "resort"],
+      summary: "The Northland peninsula has New Zealand's best coastal links golf — Kauri Cliffs and Cape Kidnappers are bucket-list tracks with stunning ocean views.",
+      driveHours: null, flightHours: 17.0, baseNightlyRate: 285, baseRoundCost: 130
+    }
+  ],
+
+  australia: [
+    {
+      name: "Melbourne Sandbelt, Australia",
+      region: "Victoria, Australia",
+      tags: ["bucket list", "sandbelt", "classic"],
+      summary: "Melbourne's Sandbelt — Royal Melbourne, Kingston Heath, and Commonwealth — is consistently rated the best collection of courses outside the British Isles. A genuine bucket-list destination.",
+      driveHours: null, flightHours: 16.5, baseNightlyRate: 295, baseRoundCost: 160
+    },
+    {
+      name: "Sydney & New South Wales, Australia",
+      region: "New South Wales, Australia",
+      tags: ["coastal", "city access", "variety"],
+      summary: "New South Wales Golf Club, Royal Sydney, and The Lakes put elite golf minutes from one of the world's great harbour cities.",
+      driveHours: null, flightHours: 16.5, baseNightlyRate: 290, baseRoundCost: 145
+    }
+  ],
+
+  mexico: [
+    {
+      name: "Los Cabos, Mexico",
+      region: "Baja California Sur, Mexico",
+      tags: ["resort", "desert", "ocean views"],
+      summary: "Cabo's Quivira, Diamante, and Palmilla courses deliver dramatic desert-meets-ocean golf with full resort amenities — one of the most popular international golf destinations from the US.",
+      driveHours: null, flightHours: 3.5, baseNightlyRate: 340, baseRoundCost: 195
+    },
+    {
+      name: "Riviera Maya, Mexico",
+      region: "Quintana Roo, Mexico",
+      tags: ["resort", "beach", "tropical"],
+      summary: "The Riviera Maya corridor from Cancún to Tulum combines championship golf (El Camaleón, Mayakoba) with full resort beach access — easy direct flights from most US cities.",
+      driveHours: null, flightHours: 3.5, baseNightlyRate: 310, baseRoundCost: 175
+    }
+  ],
+
+  "dominican republic": [
+    {
+      name: "Punta Cana & Casa de Campo, Dominican Republic",
+      region: "La Altagracia, Dominican Republic",
+      tags: ["resort", "beach", "Pete Dye"],
+      summary: "Casa de Campo's Teeth of the Dog is one of the Caribbean's finest — Pete Dye clifftop design with seven holes along the sea. Punta Cana adds beach-resort polish nearby.",
+      driveHours: null, flightHours: 4.0, baseNightlyRate: 295, baseRoundCost: 185
+    }
+  ],
+
+  bahamas: [
+    {
+      name: "Nassau & Paradise Island, Bahamas",
+      region: "New Providence, Bahamas",
+      tags: ["resort", "beach", "tropical"],
+      summary: "Albany Golf Club and the Ocean Club course anchor a Nassau golf trip with world-class resort amenities and short flights from most East Coast cities.",
+      driveHours: null, flightHours: 3.0, baseNightlyRate: 350, baseRoundCost: 195
+    }
+  ],
+
+  japan: [
+    {
+      name: "Tokyo & Kanto, Japan",
+      region: "Kanto, Japan",
+      tags: ["bucket list", "unique", "parkland"],
+      summary: "Japan's golf culture is unique — immaculate conditioning, formal caddies, and courses set in ancient forest. Tokyo's Kanto region has hundreds of private-style clubs with guest access.",
+      driveHours: null, flightHours: 14.5, baseNightlyRate: 310, baseRoundCost: 140
+    },
+    {
+      name: "Kyoto & Kansai, Japan",
+      region: "Kansai, Japan",
+      tags: ["unique", "scenic", "cultural"],
+      summary: "Pairing Kyoto's temples and cuisine with serious golf in the Kansai hills makes for a trip that stands apart — immaculate mountain courses and one of the world's greatest cultural cities.",
+      driveHours: null, flightHours: 14.5, baseNightlyRate: 295, baseRoundCost: 130
+    }
   ]
 
 };
@@ -1302,7 +1512,54 @@ const ALIASES: Record<string, string> = {
   "blue ridge mountains": "blue ridge",
   "obx": "outer banks",
   "rtj trail": "alabama",
-  "robert trent jones trail": "alabama"
+  "robert trent jones trail": "alabama",
+  // International
+  "st andrews": "scotland",
+  "st. andrews": "scotland",
+  "ayrshire": "scotland",
+  "turnberry": "scotland",
+  "carnoustie": "scotland",
+  "royal troon": "scotland",
+  "dornoch": "scotland",
+  "edinburgh": "scotland",
+  "glasgow": "scotland",
+  "uk": "scotland",
+  "united kingdom": "scotland",
+  "great britain": "scotland",
+  "ballybunion": "ireland",
+  "waterville": "ireland",
+  "lahinch": "ireland",
+  "portmarnock": "ireland",
+  "k club": "ireland",
+  "northern ireland": "ireland",
+  "royal portrush": "ireland",
+  "royal county down": "ireland",
+  "royal birkdale": "england",
+  "sunningdale": "england",
+  "wentworth": "england",
+  "algarve": "portugal",
+  "lisbon": "portugal",
+  "marbella": "spain",
+  "costa del sol": "spain",
+  "seville": "spain",
+  "queenstown": "new zealand",
+  "auckland": "new zealand",
+  "nz": "new zealand",
+  "melbourne": "australia",
+  "sydney": "australia",
+  "au": "australia",
+  "cabo": "mexico",
+  "los cabos": "mexico",
+  "cancun": "mexico",
+  "cancún": "mexico",
+  "riviera maya": "mexico",
+  "punta cana": "dominican republic",
+  "casa de campo": "dominican republic",
+  "dr": "dominican republic",
+  "nassau": "bahamas",
+  "tokyo": "japan",
+  "kyoto": "japan",
+  "osaka": "japan"
 };
 
 /**
@@ -1328,9 +1585,10 @@ export function findLocationDestinations(query: string): SubDestination[] | null
     }
   }
 
-  // Partial match through aliases
+  // Partial match through aliases — only match if the alias contains the query
+  // (not the reverse: avoids "scotland".includes("sc") → South Carolina)
   for (const [alias, catalogKey] of Object.entries(ALIASES)) {
-    if (normalized.includes(alias) || alias.includes(normalized)) {
+    if (alias.includes(normalized) && normalized.length >= 2) {
       const dests = CATALOG[catalogKey];
       if (dests) return dests;
     }
