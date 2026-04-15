@@ -532,25 +532,33 @@ export default async function OutingDetailPage({
   const totalVoters = progressTarget;
 
   // Per-person cost estimate
-  // If courses have schedule_rounds set, sum those up; otherwise fall back to global rounds estimate
+  // Priority: explicitly selected (featured) items > day-scheduled items > algorithm top pick
   const scheduledCoursesWithRounds = detail.golfCourses.filter((c) => !c.hidden && c.scheduleDay != null);
-  const totalScheduledGolfCost = scheduledCoursesWithRounds.length > 0
-    ? scheduledCoursesWithRounds.reduce((sum, c) => sum + c.averageGreensFee * (c.scheduleRounds ?? 1), 0)
-    : null;
-  const golfPerPerson = totalScheduledGolfCost !== null
-    ? totalScheduledGolfCost
+
+  // Use selected courses if any, then fall back to day-scheduled, then algorithm top
+  const golfCostCourses = selectedCourses.length > 0
+    ? selectedCourses
+    : scheduledCoursesWithRounds.length > 0
+      ? scheduledCoursesWithRounds
+      : null;
+  const totalScheduledRounds = golfCostCourses
+    ? golfCostCourses.reduce((sum, c) => sum + (c.scheduleRounds ?? 1), 0)
+    : 0;
+  const golfPerPerson = golfCostCourses
+    ? golfCostCourses.reduce((sum, c) => sum + c.averageGreensFee * (c.scheduleRounds ?? 1), 0)
     : detail.insights.topCourse
       ? detail.insights.topCourse.averageGreensFee * roundsPerPlayer
       : null;
-  const lodgingTotal = detail.insights.topLodging
-    ? (detail.insights.topLodging.priceTotal ?? detail.insights.topLodging.nightlyRate * nights)
+
+  // Use selected lodging if any, then algorithm top pick
+  const lodgingSource = selectedLodgingOption ?? detail.insights.topLodging ?? null;
+  const lodgingTotal = lodgingSource
+    ? (lodgingSource.priceTotal ?? lodgingSource.nightlyRate * nights)
     : null;
   const lodgingPerPerson = lodgingTotal !== null ? Math.round(lodgingTotal / players) : null;
   const estimatedPerPerson = golfPerPerson !== null && lodgingPerPerson !== null
     ? golfPerPerson + lodgingPerPerson
     : null;
-  // Total rounds from scheduled courses (for display)
-  const totalScheduledRounds = scheduledCoursesWithRounds.reduce((sum, c) => sum + (c.scheduleRounds ?? 1), 0);
 
   return (
     <PageShell>
@@ -1203,13 +1211,15 @@ export default async function OutingDetailPage({
                       {currency(golfPerPerson + lodgingPerPerson)}
                     </p>
                     <p className="mt-1 text-sm text-cream/55">
-                      {scheduledCoursesWithRounds.length > 0
-                        ? `${scheduledCoursesWithRounds.length} course${scheduledCoursesWithRounds.length !== 1 ? "s" : ""} scheduled · ${totalScheduledRounds} round${totalScheduledRounds !== 1 ? "s" : ""}`
-                        : `Top-ranked golf & lodging · ${nights} nights · ${roundsPerPlayer} rounds`}
+                      {selectedCourses.length > 0 && selectedLodgingOption
+                        ? `${selectedCourses.length} selected course${selectedCourses.length !== 1 ? "s" : ""} · ${selectedLodgingOption.name}`
+                        : golfCostCourses
+                          ? `${golfCostCourses.length} course${golfCostCourses.length !== 1 ? "s" : ""} scheduled · ${totalScheduledRounds} round${totalScheduledRounds !== 1 ? "s" : ""}`
+                          : `Top-ranked golf & lodging · ${nights} nights · ${roundsPerPlayer} rounds`}
                     </p>
                   </div>
                   <div className="space-y-1 text-sm text-cream/65">
-                    <p>{currency(golfPerPerson)} golf ({scheduledCoursesWithRounds.length > 0 ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`})</p>
+                    <p>{currency(golfPerPerson)} golf ({golfCostCourses ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`})</p>
                     <p>{currency(lodgingPerPerson)} lodging (÷ {players} players)</p>
                   </div>
                 </div>
