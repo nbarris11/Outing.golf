@@ -1107,8 +1107,21 @@ export default async function OutingDetailPage({
               )}
             </Card>
 
-            {/* Lodging options */}
-            <Card>
+            {/* Lodging options — hidden when golf-only mode is on */}
+            {golfOnly && isOrganizer && (
+              <Card className="flex items-center gap-3 border-dashed border-charcoal/12 bg-white/50">
+                <p className="flex-1 text-sm text-charcoal/50">🏌️ Golf only — lodging is excluded from this trip.</p>
+                <form action={toggleGolfOnlyAction}>
+                  <input type="hidden" name="outingId" value={detail.outing.id} />
+                  <input type="hidden" name="golfOnly" value="false" />
+                  <button type="submit" className="rounded-full px-3 py-1.5 text-xs font-medium text-forest-900 ring-1 ring-forest-900/20 hover:bg-forest-900/5 transition-colors">
+                    Add lodging
+                  </button>
+                </form>
+              </Card>
+            )}
+
+            {!golfOnly && <Card>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">🏨 Lodging options</h2>
@@ -1234,7 +1247,7 @@ export default async function OutingDetailPage({
                 </div>
               )}
 
-            </Card>
+            </Card>}
 
             {/* Combined cost estimate — client component so personsPerRoom updates instantly */}
             {golfPerPerson !== null && (golfOnly || lodgingNightlyRate !== null) && (
