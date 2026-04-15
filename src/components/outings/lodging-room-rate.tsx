@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { usePersonsPerRoom } from "./persons-per-room-context";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -14,22 +13,10 @@ function fmt(n: number) {
 interface LodgingRoomRateProps {
   nightlyRate: number;
   nights: number;
-  personsPerRoom: number;
 }
 
-export function LodgingRoomRate({ nightlyRate, nights, personsPerRoom }: LodgingRoomRateProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
-
-  function handleChange(n: number) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("personsPerRoom", String(n));
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    });
-  }
+export function LodgingRoomRate({ nightlyRate, nights }: LodgingRoomRateProps) {
+  const { personsPerRoom, setPersonsPerRoom } = usePersonsPerRoom();
 
   const perPersonPerNight = Math.round(nightlyRate / personsPerRoom);
   const totalPerPerson = perPersonPerNight * nights;
@@ -37,7 +24,7 @@ export function LodgingRoomRate({ nightlyRate, nights, personsPerRoom }: Lodging
   return (
     <div className="text-right shrink-0">
       <div className="flex items-baseline justify-end gap-1.5">
-        <p className={`font-semibold text-charcoal transition-opacity ${isPending ? "opacity-50" : ""}`}>
+        <p className="font-semibold text-charcoal">
           {fmt(perPersonPerNight)}
           <span className="ml-1 text-xs font-normal text-charcoal/50">/person/night</span>
         </p>
@@ -52,10 +39,9 @@ export function LodgingRoomRate({ nightlyRate, nights, personsPerRoom }: Lodging
             <button
               key={n}
               type="button"
-              onClick={() => handleChange(n)}
-              disabled={isPending}
+              onClick={() => setPersonsPerRoom(n)}
               className={[
-                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors disabled:opacity-50",
+                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors",
                 personsPerRoom === n
                   ? "bg-forest-900 text-cream"
                   : "bg-charcoal/8 text-charcoal/60 hover:bg-charcoal/15"

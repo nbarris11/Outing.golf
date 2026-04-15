@@ -10,6 +10,8 @@ import { CourseScheduleSelector } from "@/components/outings/course-schedule-sel
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
 import { FavoriteButton } from "@/components/outings/favorite-button";
 import { LodgingRoomRate } from "@/components/outings/lodging-room-rate";
+import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-context";
+import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
 import { OrganizerPickButton } from "@/components/outings/organizer-pick-button";
 import { RoundsSelector } from "@/components/outings/rounds-selector";
 import { VoteButton } from "@/components/outings/vote-button";
@@ -111,12 +113,11 @@ export default async function OutingDetailPage({
   searchParams
 }: {
   params: Promise<{ outingId: string }>;
-  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string; newMember?: string; confirmed?: string; personsPerRoom?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; created?: string; inviteEmail?: string; inviteLink?: string; shareLink?: string; newMember?: string; confirmed?: string }>;
 }) {
   const profile = await requireProfile();
   const { outingId } = await params;
   const notices = await searchParams;
-  const personsPerRoom = Math.min(4, Math.max(1, parseInt(notices.personsPerRoom ?? "2", 10) || 2));
   const detail = await getOutingDetail(outingId, profile.id);
 
   if (!detail) {
@@ -556,16 +557,16 @@ export default async function OutingDetailPage({
       : null;
 
   // Use selected lodging if any, then algorithm top pick
-  // nightlyRate is per room; cost per person = (nightlyRate / personsPerRoom) × nights
+  // nightlyRate is per room — personsPerRoom is managed client-side via context
   const lodgingSource = selectedLodgingOption ?? detail.insights.topLodging ?? null;
-  const lodgingPerPerson = lodgingSource
-    ? Math.round((lodgingSource.nightlyRate / personsPerRoom) * nights)
-    : null;
-  const estimatedPerPerson = golfPerPerson !== null && lodgingPerPerson !== null
-    ? golfPerPerson + lodgingPerPerson
+  const lodgingNightlyRate = lodgingSource?.nightlyRate ?? null;
+  // Server-side estimate uses 2 persons/room default (for the quick stats tile)
+  const estimatedPerPerson = golfPerPerson !== null && lodgingNightlyRate !== null
+    ? golfPerPerson + Math.round((lodgingNightlyRate / 2) * nights)
     : null;
 
   return (
+    <PersonsPerRoomProvider>
     <PageShell>
       <ScrollToTop />
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -1120,7 +1121,7 @@ export default async function OutingDetailPage({
                               {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
                             </p>
                           </div>
-                          <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} personsPerRoom={personsPerRoom} />
+                          <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} />
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
@@ -1207,29 +1208,21 @@ export default async function OutingDetailPage({
 
             </Card>
 
-            {/* Combined cost estimate */}
-            {golfPerPerson !== null && lodgingPerPerson !== null && (
-              <div className="rounded-[28px] bg-forest-950 px-6 py-5 text-cream">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-cream/50">Estimated per person</p>
-                    <p className="mt-2 font-serif text-4xl font-semibold tracking-[-0.05em]">
-                      {currency(golfPerPerson + lodgingPerPerson)}
-                    </p>
-                    <p className="mt-1 text-sm text-cream/55">
-                      {selectedCourses.length > 0 && selectedLodgingOption
-                        ? `${selectedCourses.length} selected course${selectedCourses.length !== 1 ? "s" : ""} · ${selectedLodgingOption.name}`
-                        : golfCostCourses
-                          ? `${golfCostCourses.length} course${golfCostCourses.length !== 1 ? "s" : ""} scheduled · ${totalScheduledRounds} round${totalScheduledRounds !== 1 ? "s" : ""}`
-                          : `Top-ranked golf & lodging · ${nights} nights · ${roundsPerPlayer} rounds`}
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-sm text-cream/65">
-                    <p>{currency(golfPerPerson)} golf ({golfCostCourses ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`})</p>
-                    <p>{currency(lodgingPerPerson)} lodging ({personsPerRoom}/room × {nights}n)</p>
-                  </div>
-                </div>
-              </div>
+            {/* Combined cost estimate — client component so personsPerRoom updates instantly */}
+            {golfPerPerson !== null && lodgingNightlyRate !== null && (
+              <TripCostEstimate
+                golfPerPerson={golfPerPerson}
+                lodgingNightlyRate={lodgingNightlyRate}
+                nights={nights}
+                golfLabel={
+                  selectedCourses.length > 0 && selectedLodgingOption
+                    ? `${selectedCourses.length} selected course${selectedCourses.length !== 1 ? "s" : ""} · ${selectedLodgingOption.name}`
+                    : golfCostCourses
+                      ? `${golfCostCourses.length} course${golfCostCourses.length !== 1 ? "s" : ""} scheduled · ${totalScheduledRounds} round${totalScheduledRounds !== 1 ? "s" : ""}`
+                      : `Top-ranked golf & lodging · ${nights} nights · ${roundsPerPlayer} rounds`
+                }
+                golfRoundsLabel={golfCostCourses ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`}
+              />
             )}
 
             {/* Chat — compact */}
@@ -1649,6 +1642,7 @@ export default async function OutingDetailPage({
         </div>
       </section>
     </PageShell>
+    </PersonsPerRoomProvider>
   );
 }
 
