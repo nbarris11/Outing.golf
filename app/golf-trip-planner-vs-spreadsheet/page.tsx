@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "Golf Trip Planner vs. Spreadsheet | Outing.golf",
   description:
-    "Most golf trip organizers start with a spreadsheet. Here is why a purpose-built golf trip planning tool gets groups to a decision faster."
+    "Most golf trip organizers start with a spreadsheet or Google Sheet. Here is why a purpose-built golf trip planning tool — and not a group chat — gets groups to a decision faster."
 };
 
 const comparison = [
@@ -86,19 +86,38 @@ export default function GolfTripPlannerVsSpreadsheetPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="max-w-3xl">
-          <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
-            When a spreadsheet is still fine
-          </h2>
-          <p className="mt-4 text-base leading-7 text-charcoal/68">
-            If you are planning a trip for two or three people who already talk regularly and trust each other's
-            judgment, a shared doc works. The coordination overhead is low enough that a tool adds no real value.
-          </p>
-          <p className="mt-3 text-base leading-7 text-charcoal/68">
-            As soon as you have more than four or five people with different schedules and different budgets, the
-            spreadsheet becomes the bottleneck. Someone has to manage it, follow up on it, and keep it current —
-            and that person is usually the same one who organized the whole trip.
-          </p>
+        <div className="max-w-3xl space-y-10">
+          <div>
+            <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+              When a spreadsheet is still fine
+            </h2>
+            <p className="mt-4 text-base leading-7 text-charcoal/68">
+              If you are planning a trip for two or three people who already talk regularly and trust each other's
+              judgment, a shared doc works. The coordination overhead is low enough that a tool adds no real value.
+            </p>
+            <p className="mt-3 text-base leading-7 text-charcoal/68">
+              As soon as you have more than four or five people with different schedules and different budgets, the
+              spreadsheet becomes the bottleneck. Someone has to manage it, follow up on it, and keep it current —
+              and that person is usually the same one who organized the whole trip.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+              What about the group chat?
+            </h2>
+            <p className="mt-4 text-base leading-7 text-charcoal/68">
+              The group chat has the same fragmentation problem as a spreadsheet — just faster. Availability gets
+              posted and buried. Budget numbers get anchored to whoever speaks first. Course ideas show up as links
+              nobody clicks. And the organizer ends up re-reading 200 messages to reconstruct what the group
+              actually said.
+            </p>
+            <p className="mt-3 text-base leading-7 text-charcoal/68">
+              A golf trip planner vs. group chat is not really a fair comparison — the chat was never built for
+              structured input. It is good for enthusiasm and bad for decisions. A purpose-built tool collects the
+              same input in a single flow, so the organizer sees the real picture without digging through the thread.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -110,6 +129,11 @@ export default function GolfTripPlannerVsSpreadsheetPage() {
               title: "How it works",
               href: "/how-it-works",
               body: "See the full workflow Outing.golf uses to replace the spreadsheet."
+            },
+            {
+              title: "Golf trip planning checklist",
+              href: "/golf-trip-planning-checklist",
+              body: "A phase-by-phase checklist so nothing falls through the cracks."
             },
             {
               title: "Back to home",

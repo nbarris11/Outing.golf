@@ -24,7 +24,7 @@ export default async function LandingPage() {
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-charcoal/66">
               {hero?.body ??
-                "Collect budgets, dates, course preferences, and lodging ideas in one place so your group can align faster and actually book the trip."}
+                "Use one golf trip planning tool to collect budgets, dates, course preferences, lodging preferences, and group input so your crew can compare options and decide faster."}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button href={hero?.ctaHref ?? "/sign-up"} className="w-full sm:w-auto">
@@ -202,7 +202,7 @@ export default async function LandingPage() {
             More resources for golf trip organizers
           </h2>
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
           {[
             {
               title: "How it works",
@@ -215,9 +215,29 @@ export default async function LandingPage() {
               body: "A step-by-step guide for getting your group from idea to booked trip."
             },
             {
+              title: "Golf trip planning checklist",
+              href: "/golf-trip-planning-checklist",
+              body: "A phase-by-phase checklist so nothing gets skipped and decisions happen in the right order."
+            },
+            {
               title: "Golf trip budget planner",
               href: "/golf-trip-budget-planner",
               body: "Why getting budget ranges from everyone early changes the whole planning process."
+            },
+            {
+              title: "Best golf trip destinations",
+              href: "/best-golf-trip-destinations",
+              body: "What each major destination costs and what to know before you plan there."
+            },
+            {
+              title: "Bachelor golf trip planner",
+              href: "/bachelor-golf-trip-planner",
+              body: "How to organize a bachelor golf trip when the group has mixed budgets and a hard deadline."
+            },
+            {
+              title: "Planner for large groups",
+              href: "/golf-trip-planner-large-groups",
+              body: "What changes when you are planning for 8, 12, or 16 players instead of 4."
             },
             {
               title: "Planner vs. spreadsheet",

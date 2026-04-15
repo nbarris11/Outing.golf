@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Planning Checklist | Outing.golf",
+  title: "Golf Trip Planning Checklist for Organizers | Outing.golf",
   description:
-    "A golf trip planning checklist for group organizers. Walk through the right steps in the right order — from budget to booking — without missing anything."
+    "A practical golf trip planning checklist covering every phase — from budget collection and date alignment to course selection, lodging, and the final itinerary."
 };
 
 const checklist = [
@@ -71,7 +71,7 @@ export default function GolfTripPlanningChecklistPage() {
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
           <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
-            Golf trip planning checklist
+            Golf trip planning checklist for organizers
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
             Most golf trip planning goes sideways because decisions get made in the wrong order. Destination gets
@@ -101,16 +101,26 @@ export default function GolfTripPlanningChecklistPage() {
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
+            {
+              title: "How to plan a golf trip",
+              href: "/how-to-plan-a-golf-trip",
+              body: "The narrative version — five steps from scattered idea to confirmed trip."
+            },
             {
               title: "Golf trip budget planner",
               href: "/golf-trip-budget-planner",
               body: "Why collecting real budget ranges from everyone early changes the whole planning process."
             },
             {
-              title: "Back to home",
-              href: "/",
+              title: "Best golf trip destinations",
+              href: "/best-golf-trip-destinations",
+              body: "What each major destination costs and what to know before you plan there."
+            },
+            {
+              title: "How it works",
+              href: "/how-it-works",
               body: "See how Outing.golf handles most of this checklist automatically."
             }
           ].map((item) => (

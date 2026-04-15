@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "How to Plan a Golf Trip with Friends | Outing.golf",
   description:
-    "A practical guide to planning a group golf trip — from picking a destination to locking in the budget. Outing.golf makes the whole process easier for the organizer."
+    "A practical guide to planning a group golf trip — from picking a destination to locking in the budget. The best way to plan a golf trip is to organize input before you research anything."
 };
 
 export default function HowToPlanAGolfTripPage() {
@@ -89,6 +89,58 @@ export default function HowToPlanAGolfTripPage() {
                 Most golf trips stall at the decision point. The organizer has the data, the group has shared
                 preferences, but nobody calls it. Once you have budget overlap and date alignment, pick the
                 strongest destination option and book the thing. The group will adjust.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+                The best way to plan a golf trip
+              </h2>
+              <p className="mt-4 text-base leading-7 text-charcoal/68">
+                The best way to plan a golf trip is to collect budget ranges, dates, and destination preferences
+                before you research a single course. Most groups do it backwards — they find a place they love and
+                then discover the group cannot agree on price, dates, or both. Getting input first takes one extra
+                step and saves several rounds of backtracking.
+              </p>
+              <p className="mt-3 text-base leading-7 text-charcoal/68">
+                Outing.golf is built around this sequence. The organizer creates an outing, the group fills out
+                preferences in a single short flow, and you have everything you need to evaluate real options before
+                anyone has fallen in love with the wrong resort.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="font-serif text-3xl font-semibold tracking-[-0.04em] text-charcoal">
+                Golf trip planning checklist
+              </h2>
+              <p className="mt-4 text-base leading-7 text-charcoal/68">
+                Use this as a quick reference for where you are in the process:
+              </p>
+              <div className="mt-5 space-y-2">
+                {[
+                  "Set a rough destination type (coastal, desert, mountain, classic parkland)",
+                  "Collect individual budget ranges from every player — privately",
+                  "Gather date availability before locking anything in",
+                  "Identify 2–3 real destination options that fit the budget window",
+                  "Compare courses and lodging together for each destination",
+                  "Share the shortlist with the group and vote on favorites",
+                  "Pick the destination and lock in the date",
+                  "Build the round-by-round course schedule",
+                  "Confirm lodging and share booking details",
+                  "Create a shared packing list before the trip"
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3 rounded-[18px] border border-charcoal/8 bg-white/80 px-4 py-3">
+                    <div className="mt-0.5 h-4 w-4 shrink-0 rounded border border-charcoal/20" />
+                    <p className="text-sm leading-6 text-charcoal/68">{item}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-sm leading-6 text-charcoal/60">
+                For a more detailed version,{" "}
+                <a href="/golf-trip-planning-checklist" className="text-forest-900 underline-offset-2 hover:underline">
+                  see the full golf trip planning checklist
+                </a>
+                .
               </p>
             </div>
           </div>

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "Bachelor Golf Trip Planner | Outing.golf",
   description:
-    "Plan a bachelor golf trip without the group-text chaos. Outing.golf helps you collect budgets, dates, and course preferences from the crew in one place."
+    "Planning a bachelor golf trip? Outing.golf helps you collect budgets, dates, and course preferences from the whole group so the organizer is not spending three weeks chasing replies in a text thread."
 };
 
 export default function BachelorGolfTripPlannerPage() {
@@ -103,12 +103,22 @@ export default function BachelorGolfTripPlannerPage() {
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
               title: "How to plan a golf trip",
               href: "/how-to-plan-a-golf-trip",
               body: "A step-by-step guide that applies to any group golf trip, including bachelor trips."
+            },
+            {
+              title: "Golf trip planning checklist",
+              href: "/golf-trip-planning-checklist",
+              body: "A phase-by-phase checklist so nothing falls through the cracks."
+            },
+            {
+              title: "Golf trip budget planner",
+              href: "/golf-trip-budget-planner",
+              body: "Why collecting real budget ranges privately matters — especially for mixed-budget groups."
             },
             {
               title: "Back to home",

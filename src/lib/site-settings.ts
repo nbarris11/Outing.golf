@@ -6,14 +6,14 @@ import type { LandingPageSettings, SiteProfileSettings } from "@/types/domain";
 
 export const defaultSiteProfileSettings: SiteProfileSettings = {
   legalBusinessName: "Outing.golf",
-  heroBadge: "Golf trip planning, simplified",
+  heroBadge: "Golf trip planning tool for organizers",
   launchStatusLabel: "Private preview",
   supportEmail: "hello@outing.golf",
   footerTagline: "Plan golf trips without spreadsheets, group-text chaos, or budget confusion."
 };
 
 export const defaultLandingPageSettings: LandingPageSettings = {
-  painPointsTitle: "Golf trips fall apart in the gap between idea and decision",
+  painPointsTitle: "Why golf trip organizers need a better planning tool",
   painPointsBody:
     "Outing.golf is a golf trip planning tool built for the person organizing the trip. Instead of chasing replies across group texts and spreadsheets, you can collect group input, browse real courses and hotels, vote on favorites, and move everyone toward one confirmed plan.",
   painPoints: [
@@ -31,7 +31,7 @@ export const defaultLandingPageSettings: LandingPageSettings = {
     },
     {
       step: "2",
-      title: "Browse real options together",
+      title: "Compare golf courses and lodging in one place",
       body: "See live golf courses and hotels matched to your destination and group budget. Vote on favorites right inside the app — no side texts required."
     },
     {
@@ -87,9 +87,9 @@ export const defaultLandingPageSettings: LandingPageSettings = {
     }
   ],
   finalCtaEyebrow: "Start planning",
-  finalCtaTitle: "Make the plan obvious for everyone",
+  finalCtaTitle: "Organize your golf trip in one place",
   finalCtaBody:
-    "Bring budgets, dates, courses, and lodging into one calm workflow so the group can stop circling and start deciding.",
+    "Outing.golf gives golf trip organizers one place to collect group input, compare options, and move from ideas to a real plan.",
   finalCtaLabel: "Start Planning Free",
   finalCtaHref: "/sign-up"
 };

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 
+import { LogRocketInit } from "@/src/components/logrocket-init";
+import { getCurrentProfile } from "@/lib/auth";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -15,17 +17,25 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Golf Trip Planning Tool for Groups | Outing.golf",
+  title: "Golf Trip Planner for Groups | Outing.golf",
   description:
-    "Outing.golf is a golf trip planning tool for group organizers. Collect budgets, dates, course preferences, and lodging ideas in one place so your group can actually decide."
+    "Outing.golf is a golf trip planner that helps organizers collect budgets, dates, course preferences, lodging preferences, and group input in one place so trips get planned faster."
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
+  const profile = await getCurrentProfile();
+  const user = profile
+    ? { id: profile.id, email: profile.email, name: profile.fullName }
+    : null;
+
   return (
     <html lang="en" className={`${manrope.variable} ${cormorant.variable}`}>
-      <body>{children}</body>
+      <body>
+        <LogRocketInit user={user} />
+        {children}
+      </body>
     </html>
   );
 }

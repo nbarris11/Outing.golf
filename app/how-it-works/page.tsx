@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "How It Works | Golf Trip Planning Software | Outing.golf",
+  title: "Golf Trip Planning Tool: How It Works | Outing.golf",
   description:
-    "See how Outing.golf works as a golf trip organizer tool. Collect group budgets, dates, and preferences, compare destinations, and get to a decision faster."
+    "See how Outing.golf works as a golf trip organizer app. Collect group budgets, dates, and preferences, compare courses and lodging, and get your group to a decision faster."
 };
 
 export default async function HowItWorksPage() {
@@ -18,12 +18,15 @@ export default async function HowItWorksPage() {
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">How it works</p>
           <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
-            A structured flow for the person planning the trip
+            How the golf trip planning tool works
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            Outing.golf is a golf trip planning tool that gives the organizer one place to collect group input and
-            move toward a real decision. No spreadsheets. No copy-pasted notes. No wondering which text thread has
-            the latest answer.
+            Outing.golf is a golf trip organizer app that gives the person running the trip one place to collect
+            group input and move toward a real decision. No spreadsheets. No copy-pasted notes. No wondering which
+            text thread has the latest answer.
+          </p>
+          <p className="mt-3 text-lg leading-8 text-charcoal/68">
+            If you have been looking for the best golf trip planning tool for a group, here is exactly how it works.
           </p>
         </div>
       </section>
@@ -59,9 +62,9 @@ export default async function HowItWorksPage() {
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           {[
             {
-              title: "Back to home",
-              href: "/",
-              body: "See what Outing.golf does and start your first outing."
+              title: "Golf trip planning checklist",
+              href: "/golf-trip-planning-checklist",
+              body: "A phase-by-phase checklist covering everything from budget collection to the final itinerary."
             },
             {
               title: "Golf trip budget planner",

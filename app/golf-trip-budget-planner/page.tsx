@@ -83,6 +83,72 @@ export default function GolfTripBudgetPlannerPage() {
                 </Card>
               ))}
             </div>
+
+            <div className="mt-8 overflow-hidden rounded-[22px] border border-charcoal/8">
+              <div className="bg-charcoal/4 px-5 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-charcoal/55">Budget reference — per person, all-in</p>
+              </div>
+              <div className="divide-y divide-charcoal/6">
+                {[
+                  {
+                    range: "Under $600",
+                    destination: "Drive-to regional",
+                    courses: "Public daily-fee",
+                    lodging: "Shared house or budget hotel",
+                    example: "Regional markets, local golf trails"
+                  },
+                  {
+                    range: "$600–$1,000",
+                    destination: "Regional fly-to",
+                    courses: "Mid-tier resort / daily-fee mix",
+                    lodging: "Hotel or condo rental",
+                    example: "Myrtle Beach, Wisconsin, Branson"
+                  },
+                  {
+                    range: "$1,000–$1,800",
+                    destination: "Premium fly-to",
+                    courses: "Resort and semi-private access",
+                    lodging: "Golf resort on property",
+                    example: "Scottsdale, Pinehurst, Palm Springs"
+                  },
+                  {
+                    range: "$1,800+",
+                    destination: "Bucket-list",
+                    courses: "Private-access and top-100 courses",
+                    lodging: "Full-service resort",
+                    example: "Bandon Dunes, Streamsong, destination resorts"
+                  }
+                ].map((row) => (
+                  <div key={row.range} className="grid gap-1 px-5 py-4 sm:grid-cols-[1fr_1fr_1fr_1.2fr]">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-charcoal/40">Budget</p>
+                      <p className="mt-1 text-sm font-semibold text-charcoal">{row.range}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-charcoal/40">Destination</p>
+                      <p className="mt-1 text-sm text-charcoal/68">{row.destination}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-charcoal/40">Courses</p>
+                      <p className="mt-1 text-sm text-charcoal/68">{row.courses}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-charcoal/40">Examples</p>
+                      <p className="mt-1 text-sm text-charcoal/68">{row.example}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-charcoal/55">
+              Ranges are rough guides. Myrtle Beach, for example, can work for groups anywhere from $500 to $1,200
+              depending on course mix and lodging choice — which is exactly why knowing the group's real range matters
+              before you start building a shortlist.{" "}
+              <a href="/myrtle-beach-golf-trip-planner" className="text-forest-900 underline-offset-2 hover:underline">
+                See the Myrtle Beach trip planner
+              </a>
+              .
+            </p>
           </div>
 
           <div>
@@ -104,12 +170,22 @@ export default function GolfTripBudgetPlannerPage() {
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
               title: "How it works",
               href: "/how-it-works",
               body: "See the full workflow Outing.golf uses to collect group input and move toward a decision."
+            },
+            {
+              title: "Golf trip planning checklist",
+              href: "/golf-trip-planning-checklist",
+              body: "A phase-by-phase checklist covering everything from budget to the final itinerary."
+            },
+            {
+              title: "Best golf trip destinations",
+              href: "/best-golf-trip-destinations",
+              body: "What each major destination costs and what to know before you plan there."
             },
             {
               title: "Back to home",
