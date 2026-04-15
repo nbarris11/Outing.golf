@@ -1020,7 +1020,15 @@ export default async function OutingDetailPage({
                               />
                             )}
                             <a
-                              href={`https://www.google.com/search?q=${encodeURIComponent(course.name + " golf course " + course.locationLabel)}`}
+                              href={`https://www.google.com/search?q=${encodeURIComponent(
+                                [
+                                  course.name,
+                                  course.locationLabel,
+                                  "tee times",
+                                  tripWindow ? new Date(tripWindow.start + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
+                                  `${players} players`
+                                ].filter(Boolean).join(" ")
+                              )}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
