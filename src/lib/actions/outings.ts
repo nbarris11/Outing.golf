@@ -1484,19 +1484,22 @@ export async function toggleGolfOnlyAction(formData: FormData) {
   if (isDemoMode) {
     await updateDemoOuting(outingId, profile.id, { golfOnly } as any);
     revalidatePath(`/outings/${outingId}`);
-    return;
+    redirect(`/outings/${outingId}`);
   }
 
   const adminClient = createSupabaseAdminClient();
   const supabase = await createSupabaseServerClient();
   const client = adminClient ?? supabase;
-  if (!client) return;
+  if (!client) redirect(`/outings/${outingId}?error=Not+configured`);
 
   const { data: outing } = await client.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
-  if (!outing || (outing.organizer_id !== profile.id && !isAdmin(profile))) return;
+  if (!outing || (outing.organizer_id !== profile.id && !isAdmin(profile))) {
+    redirect(`/outings/${outingId}?error=Not+authorized`);
+  }
 
   await client.from("outings").update({ golf_only: golfOnly }).eq("id", outingId);
   revalidatePath(`/outings/${outingId}`);
+  redirect(`/outings/${outingId}`);
 }
 
 // ── Co-organizer management ───────────────────────────────────────────────────
