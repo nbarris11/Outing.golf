@@ -1484,22 +1484,26 @@ export async function toggleGolfOnlyAction(formData: FormData) {
   if (isDemoMode) {
     await updateDemoOuting(outingId, profile.id, { golfOnly } as any);
     revalidatePath(`/outings/${outingId}`);
-    redirect(`/outings/${outingId}`);
+    return;
   }
 
   const adminClient = createSupabaseAdminClient();
   const supabase = await createSupabaseServerClient();
   const client = adminClient ?? supabase;
-  if (!client) redirect(`/outings/${outingId}?error=Not+configured`);
+  if (!client) throw new Error("Not configured");
 
   const { data: outing } = await client.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
   if (!outing || (outing.organizer_id !== profile.id && !isAdmin(profile))) {
-    redirect(`/outings/${outingId}?error=Not+authorized`);
+    throw new Error("Not authorized");
   }
 
-  await client.from("outings").update({ golf_only: golfOnly }).eq("id", outingId);
+  const { error } = await client.from("outings").update({ golf_only: golfOnly }).eq("id", outingId);
+  if (error) {
+    logError("toggleGolfOnly update failed", { outingId, golfOnly, error: error.message });
+    throw new Error("Update failed");
+  }
+
   revalidatePath(`/outings/${outingId}`);
-  redirect(`/outings/${outingId}`);
 }
 
 // ── Co-organizer management ───────────────────────────────────────────────────
