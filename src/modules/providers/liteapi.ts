@@ -50,7 +50,12 @@ export const liteApiLodgingProvider: LodgingProvider = {
         return [];
       }
 
-      return results.slice(0, input.limitPerDestination ?? 4).map<LodgingOption>((item) => ({
+      const named = results.filter((item) => {
+        const n = (item.hotelName ?? "").trim().toLowerCase();
+        return n.length > 0 && n !== "unnamed" && !n.startsWith("unnamed hotel") && !n.startsWith("unnamed property");
+      });
+
+      return named.slice(0, input.limitPerDestination ?? 4).map<LodgingOption>((item) => ({
         id: generateId("lodging"),
         outingId: input.outing.id,
         destinationOptionId: primaryDestination.id,
