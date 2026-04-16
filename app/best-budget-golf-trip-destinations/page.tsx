@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "Best Budget Golf Trip Destinations for Groups | Outing.golf",
   description:
-    "The best budget golf trip destinations for groups — where to get strong courses, good value lodging, and a real trip experience without a premium price tag."
+    "The best golf trip destinations for budget-conscious groups — strong courses and a real trip experience without the premium destination price tag.",
+  alternates: { canonical: "https://www.outing.golf/best-budget-golf-trip-destinations" }
 };
 
 const destinations = [

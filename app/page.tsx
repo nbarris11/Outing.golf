@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CalendarRange, CheckCircle2, CircleDollarSign, MapPinned, MessageSquareText } from "lucide-react";
 
 import { Testimonial } from "@/components/marketing/testimonial";
@@ -9,9 +10,24 @@ import { Card } from "@/components/ui/card";
 import { getPublicContentBlocks } from "@/lib/content";
 import { getPublicSiteSettings } from "@/lib/site-settings";
 
+export const metadata: Metadata = {
+  alternates: { canonical: "https://www.outing.golf" }
+};
+
 export default async function LandingPage() {
   const contentBlocks = await getPublicContentBlocks();
   const { siteProfile, landingPage } = await getPublicSiteSettings();
+
+  const softwareApplicationSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Outing.golf",
+    applicationCategory: "TravelApplication",
+    description: "Golf trip planning tool for group organizers. Collect dates, budgets, and course votes in one place.",
+    url: "https://www.outing.golf",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    operatingSystem: "Web"
+  };
 
   const organizationSchema = {
     "@context": "https://schema.org",
@@ -49,6 +65,7 @@ export default async function LandingPage() {
 
   return (
     <PageShell minimalHeader>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />

@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.outing.golf"),
   title: "Golf Trip Planner for Groups | Outing.golf",
   description:
-    "Outing.golf is a golf trip planner that helps organizers collect budgets, dates, course preferences, lodging preferences, and group input in one place so trips get planned faster.",
+    "Collect dates, budgets, and course votes from your group in one place. Outing.golf is the planning tool built for golf trip organizers.",
   openGraph: {
     title: "Golf Trip Planner for Groups | Outing.golf",
     description:
-      "Collect budgets, dates, course preferences, and group input in one place so your golf trip gets planned faster.",
+      "Collect dates, budgets, and course votes from your group in one place. Outing.golf is the planning tool built for golf trip organizers.",
     url: "https://www.outing.golf",
     siteName: "Outing.golf",
     type: "website",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Golf Trip Planner for Groups | Outing.golf",
     description:
-      "Collect budgets, dates, course preferences, and group input in one place so your golf trip gets planned faster."
+      "Collect dates, budgets, and course votes from your group in one place. Outing.golf is the planning tool built for golf trip organizers."
   }
 };
 

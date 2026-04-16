@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "Myrtle Beach Golf Trip Planner for Groups | Outing.golf",
   description:
-    "Planning a group golf trip to Myrtle Beach? Outing.golf helps you collect budgets, pick courses, and coordinate lodging for the Grand Strand without managing it all over group text."
+    "How to navigate 80+ courses and plan the right Myrtle Beach golf trip for your group's budget and style.",
+  alternates: { canonical: "https://www.outing.golf/myrtle-beach-golf-trip-planner" }
 };
 
 export default function MyrtleBeachGolfTripPlannerPage() {

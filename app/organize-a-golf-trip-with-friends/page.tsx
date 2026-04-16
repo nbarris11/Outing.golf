@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "How to Organize a Golf Trip with Friends | Outing.golf",
   description:
-    "A practical guide for organizing a golf trip with friends — what order to do things in, how to collect group input without the chaos, and how to get the group to a decision."
+    "How to get your friend group from scattered interest to a confirmed golf trip — what to collect, in what order, and how to make the call.",
+  alternates: { canonical: "https://www.outing.golf/organize-a-golf-trip-with-friends" }
 };
 
 export default function OrganizeAGolfTripWithFriendsPage() {

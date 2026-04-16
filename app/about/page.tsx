@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     "Why Outing.golf exists, who it's for, and the story behind building a better way for groups to plan golf trips together.",
   alternates: {
-    canonical: "/about"
+    canonical: "https://www.outing.golf/about"
   }
 };
 

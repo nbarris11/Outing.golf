@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Planning Checklist for Organizers | Outing.golf",
+  title: "Golf Trip Planning Checklist for Group Organizers | Outing.golf",
   description:
-    "A practical golf trip planning checklist covering every phase — from budget collection and date alignment to course selection, lodging, and the final itinerary."
+    "A phase-by-phase checklist for golf trip organizers. From destination type to packing list — nothing gets skipped.",
+  alternates: { canonical: "https://www.outing.golf/golf-trip-planning-checklist" }
 };
 
 const checklist = [
@@ -64,9 +65,47 @@ const checklist = [
   }
 ];
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What should I do first when planning a golf trip?",
+      acceptedAnswer: { "@type": "Answer", text: "Start with trip basics: decide on the destination type (desert, coastal, mountain, classic), confirm the group size and who is organizing, and set a rough timing window." }
+    },
+    {
+      "@type": "Question",
+      name: "How do I handle the budget for a group golf trip?",
+      acceptedAnswer: { "@type": "Answer", text: "Collect individual budget ranges privately before discussing as a group. Identify the realistic range the majority fits inside, then decide what is included: flights, lodging, greens fees, meals, and extras." }
+    },
+    {
+      "@type": "Question",
+      name: "How do I get everyone's availability for a golf trip?",
+      acceptedAnswer: { "@type": "Answer", text: "Collect availability from everyone in the first round of planning. Find the date window that works for most of the group and confirm it before committing to any rates or bookings." }
+    },
+    {
+      "@type": "Question",
+      name: "How do I narrow down the destination?",
+      acceptedAnswer: { "@type": "Answer", text: "Narrow to two or three real destination options. Research course options and quality at each, then check lodging availability and pricing for your confirmed date window." }
+    },
+    {
+      "@type": "Question",
+      name: "How do I make the final decision on a golf trip destination?",
+      acceptedAnswer: { "@type": "Answer", text: "Present the shortlist to the group with courses and lodging attached. Collect preferences or vote on the final destination, then make the call and move forward." }
+    },
+    {
+      "@type": "Question",
+      name: "What should I book first for a golf trip?",
+      acceptedAnswer: { "@type": "Answer", text: "Book lodging first to lock the dates. Then reserve tee times at priority courses, collect deposits from the group, and send a trip summary with dates, address, tee times, and logistics." }
+    }
+  ]
+};
+
 export default function GolfTripPlanningChecklistPage() {
   return (
     <PageShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>

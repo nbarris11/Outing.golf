@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Planner for Large Groups | Outing.golf",
+  title: "Golf Trip Planner for Large Groups (8, 12, or 16 Players)",
   description:
-    "Planning a golf trip for 8, 12, or 16 players? Outing.golf collects group input at scale so you can manage budgets, date availability, and course preferences without losing the thread."
+    "What changes when you're planning for 8, 12, or 16 players — and how to keep the decision-making from falling apart.",
+  alternates: { canonical: "https://www.outing.golf/golf-trip-planner-large-groups" }
 };
 
 export default function GolfTripPlannerLargeGroupsPage() {
@@ -54,7 +55,11 @@ export default function GolfTripPlannerLargeGroupsPage() {
               Getting 4 people to agree on a date is manageable. Getting 8 to 12 people to agree takes more time
               and usually requires flexibility on what "most of the group" means. For annual golf trips or large
               friend group outings, collecting availability windows 3 to 4 months out is not premature — it is the
-              minimum lead time you need to find a workable window.
+              minimum lead time you need to find a workable window. If this is a recurring trip, the{" "}
+              <a href="/annual-golf-trip-checklist" className="text-forest-900 underline-offset-2 hover:underline">
+                annual golf trip checklist
+              </a>{" "}
+              covers how to capture what worked and build on it year over year.
             </p>
             <p className="mt-3 text-base leading-7 text-charcoal/68">
               Set a clear deadline for responses. If you leave availability open-ended, it will sit in people's
@@ -106,7 +111,12 @@ export default function GolfTripPlannerLargeGroupsPage() {
             </p>
             <p className="mt-3 text-base leading-7 text-charcoal/68">
               The organizer's job is to narrow the field, not crowd-source the entire decision. Present the
-              shortlist, collect votes, assign the top picks to specific days, and move on.
+              shortlist, collect votes, assign the top picks to specific days, and move on. For the full
+              phase-by-phase sequence,{" "}
+              <a href="/golf-trip-planning-checklist" className="text-forest-900 underline-offset-2 hover:underline">
+                see the golf trip planning checklist
+              </a>
+              .
             </p>
           </div>
         </div>

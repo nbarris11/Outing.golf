@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Planning Tool: How It Works | Outing.golf",
+  title: "How Outing.golf Works — Group Golf Trip Planning Tool",
   description:
-    "See how Outing.golf works as a golf trip organizer app. Collect group budgets, dates, and preferences, compare courses and lodging, and get your group to a decision faster."
+    "See how Outing.golf works — from creating an outing to collecting group input and getting everyone aligned on one confirmed plan.",
+  alternates: { canonical: "https://www.outing.golf/how-it-works" }
 };
 
 export default async function HowItWorksPage() {

@@ -5,14 +5,50 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "How to Plan a Golf Trip with Friends | Outing.golf",
+  title: "How to Plan a Golf Trip with Friends (Step-by-Step Guide)",
   description:
-    "A practical guide to planning a group golf trip — from picking a destination to locking in the budget. The best way to plan a golf trip is to organize input before you research anything."
+    "A step-by-step guide for getting your group from scattered idea to confirmed golf trip — without the group-text chaos.",
+  alternates: { canonical: "https://www.outing.golf/how-to-plan-a-golf-trip" }
+};
+
+const howToSchema = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "How to Plan a Golf Trip with Friends",
+  description: "A step-by-step guide for planning a group golf trip from scattered idea to confirmed booking.",
+  step: [
+    {
+      "@type": "HowToStep",
+      name: "Start with a rough destination idea, not a firm plan",
+      text: "Pick a destination type — desert, coastal, mountain, or classic parkland — rather than a specific resort. This gives you room to compare real options once you know what the group can spend."
+    },
+    {
+      "@type": "HowToStep",
+      name: "Get budget ranges from everyone before you go further",
+      text: "Ask for individual budget ranges privately before any group discussion. Asking in a group chat anchors everyone to the first number posted, which is usually not the real range."
+    },
+    {
+      "@type": "HowToStep",
+      name: "Nail down the date window early",
+      text: "Get everyone's availability in the first round of planning. Look for a window that works for most of the group, not a window that requires perfect attendance from everyone."
+    },
+    {
+      "@type": "HowToStep",
+      name: "Compare courses and lodging together, not separately",
+      text: "Evaluate course quality and lodging options together so you are not building separate shortlists that never connect. Three real destination options with courses and lodging attached is better than ten half-researched ideas."
+    },
+    {
+      "@type": "HowToStep",
+      name: "Make a call and commit",
+      text: "Once you have budget overlap and date alignment, pick the strongest destination option and book the trip. The group will adjust."
+    }
+  ]
 };
 
 export default function HowToPlanAGolfTripPage() {
   return (
     <PageShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -54,7 +90,11 @@ export default function HowToPlanAGolfTripPage() {
               </p>
               <p className="mt-3 text-base leading-7 text-charcoal/68">
                 Outing.golf collects budget ranges individually so you see the real distribution before you plan
-                the wrong trip.
+                the wrong trip. For realistic per-person cost ranges by destination,{" "}
+                <a href="/golf-trip-cost-per-person" className="text-forest-900 underline-offset-2 hover:underline">
+                  see the golf trip cost per person guide
+                </a>
+                .
               </p>
             </div>
 
@@ -77,7 +117,11 @@ export default function HowToPlanAGolfTripPage() {
                 Course quality and lodging options are tied to the same destinations. A good planning process
                 evaluates them together so you are not building a shortlist of courses and a separate shortlist of
                 lodging that never connects. Three real destination options with courses and lodging attached is
-                better than ten half-researched ideas.
+                better than ten half-researched ideas. For a practical comparison of the top group destinations,{" "}
+                <a href="/best-golf-trip-destinations" className="text-forest-900 underline-offset-2 hover:underline">
+                  see the best golf trip destinations guide
+                </a>
+                .
               </p>
             </div>
 

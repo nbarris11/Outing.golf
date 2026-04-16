@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Best Golf Trip Destinations for Groups | Outing.golf",
+  title: "Best Golf Trip Destinations for Groups in 2026 | Outing.golf",
   description:
-    "A practical guide to the best golf trip destinations for groups — covering course quality, budget range, and what each destination is actually like to organize for 4 to 12 players."
+    "The best golf trip destinations for groups in 2026, compared by budget, group fit, and what organizers actually need to know.",
+  alternates: { canonical: "https://www.outing.golf/best-golf-trip-destinations" }
 };
 
 const destinations = [
@@ -31,7 +32,7 @@ const destinations = [
       "Scottsdale is the premier domestic golf destination for groups that want a high-end experience. World-class resort courses, reliable winter and spring weather, and a strong food and nightlife scene make it one of the most complete group destinations in the country. It works especially well for bachelor trips where not everyone is a hardcore golfer.",
     organizer:
       "Scottsdale has significant seasonal pricing swings. January through April is peak season and peak pricing. May onward drops significantly. If your group is flexible on timing, the off-season value is substantial.",
-    slug: null
+    slug: "/scottsdale-golf-trip-planner"
   },
   {
     name: "Pinehurst, NC",
@@ -90,9 +91,42 @@ const destinations = [
   }
 ];
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Is Myrtle Beach good for group golf trips?",
+      acceptedAnswer: { "@type": "Answer", text: "Yes. Myrtle Beach is the most popular domestic golf trip destination, with 80+ courses, a wide pricing range ($500–$1,200 per person), and strong lodging options for groups of 4–16. The main challenge for organizers is narrowing the course shortlist." }
+    },
+    {
+      "@type": "Question",
+      name: "Is Scottsdale good for group golf trips?",
+      acceptedAnswer: { "@type": "Answer", text: "Scottsdale is the premier domestic destination for groups wanting a high-end experience ($1,000–$2,500 per person). It has world-class resort courses, reliable weather from October through April, and a strong food and nightlife scene." }
+    },
+    {
+      "@type": "Question",
+      name: "Is Pinehurst good for group golf trips?",
+      acceptedAnswer: { "@type": "Answer", text: "Pinehurst is ideal for groups where golf is the entire point ($800–$2,000 per person). It's a dedicated golf village with 40+ courses including the famous Pinehurst No. 2. Less suited for groups with non-golfers." }
+    },
+    {
+      "@type": "Question",
+      name: "Is Bandon Dunes good for group golf trips?",
+      acceptedAnswer: { "@type": "Answer", text: "Bandon Dunes is the best purely golf-focused destination in the US ($1,500–$3,000 per person). Five walking-only links courses on the Oregon coast. Best for smaller groups (4–8) of serious golfers." }
+    },
+    {
+      "@type": "Question",
+      name: "What is the best budget golf trip destination for groups?",
+      acceptedAnswer: { "@type": "Answer", text: "Myrtle Beach and Wisconsin offer the best value for budget-conscious groups. Myrtle Beach starts around $500 per person all-in. Wisconsin has courses at $400–$900 per person including access to Whistling Straits and Erin Hills." }
+    }
+  ]
+};
+
 export default function BestGolfTripDestinationsPage() {
   return (
     <PageShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>

@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Scottsdale Golf Trip Planner for Groups | Outing.golf",
+  title: "Scottsdale Golf Trip Planner for Groups | Courses & Budget Guide",
   description:
-    "Planning a group golf trip to Scottsdale? A guide to courses, budget ranges, and what to know before you organize a trip to the Phoenix area — including when to go and what the destination supports across different budget tiers."
+    "Planning a Scottsdale golf trip for your group? Courses, budget ranges, seasonal timing, and what organizers need to know.",
+  alternates: { canonical: "https://www.outing.golf/scottsdale-golf-trip-planner" }
 };
 
 export default function ScottsdaleGolfTripPlannerPage() {

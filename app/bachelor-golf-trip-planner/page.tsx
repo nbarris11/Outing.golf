@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Bachelor Golf Trip Planner | Outing.golf",
+  title: "Bachelor Golf Trip Planner: How to Organize the Outing",
   description:
-    "Planning a bachelor golf trip? Outing.golf helps you collect budgets, dates, and course preferences from the whole group so the organizer is not spending three weeks chasing replies in a text thread."
+    "How to organize a bachelor golf trip when the group has mixed budgets, a hard deadline, and high expectations.",
+  alternates: { canonical: "https://www.outing.golf/bachelor-golf-trip-planner" }
 };
 
 export default function BachelorGolfTripPlannerPage() {
@@ -66,7 +67,12 @@ export default function BachelorGolfTripPlannerPage() {
               Find the date window that works for the core crew
             </h2>
             <p className="mt-4 text-base leading-7 text-charcoal/68">
-              Bachelor trips are usually three to four days. The date conversation is often the hardest part
+              Bachelor trips are usually three to four days — for a day-by-day breakdown of how that structure
+              typically works, see the{" "}
+              <a href="/bachelor-golf-trip-itinerary" className="text-forest-900 underline-offset-2 hover:underline">
+                bachelor golf trip itinerary template
+              </a>
+              . The date conversation is often the hardest part
               because it involves coordinating work schedules, family schedules, and the wedding timeline. Get
               everyone's availability in the first round of planning, set a deadline for responses, and pick the
               window that works for the core group.

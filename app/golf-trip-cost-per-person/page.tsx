@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Cost Per Person: What to Expect | Outing.golf",
+  title: "Golf Trip Cost Per Person: What to Budget by Destination",
   description:
-    "How much does a golf trip cost per person? Realistic cost ranges by destination tier — drive-to, regional fly-to, and premium — and the five variables that move the number most."
+    "Realistic per-person cost ranges for the top golf trip destinations — from drive-to budget trips to bucket-list experiences.",
+  alternates: { canonical: "https://www.outing.golf/golf-trip-cost-per-person" }
 };
 
 const tiers = [

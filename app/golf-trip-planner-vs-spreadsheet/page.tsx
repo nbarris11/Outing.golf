@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Planner vs. Spreadsheet | Outing.golf",
+  title: "Golf Trip Planner vs. Spreadsheet: What Actually Works",
   description:
-    "Most golf trip organizers start with a spreadsheet or Google Sheet. Here is why a purpose-built golf trip planning tool — and not a group chat — gets groups to a decision faster."
+    "Why a purpose-built golf trip planner handles what a shared spreadsheet can't — from private budget collection to group voting in one place.",
+  alternates: { canonical: "https://www.outing.golf/golf-trip-planner-vs-spreadsheet" }
 };
 
 const comparison = [

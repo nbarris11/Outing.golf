@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Budget Breakdown for Groups | Outing.golf",
+  title: "Golf Trip Budget Breakdown: Greens Fees, Lodging & More",
   description:
-    "A practical golf trip budget breakdown covering greens fees, lodging, travel, food, and extras — with per-person math so you know what the trip actually costs before you commit."
+    "How to break down greens fees, lodging, travel, food, and extras across your group's golf trip — and what moves each cost category most.",
+  alternates: { canonical: "https://www.outing.golf/golf-trip-budget-breakdown" }
 };
 
 const categories = [

@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Annual Golf Trip Checklist for Recurring Group Organizers | Outing.golf",
+  title: "Annual Golf Trip Checklist for Recurring Group Organizers",
   description:
-    "A checklist built for organizers who run the same golf trip every year — what to do differently once it repeats, how to build on what worked, and how to stop re-learning the same lessons."
+    "Built for recurring golf trip organizers — how to capture what worked, lock in the group early, and build a better trip every year.",
+  alternates: { canonical: "https://www.outing.golf/annual-golf-trip-checklist" }
 };
 
 const phases = [

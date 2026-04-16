@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Golf Trip Itinerary Template for Groups | Outing.golf",
+  title: "Golf Trip Itinerary Template — Day-by-Day Group Trip Planner",
   description:
-    "A practical golf trip itinerary template for group organizers — covering the day-by-day structure, what to decide before you build it, and how to share it with the group."
+    "A day-by-day itinerary template for group golf trips. Arrival through departure, with time slots, pre-trip tasks, and a 2-day weekend version.",
+  alternates: { canonical: "https://www.outing.golf/golf-trip-itinerary-template" }
 };
 
 const days = [
