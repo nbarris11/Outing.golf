@@ -142,7 +142,7 @@ export default async function LandingPage() {
                   <div className="mt-4 space-y-3">
                     {[
                       "2 courses voted on and assigned to specific days",
-                      "Hotel shortlist with live rates from the lodging API",
+                      "Hotel shortlist with current availability and rates",
                       "Shared packing list — 6 items checked off, 2 outstanding"
                     ].map((line) => (
                       <div key={line} className="flex items-start gap-3 rounded-[20px] bg-cream px-4 py-3">
