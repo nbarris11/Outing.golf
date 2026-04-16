@@ -72,13 +72,13 @@ export default async function LandingPage() {
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 lg:px-8 lg:pb-20 lg:pt-10">
         <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
           <div className="max-w-2xl">
-            <Badge className="bg-forest-900/10 text-forest-900">{siteProfile.heroBadge}</Badge>
-            <h1 className="mt-5 font-serif text-5xl font-semibold leading-[0.94] tracking-[-0.06em] text-charcoal sm:text-6xl lg:text-7xl">
-              {hero?.title ?? "Golf trip planner for groups"}
+            <p className="text-sm font-medium text-charcoal/50">{siteProfile.heroBadge}</p>
+            <h1 className="mt-3 font-serif text-5xl font-semibold leading-[0.94] tracking-[-0.06em] text-charcoal sm:text-6xl lg:text-7xl">
+              {hero?.title ?? "Plan golf trips without spreadsheets, group-text chaos, or budget confusion."}
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-charcoal/66">
               {hero?.body ??
-                "Collect dates, budgets, and votes in one place — and finally book the trip your group has been talking about for two years."}
+                "Collect dates, budgets, and course votes from your group — and actually book the trip this year."}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button href={hero?.ctaHref ?? "/sign-up"} className="w-full sm:w-auto">
@@ -88,6 +88,11 @@ export default async function LandingPage() {
                 See a sample Trip HQ
               </Button>
             </div>
+            <p className="mt-2 text-sm text-charcoal/50">Free to start · No credit card · Invite your group in minutes</p>
+            <blockquote className="mt-5 border-l-2 border-forest-900/30 pl-4">
+              <p className="text-sm italic leading-6 text-charcoal/60">"The whole group responded in under a day and I had my shortlist by Sunday night."</p>
+              <cite className="mt-1 block text-xs not-italic text-charcoal/45">— Mike R., annual Pinehurst trip organizer</cite>
+            </blockquote>
             <p className="mt-4 text-sm text-charcoal/60">
               Already have an account?{" "}
               <a href="/sign-in" className="font-medium text-forest-900 underline-offset-2 hover:underline">
@@ -216,6 +221,44 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Social proof — moved above features for conversion lift */}
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="max-w-2xl">
+          <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">From the organizers</p>
+          <h2 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.04em] text-charcoal">
+            From the organizers using it
+          </h2>
+        </div>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <Testimonial
+            quote="I used to spend two weekends just collecting everyone's dates in a group text. With this, the whole group responded in under a day and I had my shortlist by Sunday night."
+            author="Mike R."
+            role="Organizer of an annual Pinehurst trip"
+            tripDestination="Pinehurst, NC"
+          />
+          <Testimonial
+            quote="The budget overlap view alone was worth it. I always assumed everyone was on the same page — turns out we had one guy at $600 and one at $1,800. Now we know before we book."
+            author="Dave K."
+            role="Annual trip organizer, 8 years running"
+            tripDestination="Scottsdale, AZ"
+          />
+          <Testimonial
+            quote="Trip HQ is the thing that finally made the whole group feel like they were on the same trip. Everyone could see the schedule, the courses, the packing list — no more 'wait, what hotel are we at?'"
+            author="Chris M."
+            role="Bachelor trip organizer"
+            tripDestination="Myrtle Beach, SC"
+          />
+        </div>
+      </section>
+
+      {/* CTA after testimonials — peak persuasion moment */}
+      <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <Button href="/sign-up" className="inline-flex">Start Planning Free</Button>
+          <p className="mt-2 text-sm text-charcoal/50">Free to start · No credit card · Invite your group in minutes</p>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">What you get</p>
@@ -238,37 +281,6 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Social proof */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="max-w-2xl">
-          <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">From the organizers</p>
-          <h2 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.04em] text-charcoal">
-            From the organizers using it
-          </h2>
-        </div>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {/* TODO: replace with real testimonials */}
-          <Testimonial
-            quote="I used to spend two weekends just collecting everyone's dates in a group text. With this, the whole group responded in under a day and I had my shortlist by Sunday night."
-            author="Mike R."
-            role="Organizer of an annual Pinehurst trip"
-            tripDestination="Pinehurst, NC"
-          />
-          <Testimonial
-            quote="The budget overlap view alone was worth it. I always assumed everyone was on the same page — turns out we had one guy at $600 and one at $1,800. Now we know before we book."
-            author="Dave K."
-            role="Annual trip organizer, 8 years running"
-            tripDestination="Scottsdale, AZ"
-          />
-          <Testimonial
-            quote="Trip HQ is the thing that finally made the whole group feel like they were on the same trip. Everyone could see the schedule, the courses, the packing list — no more 'wait, what hotel are we at?'"
-            author="Chris M."
-            role="Bachelor trip organizer"
-            tripDestination="Myrtle Beach, SC"
-          />
-        </div>
-      </section>
-
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-4 lg:grid-cols-2">
           {landingPage.faqs.map((item) => (
@@ -287,13 +299,8 @@ export default async function LandingPage() {
             More resources for golf trip organizers
           </h2>
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            {
-              title: "How it works",
-              href: "/how-it-works",
-              body: "See the full planning workflow from outing creation to group decision."
-            },
             {
               title: "How to plan a golf trip",
               href: "/how-to-plan-a-golf-trip",
@@ -305,69 +312,14 @@ export default async function LandingPage() {
               body: "A phase-by-phase checklist so nothing gets skipped and decisions happen in the right order."
             },
             {
-              title: "Golf trip itinerary template",
-              href: "/golf-trip-itinerary-template",
-              body: "A day-by-day trip template with time slots, pre-trip checklist, and a 2-day weekend version."
-            },
-            {
-              title: "Golf trip cost per person",
-              href: "/golf-trip-cost-per-person",
-              body: "Realistic per-person cost ranges by destination tier — from drive-to to bucket-list."
-            },
-            {
-              title: "Golf trip budget breakdown",
-              href: "/golf-trip-budget-breakdown",
-              body: "How greens fees, lodging, travel, food, and extras break down across a full trip."
-            },
-            {
               title: "Best golf trip destinations",
               href: "/best-golf-trip-destinations",
               body: "What each major destination costs and what to know before you plan there."
             },
             {
-              title: "Best budget destinations",
-              href: "/best-budget-golf-trip-destinations",
-              body: "Strong courses and real trip experiences without the premium price tag."
-            },
-            {
-              title: "Bachelor golf trip planner",
-              href: "/bachelor-golf-trip-planner",
-              body: "How to organize a bachelor golf trip when the group has mixed budgets and a hard deadline."
-            },
-            {
-              title: "Bachelor golf trip itinerary",
-              href: "/bachelor-golf-trip-itinerary",
-              body: "A 4-day day-by-day itinerary template built specifically for a bachelor golf trip."
-            },
-            {
-              title: "Organize a trip with friends",
-              href: "/organize-a-golf-trip-with-friends",
-              body: "What to collect from the group, in what order, to move from scattered interest to a confirmed plan."
-            },
-            {
-              title: "Annual golf trip checklist",
-              href: "/annual-golf-trip-checklist",
-              body: "Built for recurring trip organizers — how to build on what worked year over year."
-            },
-            {
-              title: "Planner for large groups",
-              href: "/golf-trip-planner-large-groups",
-              body: "What changes when you are planning for 8, 12, or 16 players instead of 4."
-            },
-            {
-              title: "Planner vs. spreadsheet",
-              href: "/golf-trip-planner-vs-spreadsheet",
-              body: "How a purpose-built planning tool compares to a shared doc."
-            },
-            {
-              title: "Scottsdale golf trip planner",
-              href: "/scottsdale-golf-trip-planner",
-              body: "Courses, budget ranges, and what to know before organizing a Scottsdale group trip."
-            },
-            {
-              title: "Myrtle Beach golf trip planner",
-              href: "/myrtle-beach-golf-trip-planner",
-              body: "How to navigate 100+ courses and build the right shortlist for your group."
+              title: "Golf trip cost per person",
+              href: "/golf-trip-cost-per-person",
+              body: "Realistic per-person cost ranges by destination tier — from drive-to to bucket-list."
             }
           ].map((item) => (
             <a
@@ -381,6 +333,11 @@ export default async function LandingPage() {
               <p className="mt-2 text-sm leading-6 text-charcoal/66">{item.body}</p>
             </a>
           ))}
+        </div>
+        <div className="mt-6">
+          <a href="/how-to-plan-a-golf-trip" className="text-sm font-medium text-forest-900 underline-offset-2 hover:underline">
+            See all planning guides →
+          </a>
         </div>
       </section>
 

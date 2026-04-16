@@ -6,7 +6,7 @@ import type { LandingPageSettings, SiteProfileSettings } from "@/types/domain";
 
 export const defaultSiteProfileSettings: SiteProfileSettings = {
   legalBusinessName: "Outing.golf",
-  heroBadge: "Golf trip planning tool for organizers",
+  heroBadge: "Golf trip planner for groups",
   launchStatusLabel: "Private preview",
   supportEmail: "hello@outing.golf",
   footerTagline: "Plan golf trips without spreadsheets, group-text chaos, or budget confusion."
@@ -43,20 +43,20 @@ export const defaultLandingPageSettings: LandingPageSettings = {
   outcomesTitle: "Everything the group needs, in one place",
   outcomes: [
     {
-      title: "Real courses and hotels, not placeholders",
-      body: "Golf course and lodging results come from live providers so what you see is actually available and bookable at your destination."
+      title: "No more 'is this actually available?' research",
+      body: "Course and lodging results come from live providers so every option you're considering is real, available, and bookable at your destination — not a placeholder you still have to verify."
     },
     {
-      title: "Group voting without the group chat",
-      body: "Everyone votes on destinations, courses, and lodging right in the app. The organizer sees where the group is landing without running a poll in the text thread."
+      title: "Stop running polls in the group chat",
+      body: "Everyone votes on destinations, courses, and lodging right in the app. You see where the group is landing in real time — without a single 'hey did everyone vote yet?' message."
     },
     {
-      title: "A course schedule the whole group can see",
-      body: "Assign each course to a specific day and share the full round-by-round schedule inside Trip HQ so everyone arrives knowing the plan."
+      title: "Everyone shows up knowing the plan",
+      body: "Assign each course to a specific day and share the full round-by-round schedule inside Trip HQ. No more 'wait, what course are we playing Saturday?' texts the night before."
     },
     {
-      title: "A shared packing list for the whole trip",
-      body: "Add gear, check items off as you pack, and let the whole group see what is still outstanding so nobody shows up missing clubs or rain gear."
+      title: "Nobody shows up missing clubs or rain gear",
+      body: "Add gear to a shared packing list, check items off as you pack, and let the whole group see what's still outstanding before anyone leaves home."
     }
   ],
   socialProofTitle: "Built for the person who always ends up organizing the trip",
@@ -71,7 +71,7 @@ export const defaultLandingPageSettings: LandingPageSettings = {
   faqs: [
     {
       question: "Do invitees need accounts?",
-      answer: "Yes. Each person signs in to submit their preferences and access the shared Trip HQ. This keeps the outing private and makes sure votes and responses are tied to real group members."
+      answer: "Yes — and it's fast. Invites go out as a simple link. Each person clicks it, signs up in under a minute, and fills out their preferences in one short flow. Most groups are fully responded within 24 hours. The account requirement keeps your outing private and ties every vote and response to a real group member."
     },
     {
       question: "How are golf courses and hotels found?",
