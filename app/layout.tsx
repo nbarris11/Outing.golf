@@ -17,9 +17,25 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.outing.golf"),
   title: "Golf Trip Planner for Groups | Outing.golf",
   description:
-    "Outing.golf is a golf trip planner that helps organizers collect budgets, dates, course preferences, lodging preferences, and group input in one place so trips get planned faster."
+    "Outing.golf is a golf trip planner that helps organizers collect budgets, dates, course preferences, lodging preferences, and group input in one place so trips get planned faster.",
+  openGraph: {
+    title: "Golf Trip Planner for Groups | Outing.golf",
+    description:
+      "Collect budgets, dates, course preferences, and group input in one place so your golf trip gets planned faster.",
+    url: "https://www.outing.golf",
+    siteName: "Outing.golf",
+    type: "website",
+    locale: "en_US"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Golf Trip Planner for Groups | Outing.golf",
+    description:
+      "Collect budgets, dates, course preferences, and group input in one place so your golf trip gets planned faster."
+  }
 };
 
 export default async function RootLayout({

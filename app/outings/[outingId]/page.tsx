@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { BackButton } from "@/components/common/back-button";
+import { PostCreateBanner } from "@/components/outings/post-create-banner";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { AddDestinationForm, AddGolfCourseForm, AddLodgingForm } from "@/components/outings/add-option-form";
 import { OrganizerChecklist } from "@/components/outings/organizer-checklist";
@@ -529,13 +531,35 @@ export default async function OutingDetailPage({
   // Voting state
   const votingOpen = detail.outing.votingOpen;
   const myVotes = detail.votes.filter((v) => v.profileId === profile.id);
-  const myCoursePick = myVotes.find((v) => v.entityType === "golf_course")?.entityId ?? null;
-  const myLodgingPick = myVotes.find((v) => v.entityType === "lodging")?.entityId ?? null;
+  // Approval voting: a member can vote for multiple options per category
+  const myCourseVotes = new Set(myVotes.filter((v) => v.entityType === "golf_course").map((v) => v.entityId));
+  const myLodgingVotes = new Set(myVotes.filter((v) => v.entityType === "lodging").map((v) => v.entityId));
 
   // Tally votes per entity
   const allVotes = detail.votes;
   function voteTally(entityType: "golf_course" | "lodging", entityId: string) {
     return allVotes.filter((v) => v.entityType === entityType && v.entityId === entityId).length;
+  }
+
+  // Voter attribution: get profile initials for everyone who voted for an entity
+  const detailProfiles = detail.profiles;
+  function voterInitials(entityType: "golf_course" | "lodging", entityId: string) {
+    const voterIds = allVotes
+      .filter((v) => v.entityType === entityType && v.entityId === entityId)
+      .map((v) => v.profileId);
+    return voterIds.map((id) => {
+      const p = detailProfiles.find((prof) => prof.id === id);
+      const name = p?.fullName ?? p?.email ?? "?";
+      return {
+        initials: name
+          .split(/[\s@]/)
+          .filter(Boolean)
+          .map((n) => n[0].toUpperCase())
+          .slice(0, 2)
+          .join(""),
+        fullName: name.split("@")[0]
+      };
+    });
   }
 
   // Top 3 visible courses and lodging for the voting zone
@@ -581,6 +605,11 @@ export default async function OutingDetailPage({
     <PageShell>
       <ScrollToTop />
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+
+        {/* ── Breadcrumb ── */}
+        <div className="mb-5">
+          <BackButton fallback="/dashboard" label="Back to dashboard" />
+        </div>
 
         {/* ── Trip header ── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -701,7 +730,9 @@ export default async function OutingDetailPage({
         </div>
 
         {/* ── Notices ── */}
-        {notices.created === "1" ? (
+        {notices.created === "1" && isOrganizer && shareLink ? (
+          <PostCreateBanner shareLink={shareLink} outingName={detail.outing.name} />
+        ) : notices.created === "1" ? (
           <div className="mt-5 rounded-[22px] border border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)] px-5 py-4">
             <h2 className="font-semibold text-charcoal">Trip created — invite the group</h2>
             <p className="mt-1 text-sm text-charcoal/68">
@@ -716,7 +747,7 @@ export default async function OutingDetailPage({
         ) : null}
 
         {/* ── All-in CTA: organizer prompt to start vote ── */}
-        {isOrganizer && !votingOpen && responsePercent === 100 && progressTarget > 0 && allVotes.length === 0 && (
+        {isOrganizer && !votingOpen && responsePercent === 100 && detail.insights.respondedCount > 1 && progressTarget > 0 && allVotes.length === 0 && (
           <div className="mt-6 rounded-[28px] border-2 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5,#f7f4ee)] p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -737,6 +768,16 @@ export default async function OutingDetailPage({
                 />
               </form>
             </div>
+          </div>
+        )}
+
+        {/* ── Invite nudge: shown when only the organizer has responded ── */}
+        {isOrganizer && !votingOpen && responsePercent === 100 && detail.insights.respondedCount <= 1 && progressTarget <= 1 && allVotes.length === 0 && (
+          <div className="mt-6 rounded-[28px] border border-charcoal/10 bg-white p-6">
+            <h2 className="text-lg font-semibold tracking-[-0.02em] text-charcoal">Now invite the group</h2>
+            <p className="mt-1 text-sm text-charcoal/65">
+              They fill out their dates and budget in about 90 seconds, then you&apos;ll see overlap on dates and budget here.
+            </p>
           </div>
         )}
 
@@ -805,7 +846,7 @@ export default async function OutingDetailPage({
 
         {/* ── Group vote zone (full-width, only when open) ── */}
         {votingOpen && (top3Courses.length > 0 || top3Lodging.length > 0) && (
-          <div className="mt-6 rounded-[28px] border-2 border-amber-200 bg-amber-50/60 p-6">
+          <div className="mt-6 rounded-[28px] border border-forest-900/12 bg-[linear-gradient(135deg,rgba(20,58,44,0.06),rgba(247,244,238,0.85))] p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -813,13 +854,18 @@ export default async function OutingDetailPage({
                   <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Group vote</h2>
                 </div>
                 <p className="mt-1 text-sm text-charcoal/60">
-                  Each person picks one course and one lodging. The organizer makes the final call.
+                  Vote for as many options as you like. The organizer makes the final call.{" "}
+                  <a href={`/outings/${detail.outing.id}`} className="text-forest-900 hover:underline underline-offset-2">
+                    Edit shortlist →
+                  </a>
                 </p>
               </div>
               {isOrganizer && (
                 <form action={closeVotingAction}>
                   <input type="hidden" name="outingId" value={detail.outing.id} />
-                  <SubmitButton label="Close vote" pendingLabel="Closing..." className="shrink-0 text-sm" />
+                  <button type="submit" className="shrink-0 text-sm text-charcoal/50 hover:text-charcoal transition-colors">
+                    Close vote
+                  </button>
                 </form>
               )}
             </div>
@@ -832,8 +878,9 @@ export default async function OutingDetailPage({
                   <div className="space-y-3">
                     {top3Courses.map((course) => {
                       const tally = voteTally("golf_course", course.id);
-                      const isMyPick = myCoursePick === course.id;
+                      const isMyPick = myCourseVotes.has(course.id);
                       const pct = totalVoters > 0 ? Math.round((tally / totalVoters) * 100) : 0;
+                      const voters = voterInitials("golf_course", course.id);
                       return (
                         <div key={course.id} className={["rounded-[20px] p-4 transition-all", isMyPick ? "bg-forest-900 text-cream" : "bg-white"].join(" ")}>
                           <div className="flex items-start justify-between gap-3">
@@ -850,9 +897,22 @@ export default async function OutingDetailPage({
                           </div>
                           {tally > 0 && (
                             <div className="mt-3">
-                              <div className="flex items-center justify-between text-xs mb-1">
-                                <span className={isMyPick ? "text-cream/60" : "text-charcoal/50"}>{tally} vote{tally !== 1 ? "s" : ""}</span>
-                                <span className={isMyPick ? "text-cream/60" : "text-charcoal/50"}>{pct}%</span>
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <div className="flex items-center gap-1">
+                                  {voters.slice(0, 4).map((v, i) => (
+                                    <span
+                                      key={i}
+                                      title={v.fullName}
+                                      className={["flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold ring-2", isMyPick ? "bg-white/20 text-cream ring-forest-900" : "bg-forest-900 text-cream ring-white"].join(" ")}
+                                    >
+                                      {v.initials}
+                                    </span>
+                                  ))}
+                                  {voters.length > 4 && (
+                                    <span className={["text-xs", isMyPick ? "text-cream/55" : "text-charcoal/45"].join(" ")}>+{voters.length - 4}</span>
+                                  )}
+                                </div>
+                                <span className={["text-xs", isMyPick ? "text-cream/60" : "text-charcoal/50"].join(" ")}>{pct}%</span>
                               </div>
                               <div className={["h-1.5 w-full rounded-full", isMyPick ? "bg-white/15" : "bg-charcoal/8"].join(" ")}>
                                 <div
@@ -876,8 +936,9 @@ export default async function OutingDetailPage({
                   <div className="space-y-3">
                     {top3Lodging.map((stay) => {
                       const tally = voteTally("lodging", stay.id);
-                      const isMyPick = myLodgingPick === stay.id;
+                      const isMyPick = myLodgingVotes.has(stay.id);
                       const pct = totalVoters > 0 ? Math.round((tally / totalVoters) * 100) : 0;
+                      const voters = voterInitials("lodging", stay.id);
                       return (
                         <div key={stay.id} className={["rounded-[20px] p-4 transition-all", isMyPick ? "bg-forest-900 text-cream" : "bg-white"].join(" ")}>
                           <div className="flex items-start justify-between gap-3">
@@ -896,9 +957,22 @@ export default async function OutingDetailPage({
                           </div>
                           {tally > 0 && (
                             <div className="mt-3">
-                              <div className="flex items-center justify-between text-xs mb-1">
-                                <span className={isMyPick ? "text-cream/60" : "text-charcoal/50"}>{tally} vote{tally !== 1 ? "s" : ""}</span>
-                                <span className={isMyPick ? "text-cream/60" : "text-charcoal/50"}>{pct}%</span>
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <div className="flex items-center gap-1">
+                                  {voters.slice(0, 4).map((v, i) => (
+                                    <span
+                                      key={i}
+                                      title={v.fullName}
+                                      className={["flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold ring-2", isMyPick ? "bg-white/20 text-cream ring-forest-900" : "bg-forest-900 text-cream ring-white"].join(" ")}
+                                    >
+                                      {v.initials}
+                                    </span>
+                                  ))}
+                                  {voters.length > 4 && (
+                                    <span className={["text-xs", isMyPick ? "text-cream/55" : "text-charcoal/45"].join(" ")}>+{voters.length - 4}</span>
+                                  )}
+                                </div>
+                                <span className={["text-xs", isMyPick ? "text-cream/60" : "text-charcoal/50"].join(" ")}>{pct}%</span>
                               </div>
                               <div className={["h-1.5 w-full rounded-full", isMyPick ? "bg-white/15" : "bg-charcoal/8"].join(" ")}>
                                 <div
@@ -1699,19 +1773,7 @@ export default async function OutingDetailPage({
                   courseNames={visibleCourses.map((c) => c.name)}
                 />
 
-                {/* Open vote (only when not yet open and there are options to vote on) */}
-                {!votingOpen && (visibleCourses.length >= 2 || visibleLodging.length >= 2) && (
-                  <div className="rounded-[22px] border border-charcoal/10 bg-white px-5 py-4">
-                    <p className="text-sm font-semibold text-charcoal">Ready to let the group vote?</p>
-                    <p className="mt-1 text-xs text-charcoal/55">
-                      Open a group vote so everyone picks their preferred course and lodging. You make the final call.
-                    </p>
-                    <form action={openVotingAction} className="mt-3">
-                      <input type="hidden" name="outingId" value={detail.outing.id} />
-                      <SubmitButton label="🗳 Open group vote" pendingLabel="Opening..." className="w-full justify-center text-sm" />
-                    </form>
-                  </div>
-                )}
+                {/* Open vote button lives in the All-in CTA card above — removed duplicate here */}
 
                 {/* Compare & finalize CTA */}
                 {(visibleDestinations.length > 0 || visibleCourses.length > 0) && detail.insights.respondedCount >= 1 && (

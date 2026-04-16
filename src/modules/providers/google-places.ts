@@ -230,9 +230,18 @@ function estimateQualityScore(place: GooglePlace, index: number) {
   return clamp(ratingScore + reviewLift - index, 72, 98);
 }
 
-function golfSummary(place: GooglePlace, destination: DestinationOption) {
-  const ratingLabel = place.rating ? ` with a ${place.rating.toFixed(1)} Google rating` : "";
-  return `Live course result near ${destination.name}${ratingLabel}. Greens fee and walking/riding fit are estimated for planning until live tee-time feeds are connected.`;
+// Returns empty — templated descriptions destroy trust; summary will be blank until
+// editorialSummary from Place Details is wired up.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function golfSummary(_place: GooglePlace, _destination: DestinationOption) {
+  return "";
+}
+
+const NON_COURSE_NAME_PATTERNS = /pro\s?shop|golf shop|golf store|golf academy|instruction|driving range/i;
+
+function isActualCourse(place: GooglePlace): boolean {
+  const name = getPlaceName(place).toLowerCase();
+  return !NON_COURSE_NAME_PATTERNS.test(name);
 }
 
 function golfTags(place: GooglePlace) {
@@ -470,6 +479,9 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
           const existingIds = new Set(places.map(p => p.id));
           places.push(...more.filter(p => !existingIds.has(p.id)));
         }
+
+        // Filter out pro shops, academies, and driving ranges
+        places = places.filter(isActualCourse);
 
         if (!places.length) {
           logInfo("Google Places golf search returned no results — skipping destination", {

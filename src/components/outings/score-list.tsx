@@ -45,9 +45,12 @@ export function ScoreList({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h4 className="font-medium text-charcoal">{option.name}</h4>
-                  <p className="mt-1 text-sm text-charcoal/65">
-                    {"summary" in option ? option.summary : ""}
-                  </p>
+                  {(() => {
+                    const s = "summary" in option ? (option.summary as string) : "";
+                    return s && !s.startsWith("Live course result") ? (
+                      <p className="mt-1 text-sm text-charcoal/65">{s}</p>
+                    ) : null;
+                  })()}
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-forest-900">{score.score} fit</p>

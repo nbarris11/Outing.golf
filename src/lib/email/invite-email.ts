@@ -132,3 +132,54 @@ export async function sendBookingConfirmedEmail(input: {
     text
   });
 }
+
+export async function sendVoteOpenEmail(input: {
+  memberEmail: string;
+  memberName: string;
+  outingName: string;
+  organizerFirstName: string;
+  voteUrl: string;
+}) {
+  const resend = getResendClient();
+  if (!resend || !env.RESEND_FROM_EMAIL) return; // silently skip if not configured
+
+  const subject = `Voting is open for ${input.outingName}`;
+  const text = [
+    `${input.organizerFirstName} just opened the group vote for ${input.outingName}.`,
+    "",
+    "Pick your favorite course and hotel — takes 30 seconds.",
+    "",
+    `Open vote: ${input.voteUrl}`,
+    "",
+    "Outing.golf"
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2423; max-width: 620px; margin: 0 auto; padding: 24px;">
+      <p style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #6b726d;">Outing.golf · Group vote</p>
+      <h1 style="font-size: 28px; line-height: 1.15; margin: 12px 0 8px; font-family: Georgia, serif;">Voting is open for ${input.outingName}</h1>
+      <p style="font-size: 16px; color: #45504b;">Hey ${input.memberName},</p>
+      <p style="font-size: 16px; color: #45504b; margin-bottom: 4px;">${input.organizerFirstName} just opened the group vote. Pick your favorite course and hotel — it takes about 30 seconds.</p>
+      <p style="margin: 28px 0;">
+        <a href="${input.voteUrl}" style="display: inline-block; background: #143a2c; color: #f7f4ee; text-decoration: none; padding: 14px 22px; border-radius: 999px; font-weight: 600;">
+          Open vote →
+        </a>
+      </p>
+      <p style="font-size: 13px; color: #7a837e; margin-top: 24px;">
+        If the button does not work, copy and paste this link:<br />
+        <a href="${input.voteUrl}" style="color: #143a2c;">${input.voteUrl}</a>
+      </p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: env.RESEND_FROM_EMAIL,
+    to: input.memberEmail,
+    replyTo: env.RESEND_REPLY_TO_EMAIL || undefined,
+    subject,
+    html,
+    text
+  });
+
+  logInfo("Vote-open email sent", { memberEmail: input.memberEmail, outingName: input.outingName });
+}

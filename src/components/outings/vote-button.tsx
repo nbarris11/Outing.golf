@@ -20,8 +20,8 @@ export function VoteButton({
   entityType,
   entityId,
   isMyPick,
-  idleClassName = "bg-forest-900/10 text-forest-900 hover:bg-forest-900/20",
-  activeClassName = "bg-white/20 text-cream hover:bg-white/30"
+  idleClassName = "bg-forest-900 text-cream hover:bg-forest-900/90",
+  activeClassName = "bg-white/20 text-cream ring-2 ring-white/40 hover:bg-white/30"
 }: Props) {
   const [isPending, startTransition] = useTransition();
 

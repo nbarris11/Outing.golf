@@ -130,7 +130,7 @@ export function ComparePanel({
                     <span>{course.qualityScore}/100 quality</span>
                     <span>{course.walkingFriendly ? "Walking-friendly" : "Riding-first"}</span>
                   </div>
-                  {course.summary ? (
+                  {course.summary && !course.summary.startsWith("Live course result") ? (
                     <p className={["mt-3 text-sm leading-6", isSelected ? "text-cream/60" : "text-charcoal/64"].join(" ")}>
                       {course.summary}
                     </p>

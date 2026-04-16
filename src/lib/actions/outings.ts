@@ -23,7 +23,7 @@ import {
   upsertDemoPreference
 } from "@/lib/demo/store";
 import { isDemoMode, publicAppUrl } from "@/lib/env";
-import { isInviteEmailConfigured, sendInviteEmail } from "@/lib/email/invite-email";
+import { isInviteEmailConfigured, sendInviteEmail, sendVoteOpenEmail } from "@/lib/email/invite-email";
 import { logError } from "@/lib/logger";
 import { getOutingShareLink, resolveOutingIdFromShareToken } from "@/lib/outing-share-links";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -1562,6 +1562,50 @@ export async function openVotingAction(formData: FormData) {
   }
 
   await client.from("outings").update({ voting_open: true }).eq("id", outingId);
+
+  // Email all members who have responded but haven't voted yet
+  try {
+    const [{ data: outingFull }, { data: members }, { data: preferences }, { data: existingVotes }] =
+      await Promise.all([
+        client.from("outings").select("name").eq("id", outingId).maybeSingle(),
+        client.from("outing_members").select("profile_id").eq("outing_id", outingId),
+        client.from("preference_submissions").select("profile_id").eq("outing_id", outingId),
+        client.from("votes").select("profile_id").eq("outing_id", outingId)
+      ]);
+
+    const respondedIds = new Set((preferences ?? []).map((p) => p.profile_id));
+    const votedIds = new Set((existingVotes ?? []).map((v) => v.profile_id));
+    const memberIds = (members ?? []).map((m) => m.profile_id);
+    const toNotify = memberIds.filter(
+      (id) => id !== profile.id && respondedIds.has(id) && !votedIds.has(id)
+    );
+
+    if (toNotify.length > 0 && outingFull?.name) {
+      const { data: profileRows } = await client
+        .from("profiles")
+        .select("id,email,full_name")
+        .in("id", toNotify);
+
+      const organizerFirstName = (profile.fullName ?? profile.email).split(/[\s@]/)[0] || "Your organizer";
+
+      const voteUrl = `${publicAppUrl}/outings/${outingId}`;
+
+      await Promise.allSettled(
+        (profileRows ?? []).map((p) =>
+          sendVoteOpenEmail({
+            memberEmail: p.email,
+            memberName: (p.full_name ?? p.email).split(/[\s@]/)[0],
+            outingName: outingFull.name,
+            organizerFirstName,
+            voteUrl
+          })
+        )
+      );
+    }
+  } catch {
+    // Email errors must never block the action
+  }
+
   revalidatePath(`/outings/${outingId}`);
   redirect(`/outings/${outingId}?success=Group+vote+is+now+open`);
 }
@@ -1688,29 +1732,22 @@ export async function castGroupVoteAction(formData: FormData) {
     redirect(`/outings/${outingId}?error=Not+a+member`);
   }
 
-  // Find any existing vote this member has cast for this entity_type in this outing
-  const { data: existingVotes } = await client
+  // Approval voting: each person can vote for multiple options.
+  // Tapping a voted option toggles it off; tapping an un-voted option adds a new vote.
+  const { data: existingVote } = await client
     .from("votes")
-    .select("id,entity_id")
+    .select("id")
     .eq("outing_id", outingId)
     .eq("profile_id", profile.id)
-    .eq("entity_type", entityType);
+    .eq("entity_type", entityType)
+    .eq("entity_id", entityId)
+    .maybeSingle();
 
-  const existingForSameEntity = (existingVotes ?? []).find((v) => v.entity_id === entityId);
-
-  // Delete all existing votes for this type (enforces one pick per category)
-  if (existingVotes && existingVotes.length > 0) {
-    await client
-      .from("votes")
-      .delete()
-      .eq("outing_id", outingId)
-      .eq("profile_id", profile.id)
-      .eq("entity_type", entityType);
-  }
-
-  // If they clicked their own existing vote → it's a toggle-off, so just remove (done above)
-  // If they clicked a different option → insert the new vote
-  if (!existingForSameEntity) {
+  if (existingVote) {
+    // Toggle off — remove this specific vote
+    await client.from("votes").delete().eq("id", existingVote.id);
+  } else {
+    // Toggle on — add a new vote for this option
     await client.from("votes").insert({
       outing_id: outingId,
       profile_id: profile.id,

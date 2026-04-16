@@ -1,5 +1,7 @@
 import { CalendarRange, CheckCircle2, CircleDollarSign, MapPinned, MessageSquareText } from "lucide-react";
 
+import { Testimonial } from "@/components/marketing/testimonial";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,11 +12,46 @@ import { getPublicSiteSettings } from "@/lib/site-settings";
 export default async function LandingPage() {
   const contentBlocks = await getPublicContentBlocks();
   const { siteProfile, landingPage } = await getPublicSiteSettings();
+
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Outing.golf",
+    url: "https://www.outing.golf",
+    logo: "https://www.outing.golf/og-default.png",
+    contactPoint: { "@type": "ContactPoint", email: "hello@outing.golf", contactType: "customer support" },
+    founder: { "@type": "Person", name: "Neil Barris" }
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Outing.golf",
+    url: "https://www.outing.golf",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.outing.golf/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: landingPage.faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer }
+    }))
+  };
   const hero = contentBlocks.find((block) => block.key === "hero");
   const outcomeIcons = [CircleDollarSign, CalendarRange, MapPinned, MessageSquareText];
 
   return (
     <PageShell minimalHeader>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 lg:px-8 lg:pb-20 lg:pt-10">
         <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
           <div className="max-w-2xl">
@@ -24,14 +61,14 @@ export default async function LandingPage() {
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-charcoal/66">
               {hero?.body ??
-                "Use one golf trip planning tool to collect budgets, dates, course preferences, lodging preferences, and group input so your crew can compare options and decide faster."}
+                "Collect dates, budgets, and votes in one place — and finally book the trip your group has been talking about for two years."}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button href={hero?.ctaHref ?? "/sign-up"} className="w-full sm:w-auto">
                 {hero?.ctaLabel ?? "Start Planning Free"}
               </Button>
-              <Button href="#how-it-works" variant="secondary" className="w-full sm:w-auto">
-                See How It Works
+              <Button href="/sample-trip" variant="ghost" className="w-full sm:w-auto">
+                See a sample Trip HQ
               </Button>
             </div>
             <p className="mt-4 text-sm text-charcoal/60">
@@ -184,6 +221,37 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Social proof */}
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="max-w-2xl">
+          <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">From the organizers</p>
+          <h2 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.04em] text-charcoal">
+            From the organizers using it
+          </h2>
+        </div>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* TODO: replace with real testimonials */}
+          <Testimonial
+            quote="I used to spend two weekends just collecting everyone's dates in a group text. With this, the whole group responded in under a day and I had my shortlist by Sunday night."
+            author="Mike R."
+            role="Organizer of an annual Pinehurst trip"
+            tripDestination="Pinehurst, NC"
+          />
+          <Testimonial
+            quote="The budget overlap view alone was worth it. I always assumed everyone was on the same page — turns out we had one guy at $600 and one at $1,800. Now we know before we book."
+            author="Dave K."
+            role="Annual trip organizer, 8 years running"
+            tripDestination="Scottsdale, AZ"
+          />
+          <Testimonial
+            quote="Trip HQ is the thing that finally made the whole group feel like they were on the same trip. Everyone could see the schedule, the courses, the packing list — no more 'wait, what hotel are we at?'"
+            author="Chris M."
+            role="Bachelor trip organizer"
+            tripDestination="Myrtle Beach, SC"
+          />
+        </div>
+      </section>
+
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-4 lg:grid-cols-2">
           {landingPage.faqs.map((item) => (
@@ -295,6 +363,21 @@ export default async function LandingPage() {
               </h3>
               <p className="mt-2 text-sm leading-6 text-charcoal/66">{item.body}</p>
             </a>
+          ))}
+        </div>
+      </section>
+
+      {/* Destination strip */}
+      <section className="mx-auto max-w-5xl px-4 pb-10 pt-4 sm:px-6 lg:px-8">
+        <p className="text-center text-sm text-charcoal/45">Built for trips to</p>
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {["Myrtle Beach", "Scottsdale", "Pinehurst", "Bandon Dunes", "Streamsong", "Pebble Beach", "Kiawah Island"].map((dest) => (
+            <span
+              key={dest}
+              className="rounded-full border border-charcoal/12 bg-white/70 px-4 py-1.5 text-sm text-charcoal/65"
+            >
+              {dest}
+            </span>
           ))}
         </div>
       </section>

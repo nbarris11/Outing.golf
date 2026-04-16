@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
+import { SiteFooter } from "@/components/layout/site-footer";
 import { TripBoardingPass } from "@/components/trip/trip-boarding-pass";
 import { TripCountdown } from "@/components/trip/trip-countdown";
 import { TripLineup } from "@/components/trip/trip-lineup";
@@ -75,8 +77,23 @@ export default async function TripHqPage({
 
   return (
     <div className="min-h-screen bg-forest-900">
+      {/* Breadcrumb */}
+      <div className="px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <Link
+            href={`/outings/${outingId}`}
+            className="inline-flex items-center gap-1.5 text-sm text-cream/50 transition hover:text-cream/80"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to outing
+          </Link>
+        </div>
+      </div>
+
       {/* Hero */}
-      <section className="relative overflow-hidden px-4 pt-16 pb-14 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden px-4 pt-10 pb-14 sm:px-6 lg:px-8">
         {/* Subtle dot pattern */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -271,6 +288,7 @@ export default async function TripHqPage({
           <div className="mt-12 pb-8" />
         </div>
       </div>
+      <SiteFooter />
     </div>
   );
 }
