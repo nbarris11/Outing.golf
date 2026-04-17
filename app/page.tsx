@@ -9,14 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getPublicContentBlocks } from "@/lib/content";
 import { getPublicSiteSettings } from "@/lib/site-settings";
+import { getCurrentProfile } from "@/lib/auth";
 
 export const metadata: Metadata = {
   alternates: { canonical: "https://www.outing.golf" }
 };
 
 export default async function LandingPage() {
-  const contentBlocks = await getPublicContentBlocks();
-  const { siteProfile, landingPage } = await getPublicSiteSettings();
+  const [contentBlocks, { siteProfile, landingPage }, profile] = await Promise.all([
+    getPublicContentBlocks(),
+    getPublicSiteSettings(),
+    getCurrentProfile()
+  ]);
+  const ctaHref = profile ? "/outings/new" : "/sign-up";
 
   const softwareApplicationSchema = {
     "@context": "https://schema.org",
@@ -81,7 +86,7 @@ export default async function LandingPage() {
                 "Collect dates, budgets, and course votes from your group — and actually book the trip this year."}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button href={hero?.ctaHref ?? "/sign-up"} className="w-full sm:w-auto">
+              <Button href={hero?.ctaHref ?? ctaHref} className="w-full sm:w-auto">
                 {hero?.ctaLabel ?? "Start Planning Free"}
               </Button>
               <Button href="/sample-trip" variant="ghost" className="w-full sm:w-auto">
@@ -93,12 +98,14 @@ export default async function LandingPage() {
               <p className="text-sm italic leading-6 text-charcoal/60">"The whole group responded in under a day and I had my shortlist by Sunday night."</p>
               <cite className="mt-1 block text-xs not-italic text-charcoal/45">— Mike R., annual Pinehurst trip organizer</cite>
             </blockquote>
-            <p className="mt-4 text-sm text-charcoal/60">
-              Already have an account?{" "}
-              <a href="/sign-in" className="font-medium text-forest-900 underline-offset-2 hover:underline">
-                Sign in
-              </a>
-            </p>
+            {!profile && (
+              <p className="mt-4 text-sm text-charcoal/60">
+                Already have an account?{" "}
+                <a href="/sign-in" className="font-medium text-forest-900 underline-offset-2 hover:underline">
+                  Sign in
+                </a>
+              </p>
+            )}
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
                 "Live courses and hotels matched to your group",
@@ -254,7 +261,7 @@ export default async function LandingPage() {
       {/* CTA after testimonials — peak persuasion moment */}
       <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center">
-          <Button href="/sign-up" className="inline-flex">Start Planning Free</Button>
+          <Button href={ctaHref} className="inline-flex">Start Planning Free</Button>
           <p className="mt-2 text-sm text-charcoal/50">Free to start · No credit card · Invite your group in minutes</p>
         </div>
       </section>
