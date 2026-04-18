@@ -14,6 +14,7 @@ import { FavoriteButton } from "@/components/outings/favorite-button";
 import { CoursePriceDisplay } from "@/components/outings/course-price-display";
 import { LodgingRoomRate } from "@/components/outings/lodging-room-rate";
 import { CoursePriceEditor } from "@/components/outings/course-price-editor";
+import { LodgingAddressEditor } from "@/components/outings/lodging-address-editor";
 import { GolfOnlyToggle } from "@/components/outings/golf-only-toggle";
 import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-context";
 import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
@@ -1357,6 +1358,13 @@ export default async function OutingDetailPage({
                               </p>
                               {stay.hotelAddress && (
                                 <p className="mt-0.5 text-xs text-charcoal/45">{stay.hotelAddress}</p>
+                              )}
+                              {isOrganizer && (
+                                <LodgingAddressEditor
+                                  optionId={stay.id}
+                                  outingId={detail.outing.id}
+                                  currentAddress={stay.hotelAddress}
+                                />
                               )}
                             </div>
                             <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} players={players} />
