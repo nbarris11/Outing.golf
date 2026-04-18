@@ -2149,6 +2149,7 @@ export async function addCustomLodgingAction(formData: FormData) {
   const lodgingType = (formData.get("lodgingType")?.toString() ?? "hotel") as LodgingType;
   const destinationOptionId = formData.get("destinationOptionId")?.toString() ?? "";
   const sleeps = Math.max(1, Number(formData.get("sleeps") ?? 8));
+  const address = formData.get("address")?.toString().trim() || null;
 
   if (!outingId || !name) return;
 
@@ -2161,6 +2162,7 @@ export async function addCustomLodgingAction(formData: FormData) {
     nightlyRate,
     lodgingType,
     sleeps,
+    hotelAddress: address ?? undefined,
     summary: `${name} — added by organizer`,
     tags: ["custom"],
     featured: false,
@@ -2187,6 +2189,7 @@ export async function addCustomLodgingAction(formData: FormData) {
     nightly_rate: newOption.nightlyRate,
     lodging_type: newOption.lodgingType,
     sleeps: newOption.sleeps,
+    hotel_address: address,
     summary: newOption.summary,
     tags: ["custom"],
     featured: false,

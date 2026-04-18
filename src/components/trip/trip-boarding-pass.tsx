@@ -5,6 +5,7 @@ interface Props {
   endDate: string;
   courses: Array<{ name: string; scheduleDay?: number | null; dayLabel?: string | null }>;
   lodgingName: string | null;
+  lodgingAddress?: string | null;
   playerCount: number;
   memberNames: string[];
 }
@@ -53,6 +54,7 @@ export function TripBoardingPass({
   endDate,
   courses,
   lodgingName,
+  lodgingAddress,
   playerCount,
   memberNames
 }: Props) {
@@ -134,6 +136,9 @@ export function TripBoardingPass({
             <p className="mt-1 text-sm font-medium text-forest-900 leading-snug">
               {lodgingName ?? "TBD"}
             </p>
+            {lodgingAddress && (
+              <p className="mt-0.5 text-xs text-charcoal/50 leading-snug">{lodgingAddress}</p>
+            )}
           </div>
 
           <div className="col-span-2 sm:col-span-1">

@@ -136,6 +136,7 @@ export default async function TripHqPage({
                 return a.scheduleDay - b.scheduleDay;
               })}
             lodgingName={topLodging?.name ?? null}
+            lodgingAddress={topLodging?.hotelAddress ?? null}
             playerCount={detail.outing.numberOfPlayers}
             memberNames={memberFirstNames}
           />
@@ -167,7 +168,7 @@ export default async function TripHqPage({
                   {destinationForWeather && (
                     <li>
                       <a
-                        href={`https://weather.com/weather/tenday/l/${encodeURIComponent(destinationForWeather)}`}
+                        href={`https://www.google.com/search?q=${encodeURIComponent(`10 day weather forecast ${destinationForWeather}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 rounded-xl bg-cream px-4 py-3 text-sm font-medium text-charcoal hover:bg-sand transition-colors"

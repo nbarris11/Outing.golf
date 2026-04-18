@@ -185,6 +185,10 @@ export function AddLodgingForm({ outingId, destinationOptionId, defaultSleeps, a
         <label className="mb-1 block text-xs font-medium text-charcoal/70">Property name *</label>
         <Input name="name" placeholder="e.g. Hyatt Regency Scottsdale" required autoFocus />
       </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-charcoal/70">Address (optional)</label>
+        <Input name="address" placeholder="e.g. 123 Lakeside Dr, Harrison, MI 48625" />
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-medium text-charcoal/70">Type</label>

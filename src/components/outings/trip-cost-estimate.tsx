@@ -17,6 +17,7 @@ interface TripCostEstimateProps {
   golfLabel: string;
   golfRoundsLabel: string;
   golfOnly?: boolean;
+  players?: number;
 }
 
 export function TripCostEstimate({
@@ -25,7 +26,8 @@ export function TripCostEstimate({
   nights,
   golfLabel,
   golfRoundsLabel,
-  golfOnly = false
+  golfOnly = false,
+  players = 4
 }: TripCostEstimateProps) {
   const { personsPerRoom, setPersonsPerRoom } = usePersonsPerRoom();
 
@@ -55,7 +57,7 @@ export function TripCostEstimate({
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-cream/40">({nights}n ÷</span>
                 <div className="flex gap-0.5">
-                  {[1, 2, 3, 4].map((n) => (
+                  {Array.from({ length: players }, (_, i) => i + 1).map((n) => (
                     <button
                       key={n}
                       type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePersonsPerRoom } from "./persons-per-room-context";
+import { useState } from "react";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -13,10 +13,11 @@ function fmt(n: number) {
 interface LodgingRoomRateProps {
   nightlyRate: number;
   nights: number;
+  players?: number;
 }
 
-export function LodgingRoomRate({ nightlyRate, nights }: LodgingRoomRateProps) {
-  const { personsPerRoom, setPersonsPerRoom } = usePersonsPerRoom();
+export function LodgingRoomRate({ nightlyRate, nights, players = 4 }: LodgingRoomRateProps) {
+  const [personsPerRoom, setPersonsPerRoom] = useState(Math.min(2, players));
 
   const perPersonPerNight = Math.round(nightlyRate / personsPerRoom);
   const totalPerPerson = perPersonPerNight * nights;
@@ -35,7 +36,7 @@ export function LodgingRoomRate({ nightlyRate, nights }: LodgingRoomRateProps) {
       <div className="mt-1.5 flex items-center justify-end gap-1.5">
         <span className="text-xs text-charcoal/45">Persons/room:</span>
         <div className="flex gap-1">
-          {[1, 2, 3, 4].map((n) => (
+          {Array.from({ length: players }, (_, i) => i + 1).map((n) => (
             <button
               key={n}
               type="button"

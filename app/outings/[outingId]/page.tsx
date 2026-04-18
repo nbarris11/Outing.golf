@@ -1348,7 +1348,7 @@ export default async function OutingDetailPage({
                                 {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
                               </p>
                             </div>
-                            <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} />
+                            <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} players={players} />
                           </div>
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
@@ -1472,6 +1472,7 @@ export default async function OutingDetailPage({
                       : `Top-ranked golf${golfOnly ? "" : " & lodging"} · ${nights} nights · ${roundsPerPlayer} rounds`
                 }
                 golfRoundsLabel={golfCostCourses ? `${totalScheduledRounds} rounds` : `${roundsPerPlayer} rounds`}
+                players={players}
               />
             )}
 
@@ -1745,7 +1746,7 @@ export default async function OutingDetailPage({
               const vrboParams = new URLSearchParams({
                 ...(dest ? { q: dest } : {}),
                 ...(tripWindow ? { arrival: tripWindow.start, departure: tripWindow.end } : {}),
-                sleeps: String(players)
+                adults: String(players)
               });
               const vrboUrl = `https://www.vrbo.com/search?${vrboParams}`;
               return (
@@ -1754,28 +1755,28 @@ export default async function OutingDetailPage({
                   <p className="mt-0.5 text-xs text-charcoal/50">
                     Pre-filled with your destination{tripWindow ? ", dates," : ""} and {players} guests.
                   </p>
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-3">
                     <a
                       href={airbnbUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-1 items-center justify-center gap-2 rounded-full border border-charcoal/12 bg-cream px-3 py-2 text-sm font-medium text-charcoal transition hover:border-[#FF5A5F]/50 hover:text-[#FF5A5F]"
+                      className="flex items-center justify-center gap-2.5 rounded-[22px] bg-[#FF5A5F] px-5 py-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                     >
                       <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 fill-current" aria-hidden="true">
                         <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-.09 4.29c.615 0 1.12.504 1.12 1.12a1.12 1.12 0 01-2.24 0c0-.616.505-1.12 1.12-1.12zm3.93 11.55c-.17.396-.404.74-.695 1.02a3.16 3.16 0 01-.99.655c-.37.15-.75.228-1.154.228-.405 0-.785-.077-1.155-.228a3.16 3.16 0 01-.989-.655 3.17 3.17 0 01-.695-1.02c-.614-1.434-.24-2.99.3-4.307.544-1.315 1.31-2.5 1.945-3.43.633.93 1.4 2.115 1.943 3.43.54 1.317.915 2.873.3 4.306h.19zm1.47.614c.16-.382.255-.79.255-1.225 0-.79-.24-1.568-.58-2.317-.342-.748-.813-1.487-1.283-2.185-.47-.698-.943-1.36-1.33-1.948a.414.414 0 00-.692 0c-.387.588-.86 1.25-1.33 1.948-.47.698-.942 1.437-1.283 2.185-.34.749-.58 1.527-.58 2.317 0 .436.094.843.255 1.225.384.895 1.107 1.61 2.017 1.97.38.148.78.225 1.196.225.415 0 .815-.077 1.195-.224.91-.36 1.633-1.076 2.016-1.97l.145-.001z" />
                       </svg>
-                      Airbnb ↗
+                      Search Airbnb →
                     </a>
                     <a
                       href={vrboUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-1 items-center justify-center gap-2 rounded-full border border-charcoal/12 bg-cream px-3 py-2 text-sm font-medium text-charcoal transition hover:border-[#1C6BB0]/50 hover:text-[#1C6BB0]"
+                      className="flex items-center justify-center gap-2.5 rounded-[22px] bg-[#1B6FE4] px-5 py-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                     >
                       <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 fill-current" aria-hidden="true">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
                       </svg>
-                      VRBO ↗
+                      Search VRBO →
                     </a>
                   </div>
                 </div>
