@@ -57,7 +57,9 @@ const envSchema = z.object({
   // HotelBeds credentials — set HOTELBEDS_API_KEY and HOTELBEDS_SECRET in .env
   HOTELBEDS_API_KEY: z.string().optional(),
   HOTELBEDS_SECRET: z.string().optional(),
-  HOTELBEDS_BASE_URL: z.string().url().default("https://api.hotelbeds.com")
+  HOTELBEDS_BASE_URL: z.string().url().default("https://api.hotelbeds.com"),
+  // Booking.com affiliate (Awin publisher ID)
+  NEXT_PUBLIC_BOOKING_AFFILIATE_ID: z.string().optional()
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -81,6 +83,7 @@ export const adminEmails = env.ADMIN_EMAILS;
 export const recaptchaSiteKey = env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 export const recaptchaSecretKey = env.RECAPTCHA_SECRET_KEY;
 export const isRecaptchaConfigured = Boolean(env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) && Boolean(env.RECAPTCHA_SECRET_KEY);
+export const bookingAffiliateId = env.NEXT_PUBLIC_BOOKING_AFFILIATE_ID;
 
 function normalizeDeploymentUrl(value?: string) {
   if (!value) {

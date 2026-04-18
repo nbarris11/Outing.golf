@@ -48,6 +48,7 @@ import {
   removeCoOrganizerAction
 } from "@/lib/actions/outings";
 import { requireProfile } from "@/lib/auth";
+import { buildBookingComUrl } from "@/lib/booking-links";
 import { getOutingShareLink } from "@/lib/outing-share-links";
 import { currency, formatLongDateLabel } from "@/lib/utils";
 import { getOutingDetail } from "@/modules/outings/service";
@@ -1363,12 +1364,20 @@ export default async function OutingDetailPage({
                                 />
                               )}
                               <a
-                                href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
+                                href={buildBookingComUrl(stay)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
                               >
-                                View on Maps →
+                                Book on Booking.com →
+                              </a>
+                              <a
+                                href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-full border border-charcoal/15 bg-white px-3 py-1.5 text-xs font-medium text-charcoal/60 hover:border-charcoal/30 hover:text-charcoal transition-colors"
+                              >
+                                📍 Maps
                               </a>
                               {/* Hide button — organizer only, and only for candidates (not in-trip items) */}
                               {isOrganizer && !inTrip && (
