@@ -189,6 +189,9 @@ export function TripItineraryPanel({
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-700/80">Hotel · {nights} night{nights !== 1 ? "s" : ""}</p>
                 <p className="mt-0.5 font-semibold text-charcoal truncate">{selectedLodging.name}</p>
+                {selectedLodging.hotelAddress && (
+                  <p className="text-xs text-charcoal/55 truncate">{selectedLodging.hotelAddress}</p>
+                )}
                 <p className="text-xs text-charcoal/50">
                   {currency(selectedLodging.nightlyRate)}/night
                 </p>

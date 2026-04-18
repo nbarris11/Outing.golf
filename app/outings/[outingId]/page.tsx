@@ -1347,6 +1347,9 @@ export default async function OutingDetailPage({
                               <p className="mt-0.5 text-sm capitalize text-charcoal/55">
                                 {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
                               </p>
+                              {stay.hotelAddress && (
+                                <p className="mt-0.5 text-xs text-charcoal/45">{stay.hotelAddress}</p>
+                              )}
                             </div>
                             <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} players={players} />
                           </div>
