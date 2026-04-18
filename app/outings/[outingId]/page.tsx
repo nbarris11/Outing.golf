@@ -45,6 +45,7 @@ import {
   sendChatMessageInlineAction,
   submitPreferencesAction,
   toggleGolfOnlyAction,
+  toggleNoGolfDayAction,
   assignCoOrganizerAction,
   removeCoOrganizerAction
 } from "@/lib/actions/outings";
@@ -813,6 +814,8 @@ export default async function OutingDetailPage({
             selectedCourses={selectedCourses}
             selectedLodging={selectedLodgingOption}
             golfOnly={golfOnly}
+            noGolfDays={detail.outing.noGolfDays}
+            toggleNoGolfDayAction={toggleNoGolfDayAction}
             currency={currency}
           />
         )}
@@ -1370,14 +1373,16 @@ export default async function OutingDetailPage({
                                   isFeatured={inTrip}
                                 />
                               )}
-                              <a
-                                href={buildBookingComUrl(stay, { checkIn: tripWindow?.start, checkOut: tripWindow?.end, guests: players })}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
-                              >
-                                Book on Booking.com →
-                              </a>
+                              {stay.providerKey !== "custom" && (
+                                <a
+                                  href={buildBookingComUrl(stay, { checkIn: tripWindow?.start, checkOut: tripWindow?.end, guests: players })}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
+                                >
+                                  Book on Booking.com →
+                                </a>
+                              )}
                               <a
                                 href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
                                 target="_blank"

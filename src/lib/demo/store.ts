@@ -78,6 +78,7 @@ const seedOuting: Outing = {
   votingOpen: false,
   golfOnly: false,
   teeTimeBookings: [],
+    noGolfDays: [],
   createdAt: now.toISOString()
 };
 

@@ -8,6 +8,8 @@ interface Props {
   selectedCourses: GolfCourseOption[];
   selectedLodging: LodgingOption | null;
   golfOnly: boolean;
+  noGolfDays: number[];
+  toggleNoGolfDayAction: (formData: FormData) => Promise<void>;
   currency: (n: number) => string;
 }
 
@@ -21,15 +23,18 @@ function formatDayLabel(tripStart: string | null, dayIndex: number): string {
 }
 
 export function TripItineraryPanel({
-  outingId: _outingId,
+  outingId,
   isOrganizer,
   nights,
   tripStart,
   selectedCourses,
   selectedLodging,
   golfOnly,
+  noGolfDays,
+  toggleNoGolfDayAction,
   currency
 }: Props) {
+  const noGolfDaySet = new Set(noGolfDays);
   // Map each day number to the featured course assigned to that day (if any)
   const courseByDay = new Map<number, GolfCourseOption>();
   selectedCourses.forEach((c) => {
@@ -62,6 +67,32 @@ export function TripItineraryPanel({
         {Array.from({ length: nights }, (_, i) => i + 1).map((day) => {
           const course = courseByDay.get(day);
           const label = formatDayLabel(tripStart, day);
+          const isNoGolf = noGolfDaySet.has(day);
+          if (isNoGolf) {
+            return (
+              <div
+                key={day}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-charcoal/10 bg-charcoal/4 px-4 py-3"
+              >
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-charcoal/45">{label}</p>
+                  <p className="mt-0.5 text-sm font-medium text-charcoal/55">No golf this day</p>
+                </div>
+                {isOrganizer && (
+                  <form action={toggleNoGolfDayAction}>
+                    <input type="hidden" name="outingId" value={outingId} />
+                    <input type="hidden" name="day" value={day} />
+                    <button
+                      type="submit"
+                      className="rounded-full px-3 py-1 text-xs font-medium text-forest-900 hover:bg-forest-900/10 transition-colors"
+                    >
+                      ↩ Add golf back
+                    </button>
+                  </form>
+                )}
+              </div>
+            );
+          }
           if (course) {
             const rounds = course.scheduleRounds ?? 1;
             const cost = course.averageGreensFee * rounds;
@@ -84,9 +115,8 @@ export function TripItineraryPanel({
             );
           }
           return (
-            <a
+            <div
               key={day}
-              href={isOrganizer ? "#courses" : undefined}
               className={[
                 "flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-dashed px-4 py-3 transition-colors",
                 isOrganizer
@@ -96,11 +126,27 @@ export function TripItineraryPanel({
             >
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.14em] text-charcoal/50">{label}</p>
-                <p className="mt-0.5 text-sm font-medium text-charcoal/60">
+                <a
+                  href={isOrganizer ? "#courses" : undefined}
+                  className="mt-0.5 inline-block text-sm font-medium text-charcoal/60 hover:text-forest-900"
+                >
                   {isOrganizer ? "Pick a course →" : "Not picked yet"}
-                </p>
+                </a>
               </div>
-            </a>
+              {isOrganizer && (
+                <form action={toggleNoGolfDayAction}>
+                  <input type="hidden" name="outingId" value={outingId} />
+                  <input type="hidden" name="day" value={day} />
+                  <button
+                    type="submit"
+                    className="rounded-full border border-charcoal/15 bg-white px-2.5 py-1 text-xs font-medium text-charcoal/55 hover:border-charcoal/30 hover:text-charcoal transition-colors"
+                    title="Mark this day as a rest / travel day with no golf"
+                  >
+                    No golf
+                  </button>
+                </form>
+              )}
+            </div>
           );
         })}
 

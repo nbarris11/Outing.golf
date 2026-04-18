@@ -172,6 +172,7 @@ describe("lodging save permissions", () => {
           status: "planning",
           organizerWeighting: 3, votingOpen: false, golfOnly: false,
           teeTimeBookings: [],
+    noGolfDays: [],
           createdAt: "2026-04-10T00:00:00Z"
         },
         {
@@ -203,6 +204,7 @@ describe("lodging save permissions", () => {
           status: "planning",
           organizerWeighting: 3, votingOpen: false, golfOnly: false,
           teeTimeBookings: [],
+    noGolfDays: [],
           createdAt: "2026-04-10T00:00:00Z"
         },
         {

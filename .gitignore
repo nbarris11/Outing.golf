@@ -12,3 +12,4 @@ supabase/.temp
 .env.vercel.live
 .env.vercel.production
 .env.vercel.*
+.env*.local

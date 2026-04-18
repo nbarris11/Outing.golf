@@ -31,6 +31,7 @@ describe("permissions", () => {
           status: "planning",
           organizerWeighting: 5, votingOpen: false, golfOnly: false,
           teeTimeBookings: [],
+    noGolfDays: [],
           createdAt: ""
         },
         {

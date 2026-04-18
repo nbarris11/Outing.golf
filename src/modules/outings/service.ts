@@ -71,6 +71,7 @@ function mapOutingRow(row: Record<string, any>): Outing {
     votingOpen: row.voting_open ?? false,
     golfOnly: row.golf_only ?? false,
     teeTimeBookings: Array.isArray(row.tee_time_bookings) ? row.tee_time_bookings : [],
+    noGolfDays: Array.isArray(row.no_golf_days) ? row.no_golf_days : [],
     createdAt: row.created_at
   };
 }
@@ -255,7 +256,7 @@ async function getLiveOutings(profileId: string) {
   const [{ data: organizerOutings }, { data: memberships }] = await Promise.all([
     supabase
       .from("outings")
-      .select("id,name,organizer_id,destination_type,destination_label,preferred_date_windows,budget_target,trip_style,number_of_players,golf_intensity,lodging_preference,notes,status,organizer_weighting,voting_open,golf_only,tee_time_bookings,created_at")
+      .select("id,name,organizer_id,destination_type,destination_label,preferred_date_windows,budget_target,trip_style,number_of_players,golf_intensity,lodging_preference,notes,status,organizer_weighting,voting_open,golf_only,tee_time_bookings,no_golf_days,created_at")
       .eq("organizer_id", profileId)
       .order("created_at", { ascending: false }),
     supabase.from("outing_members").select("outing_id").eq("profile_id", profileId)
@@ -271,7 +272,7 @@ async function getLiveOutings(profileId: string) {
 
   const { data: outingRows } = await supabase
     .from("outings")
-    .select("id,name,organizer_id,destination_type,destination_label,preferred_date_windows,budget_target,trip_style,number_of_players,golf_intensity,lodging_preference,notes,status,organizer_weighting,voting_open,golf_only,tee_time_bookings,created_at")
+    .select("id,name,organizer_id,destination_type,destination_label,preferred_date_windows,budget_target,trip_style,number_of_players,golf_intensity,lodging_preference,notes,status,organizer_weighting,voting_open,golf_only,tee_time_bookings,no_golf_days,created_at")
     .in("id", outingIds)
     .order("created_at", { ascending: false });
 
@@ -482,7 +483,7 @@ export async function getOutingDetail(outingId: string, profileId: string) {
 
     const { data: outingRow } = await queryClient
       .from("outings")
-      .select("id,name,organizer_id,destination_type,destination_label,preferred_date_windows,budget_target,trip_style,number_of_players,golf_intensity,lodging_preference,notes,status,organizer_weighting,voting_open,golf_only,tee_time_bookings,created_at")
+      .select("id,name,organizer_id,destination_type,destination_label,preferred_date_windows,budget_target,trip_style,number_of_players,golf_intensity,lodging_preference,notes,status,organizer_weighting,voting_open,golf_only,tee_time_bookings,no_golf_days,created_at")
       .eq("id", outingId)
       .maybeSingle();
 

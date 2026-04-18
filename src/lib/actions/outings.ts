@@ -285,6 +285,7 @@ function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerI
     organizerWeighting: input.organizerWeighting,
     golfOnly: input.golfOnly ?? false,
     teeTimeBookings: [],
+    noGolfDays: [],
     votingOpen: false
   };
 }
@@ -574,6 +575,7 @@ export async function createOutingAction(formData: FormData) {
         organizerWeighting: outingDraft.organizerWeighting,
         golfOnly: outingDraft.golfOnly ?? false,
         teeTimeBookings: [],
+    noGolfDays: [],
         votingOpen: false
       });
 
@@ -1807,6 +1809,7 @@ export async function regenerateOutingInventoryAction(outingId: string) {
     status: outingRow.status,
     organizerWeighting: outingRow.organizer_weighting,
     teeTimeBookings: Array.isArray(outingRow.tee_time_bookings) ? outingRow.tee_time_bookings : [],
+    noGolfDays: Array.isArray(outingRow.no_golf_days) ? outingRow.no_golf_days : [],
     votingOpen: outingRow.voting_open ?? false,
     golfOnly: outingRow.golf_only ?? false,
     createdAt: outingRow.created_at
@@ -2193,6 +2196,49 @@ export async function addCustomLodgingAction(formData: FormData) {
     logError("Failed to insert custom lodging", insertLodgingError, { outingId });
     throw new Error(`Could not add lodging: ${insertLodgingError.message}`);
   }
+  revalidatePath(`/outings/${outingId}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// No-golf day toggle — organizer marks specific trip days as non-golf
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function toggleNoGolfDayAction(formData: FormData) {
+  const profile = await requireProfile();
+  const outingId = formData.get("outingId")?.toString() ?? "";
+  const day = Number(formData.get("day") ?? 0);
+  if (!outingId || !Number.isFinite(day) || day < 1) return;
+
+  if (isDemoMode) {
+    const { getDemoState } = await import("@/lib/demo/store");
+    const state = await getDemoState();
+    const outing = state.outings.find((o) => o.id === outingId);
+    if (!outing || outing.organizerId !== profile.id) return;
+    const set = new Set(outing.noGolfDays ?? []);
+    if (set.has(day)) set.delete(day);
+    else set.add(day);
+    outing.noGolfDays = Array.from(set).sort((a, b) => a - b);
+    revalidatePath(`/outings/${outingId}`);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
+  if (!supabase) return;
+
+  const { data: outing } = await supabase
+    .from("outings")
+    .select("organizer_id,no_golf_days")
+    .eq("id", outingId)
+    .maybeSingle();
+  if (!outing || outing.organizer_id !== profile.id) return;
+
+  const current: number[] = Array.isArray(outing.no_golf_days) ? outing.no_golf_days : [];
+  const set = new Set(current);
+  if (set.has(day)) set.delete(day);
+  else set.add(day);
+  const next = Array.from(set).sort((a, b) => a - b);
+
+  await supabase.from("outings").update({ no_golf_days: next }).eq("id", outingId);
   revalidatePath(`/outings/${outingId}`);
 }
 

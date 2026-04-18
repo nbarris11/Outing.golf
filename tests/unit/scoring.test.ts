@@ -26,6 +26,7 @@ const outing: Outing = {
   status: "planning",
   organizerWeighting: 7, votingOpen: false, golfOnly: false,
   teeTimeBookings: [],
+    noGolfDays: [],
   createdAt: new Date().toISOString()
 };
 

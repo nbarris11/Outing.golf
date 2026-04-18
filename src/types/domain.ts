@@ -53,6 +53,7 @@ export interface Outing {
   votingOpen: boolean;
   golfOnly: boolean;
   teeTimeBookings: TeeTimeBooking[];
+  noGolfDays: number[];
   createdAt: string;
 }
 

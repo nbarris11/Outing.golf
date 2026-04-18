@@ -239,6 +239,90 @@ interface BuiltPricing {
   confidence: "high" | "medium" | "low";
 }
 
+// ─── Course website scraping ──────────────────────────────────────────────────
+
+const RATE_PATHS = ["/rates", "/green-fees", "/greens-fees", "/fees", "/pricing", "/tee-times", "/golf/rates", "/course/rates"];
+const RATE_CONTEXT_WORDS = /\b(greens?\s*fees?|rate|round|18\s*holes?|9\s*holes?|weekday|weekend|twilight|morning|afternoon|cart|walk(?:ing)?|golf)\b/i;
+const SCRAPE_TIMEOUT_MS = 4000;
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ");
+}
+
+async function fetchHtml(url: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; OutingGolfBot/1.0; +https://outing.golf)",
+        Accept: "text/html,application/xhtml+xml"
+      }
+    });
+    if (!response.ok) return null;
+    const ct = response.headers.get("content-type") ?? "";
+    if (!ct.includes("text/html")) return null;
+    const text = await response.text();
+    return text.slice(0, 400_000); // cap to 400KB
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// Extract prices that appear within ~60 chars of rate-related keywords.
+function extractRatePrices(text: string): number[] {
+  const prices: number[] = [];
+  const pattern = /\$\s?(\d{2,4})(?:\.\d{1,2})?/g;
+  for (const match of text.matchAll(pattern)) {
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value < 20 || value > 500) continue;
+    const idx = match.index ?? 0;
+    const window = text.slice(Math.max(0, idx - 60), idx + 60);
+    if (RATE_CONTEXT_WORDS.test(window)) prices.push(value);
+  }
+  return prices;
+}
+
+async function scrapeCourseWebsite(
+  websiteUri: string
+): Promise<{ prices: number[]; pageUrl: string } | null> {
+  let base: URL;
+  try {
+    base = new URL(websiteUri);
+  } catch {
+    return null;
+  }
+
+  const urls = [base.href, ...RATE_PATHS.map((p) => new URL(p, base).href)];
+  const unique = Array.from(new Set(urls));
+
+  const results = await Promise.all(
+    unique.map(async (url) => {
+      const html = await fetchHtml(url);
+      if (!html) return null;
+      const text = stripHtml(html);
+      const prices = extractRatePrices(text);
+      return prices.length > 0 ? { url, prices } : null;
+    })
+  );
+
+  // Prefer a dedicated rates page over the homepage when both have prices.
+  const ratesHit = results.find((r) => r && r.url !== base.href);
+  const winner = ratesHit ?? results.find((r) => r !== null);
+  if (!winner) return null;
+  return { prices: winner.prices, pageUrl: winner.url };
+}
+
 function buildPricingFromDetails(details: PlaceDetails): BuiltPricing | null {
   const reviewPrices = extractPricesFromReviews(details.reviews);
 
@@ -331,7 +415,27 @@ export async function fetchAndCacheCoursePricing(
     const details = await fetchPlaceDetails(placeId);
     if (!details) return null;
 
-    const built = buildPricingFromDetails(details);
+    let built: BuiltPricing | null = null;
+
+    if (details.websiteUri) {
+      const scraped = await scrapeCourseWebsite(details.websiteUri);
+      if (scraped && scraped.prices.length > 0) {
+        const med = median(scraped.prices);
+        if (med) {
+          built = {
+            avgRate: med,
+            weekdayRate: Math.min(...scraped.prices),
+            weekendRate: Math.max(...scraped.prices),
+            sourceUrl: scraped.pageUrl,
+            sourceName: hostFromUrl(scraped.pageUrl),
+            notes: `From ${scraped.prices.length} rate${scraped.prices.length !== 1 ? "s" : ""} on course website`,
+            confidence: scraped.prices.length >= 2 ? "high" : "medium"
+          };
+        }
+      }
+    }
+
+    if (!built) built = buildPricingFromDetails(details);
     if (!built) {
       logInfo("Google Places returned no usable pricing signals", { name, location });
       return null;
