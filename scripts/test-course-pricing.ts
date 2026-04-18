@@ -16,7 +16,7 @@ async function run() {
       console.log("CACHED:", cached);
       continue;
     }
-    console.log("No cache — fetching from Claude web search…");
+    console.log("No cache — fetching from Google Places…");
     const pricing = await fetchAndCacheCoursePricing(course.name, course.location);
     console.log("RESULT:", pricing);
   }
