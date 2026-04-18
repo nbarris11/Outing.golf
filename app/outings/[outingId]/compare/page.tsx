@@ -5,10 +5,12 @@ import { BackButton } from "@/components/common/back-button";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
 import { LodgingSearchPanel } from "@/components/outings/lodging-search-panel";
+import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
 import { RentalListingPanel } from "@/components/outings/rental-listing-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requireProfile } from "@/lib/auth";
+import { markAsBookedAction } from "@/lib/actions/outings";
 import { currency } from "@/lib/utils";
 import { isAdmin } from "@/modules/outings/permissions";
 import { getOutingDetail } from "@/modules/outings/service";
@@ -63,6 +65,12 @@ export default async function ComparePage({
   const pickedLodging = dedupedLodging.find((l) => l.featured && !l.hidden) ?? null;
   const picksCount = pickedCourses.length + (pickedLodging ? 1 : 0);
 
+  const isOrganizer = detail.outing.organizerId === profile.id || isAdmin(profile);
+  const isBooked = detail.outing.status === "booked" || detail.outing.status === "completed";
+  const votingOpen = detail.outing.votingOpen;
+  const allVotes = detail.votes;
+  const bookingState = !votingOpen && allVotes.length > 0 ? "ready" : votingOpen ? "voting_open" : "no_vote";
+
   return (
     <PageShell>
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -79,12 +87,29 @@ export default async function ComparePage({
               Read-only summary: recommendations, destination costs, and rental options. To add or change picks, head back to the Organize page.
             </p>
           </div>
-          <Link
-            href={`/outings/${outingId}`}
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-forest-900 px-5 text-sm font-semibold text-cream shadow-[0_4px_14px_rgba(20,58,44,0.25)] hover:bg-forest-900/90 transition-colors"
-          >
-            {picksCount > 0 ? "Edit picks on Organize →" : "Pick courses on Organize →"}
-          </Link>
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+            <Link
+              href={`/outings/${outingId}`}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-forest-900 px-5 text-sm font-semibold text-cream shadow-[0_4px_14px_rgba(20,58,44,0.25)] hover:bg-forest-900/90 transition-colors"
+            >
+              {picksCount > 0 ? "Edit picks on Organize →" : "Pick courses on Organize →"}
+            </Link>
+            {isOrganizer && !isBooked && (
+              <MarkAsBookedButton
+                outingId={outingId}
+                markAsBooked={markAsBookedAction}
+                bookingState={bookingState}
+              />
+            )}
+            {isOrganizer && isBooked && (
+              <Link
+                href={`/outings/${outingId}/trip`}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-emerald-600 px-5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+              >
+                → View Trip HQ
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* ── Current picks summary (what's already "in the trip") ── */}

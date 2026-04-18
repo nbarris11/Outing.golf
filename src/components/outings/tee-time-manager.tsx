@@ -109,20 +109,18 @@ export function TeeTimeManager({
           <div>
             <label className="mb-1 block text-xs font-medium text-charcoal/65">Course *</label>
             {courseNames.length > 0 ? (
-              <div className="relative">
-                <Input
-                  name="courseName"
-                  list="course-suggestions"
-                  placeholder="e.g. TPC Scottsdale"
-                  required
-                  autoFocus
-                />
-                <datalist id="course-suggestions">
-                  {courseNames.map((name) => (
-                    <option key={name} value={name} />
-                  ))}
-                </datalist>
-              </div>
+              <select
+                name="courseName"
+                required
+                autoFocus
+                defaultValue={courseNames.length === 1 ? courseNames[0] : ""}
+                className="w-full rounded-[18px] border border-charcoal/15 bg-white px-4 py-2 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-forest-800/20"
+              >
+                {courseNames.length > 1 && <option value="">Select a course…</option>}
+                {courseNames.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
             ) : (
               <Input name="courseName" placeholder="e.g. TPC Scottsdale" required autoFocus />
             )}

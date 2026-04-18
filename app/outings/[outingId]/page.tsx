@@ -1859,7 +1859,7 @@ export default async function OutingDetailPage({
                   bookings={detail.outing.teeTimeBookings ?? []}
                   addAction={addTeeTimeAction}
                   deleteAction={deleteTeeTimeAction}
-                  courseNames={visibleCourses.map((c) => c.name)}
+                  courseNames={selectedCourses.map((c) => c.name)}
                 />
 
                 {/* Open vote button lives in the All-in CTA card above — removed duplicate here */}
