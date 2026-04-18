@@ -35,10 +35,14 @@ export function TripItineraryPanel({
   currency
 }: Props) {
   const noGolfDaySet = new Set(noGolfDays);
-  // Map each day number to the featured course assigned to that day (if any)
-  const courseByDay = new Map<number, GolfCourseOption>();
+  // Map each day number to all courses assigned to that day
+  const courseByDay = new Map<number, GolfCourseOption[]>();
   selectedCourses.forEach((c) => {
-    if (c.scheduleDay != null) courseByDay.set(c.scheduleDay, c);
+    if (c.scheduleDay != null) {
+      const arr = courseByDay.get(c.scheduleDay) ?? [];
+      arr.push(c);
+      courseByDay.set(c.scheduleDay, arr);
+    }
   });
   const unscheduledPicks = selectedCourses.filter((c) => c.scheduleDay == null);
 
@@ -65,7 +69,7 @@ export function TripItineraryPanel({
       <div className="mt-4 grid gap-2">
         {/* Day slots */}
         {Array.from({ length: nights }, (_, i) => i + 1).map((day) => {
-          const course = courseByDay.get(day);
+          const courses = courseByDay.get(day) ?? [];
           const label = formatDayLabel(tripStart, day);
           const isNoGolf = noGolfDaySet.has(day);
           if (isNoGolf) {
@@ -93,24 +97,33 @@ export function TripItineraryPanel({
               </div>
             );
           }
-          if (course) {
-            const rounds = course.scheduleRounds ?? 1;
-            const cost = course.averageGreensFee * rounds;
+          if (courses.length > 0) {
             return (
-              <div
-                key={day}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-emerald-200 bg-white/90 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-700/80">{label}</p>
-                  <p className="mt-0.5 font-semibold text-charcoal truncate">{course.name}</p>
-                  <p className="text-xs text-charcoal/50">
-                    {rounds} round{rounds !== 1 ? "s" : ""} · {currency(cost)}/person
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full bg-emerald-600/10 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                  ✓ In the trip
-                </span>
+              <div key={day} className="rounded-[18px] border border-emerald-200 bg-white/90 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-700/80">{label}</p>
+                {courses.map((course, idx) => {
+                  const rounds = course.scheduleRounds ?? 1;
+                  const cost = course.averageGreensFee * rounds;
+                  return (
+                    <div
+                      key={course.id}
+                      className={[
+                        "flex flex-wrap items-center justify-between gap-2",
+                        idx > 0 ? "mt-2 border-t border-emerald-100 pt-2" : "mt-0.5"
+                      ].join(" ")}
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold text-charcoal truncate">{course.name}</p>
+                        <p className="text-xs text-charcoal/50">
+                          {rounds} round{rounds !== 1 ? "s" : ""} · {currency(cost)}/person
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-emerald-600/10 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        ✓ In the trip
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             );
           }
