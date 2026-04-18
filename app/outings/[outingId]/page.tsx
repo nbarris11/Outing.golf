@@ -18,6 +18,8 @@ import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
 import { OrganizerPickButton } from "@/components/outings/organizer-pick-button";
 import { RoundsSelector } from "@/components/outings/rounds-selector";
 import { VoteButton } from "@/components/outings/vote-button";
+import { CollapsibleOptions } from "@/components/outings/collapsible-options";
+import { TripItineraryPanel } from "@/components/outings/trip-itinerary-panel";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -642,7 +644,7 @@ export default async function OutingDetailPage({
               </Button>
             )}
             <Button href={`/outings/${detail.outing.id}/compare`} variant="secondary" className="w-full sm:w-auto">
-              Compare options
+              Overview
             </Button>
             {isOrganizer && detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
               <>
@@ -729,6 +731,87 @@ export default async function OutingDetailPage({
             </p>
           </div>
         </div>
+
+        {/* ── What's next banner ── */}
+        {(() => {
+          // Skip entirely for booked/completed trips — the Trip HQ button handles that state.
+          if (detail.outing.status === "booked" || detail.outing.status === "completed") {
+            return null;
+          }
+          // Skip in the two states that already have dedicated banners below
+          // (post-create banner and the "Everyone's in!" All-in CTA).
+          if (notices.created === "1") return null;
+          const allInAllVoted = isOrganizer && !votingOpen && responsePercent === 100 && detail.insights.respondedCount > 1 && progressTarget > 0 && allVotes.length === 0;
+          if (allInAllVoted) return null;
+
+          // Pick one contextual message based on the trip phase.
+          let message: string | null = null;
+          let actionLabel: string | null = null;
+          let actionHref: string | null = null;
+          let tone: "info" | "success" | "warn" = "info";
+
+          const uniqueVoters = new Set(allVotes.map((v) => v.profileId)).size;
+          const hasMyVote = myVotes.length > 0;
+          const picksMade = selectedCourses.length + (selectedLodgingOption ? 1 : 0);
+
+          if (votingOpen) {
+            if (isOrganizer) {
+              message = `Group vote open · ${uniqueVoters} of ${progressTarget || detail.insights.respondedCount} voted`;
+              tone = "info";
+            } else if (!hasMyVote) {
+              message = "Cast your vote on the top picks below";
+              tone = "warn";
+            } else {
+              message = "Your vote is in · waiting on the group";
+              tone = "success";
+            }
+          } else if (!isOrganizer && responsePercent < 100) {
+            // Member view, still collecting prefs
+            message = "The group is still sharing preferences";
+            tone = "info";
+          } else if (isOrganizer && picksMade > 0) {
+            message = `Trip in progress · ${picksMade} pick${picksMade !== 1 ? "s" : ""} added`;
+            actionLabel = "Mark as booked →";
+            tone = "success";
+          } else if (!isOrganizer && picksMade > 0) {
+            message = "The trip is coming together — check the picks below";
+            tone = "success";
+          }
+
+          if (!message) return null;
+
+          const toneClasses =
+            tone === "success"
+              ? "border-emerald-200 bg-emerald-50/70 text-emerald-900"
+              : tone === "warn"
+                ? "border-amber-200 bg-amber-50/80 text-amber-900"
+                : "border-forest-900/15 bg-forest-900/5 text-forest-900";
+
+          return (
+            <div className={`mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border px-5 py-3 ${toneClasses}`}>
+              <p className="text-sm font-medium">{message}</p>
+              {actionLabel && actionHref && (
+                <a href={actionHref} className="text-sm font-semibold underline underline-offset-2 hover:no-underline">
+                  {actionLabel}
+                </a>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Your trip / itinerary panel ── */}
+        {detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
+          <TripItineraryPanel
+            outingId={detail.outing.id}
+            isOrganizer={isOrganizer}
+            nights={nights}
+            tripStart={tripWindow?.start ?? null}
+            selectedCourses={selectedCourses}
+            selectedLodging={selectedLodgingOption}
+            golfOnly={golfOnly}
+            currency={currency}
+          />
+        )}
 
         {/* ── Notices ── */}
         {notices.created === "1" && isOrganizer && shareLink ? (
@@ -1000,7 +1083,7 @@ export default async function OutingDetailPage({
           <div className="space-y-6">
 
             {/* Golf courses */}
-            <Card>
+            <Card id="courses" className="scroll-mt-20">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">⛳ Golf courses</h2>
@@ -1036,115 +1119,130 @@ export default async function OutingDetailPage({
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {sortedVisibleCourses.map((course) => {
-                    const isTop = course.id === detail.insights.topCourse?.id;
-                    const courseRounds = course.scheduleRounds ?? 1;
-                    const courseGolfCost = course.averageGreensFee * courseRounds;
-                    const tally = voteTally("golf_course", course.id);
-                    const favCount = favoriteCount("golf_course", course.id);
-                    const favByMe = isFavoritedByMe("golf_course", course.id);
-                    return (
-                      <div key={course.id} className={`rounded-[22px] border p-4 transition-colors ${course.featured ? "border-emerald-200 bg-emerald-50/40" : "border-charcoal/8 bg-cream"}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold text-charcoal">{course.name}</p>
-                              {course.featured && <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>}
-                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
-                              {course.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
-                              {tally > 0 && votingOpen && (
-                                <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
+                  {(() => {
+                    const renderCourseCard = (course: typeof sortedVisibleCourses[number]) => {
+                      const isTop = course.id === detail.insights.topCourse?.id;
+                      const courseRounds = course.scheduleRounds ?? 1;
+                      const courseGolfCost = course.averageGreensFee * courseRounds;
+                      const tally = voteTally("golf_course", course.id);
+                      const favCount = favoriteCount("golf_course", course.id);
+                      const favByMe = isFavoritedByMe("golf_course", course.id);
+                      const inTrip = course.featured ?? false;
+                      return (
+                        <div key={course.id} className={`rounded-[22px] border p-4 transition-colors ${inTrip ? "border-emerald-200 bg-emerald-50/40" : "border-charcoal/8 bg-cream"}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold text-charcoal">{course.name}</p>
+                                {inTrip && <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>}
+                                {isTop && !inTrip && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
+                                {course.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
+                                {tally > 0 && votingOpen && (
+                                  <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
+                                )}
+                              </div>
+                              <p className="mt-0.5 text-sm text-charcoal/55">{course.locationLabel}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="font-semibold text-charcoal">{currency(courseGolfCost)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
+                              <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {courseRounds}rnd</p>
+                            </div>
+                          </div>
+                          {/* Bottom row — info left, actions right; scheduling controls only appear once the course is in the trip */}
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-xs text-charcoal/55 min-w-0">
+                              <span className="shrink-0">Quality {course.qualityScore}/100</span>
+                              <span className="shrink-0">{course.walkingFriendly ? "Walking" : "Riding"}</span>
+                              {course.scheduleDay && (
+                                <span className="shrink-0 rounded-full bg-forest-900/8 px-2 py-0.5 text-forest-900 font-medium">
+                                  Day {course.scheduleDay}
+                                </span>
                               )}
                             </div>
-                            <p className="mt-0.5 text-sm text-charcoal/55">{course.locationLabel}</p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="font-semibold text-charcoal">{currency(courseGolfCost)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
-                            <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {courseRounds}rnd</p>
-                          </div>
-                        </div>
-                        {/* Bottom row — info left, all controls right; wraps on mobile */}
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 text-xs text-charcoal/55 min-w-0">
-                            <span className="shrink-0">Quality {course.qualityScore}/100</span>
-                            <span className="shrink-0">{course.walkingFriendly ? "Walking" : "Riding"}</span>
-                            {course.scheduleDay && (
-                              <span className="shrink-0 rounded-full bg-forest-900/8 px-2 py-0.5 text-forest-900 font-medium">
-                                Day {course.scheduleDay}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center justify-end gap-1.5">
-                            <FavoriteButton
-                              outingId={detail.outing.id}
-                              entityType="golf_course"
-                              entityId={course.id}
-                              isFavorited={favByMe}
-                              totalCount={favCount}
-                            />
-                            {isOrganizer && (
-                              <OrganizerPickButton
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                              <FavoriteButton
                                 outingId={detail.outing.id}
                                 entityType="golf_course"
                                 entityId={course.id}
-                                isFeatured={course.featured ?? false}
+                                isFavorited={favByMe}
+                                totalCount={favCount}
                               />
-                            )}
-                            {isOrganizer && (
-                              <RoundsSelector
-                                outingId={detail.outing.id}
-                                courseId={course.id}
-                                scheduleRounds={course.scheduleRounds ?? 1}
-                              />
-                            )}
-                            {isOrganizer && visibleCourses.length > 1 && (
-                              <CourseScheduleSelector
-                                outingId={detail.outing.id}
-                                courseId={course.id}
-                                scheduleDay={course.scheduleDay ?? null}
-                                maxDays={nights}
-                              />
-                            )}
-                            <a
-                              href={`https://www.google.com/search?q=${encodeURIComponent(
-                                [
-                                  course.name,
-                                  course.locationLabel,
-                                  "tee times",
-                                  tripWindow ? new Date(tripWindow.start + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
-                                  `${players} players`
-                                ].filter(Boolean).join(" ")
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
-                            >
-                              Find tee times →
-                            </a>
-                            <a
-                              href={`https://www.google.com/search?q=${encodeURIComponent(`${course.name}${course.locationLabel ? " " + course.locationLabel : ""} phone number`)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Look up phone number"
-                              className="inline-flex items-center gap-1 rounded-full border border-charcoal/15 bg-white px-3 py-1.5 text-xs font-medium text-charcoal/60 hover:border-charcoal/30 hover:text-charcoal transition-colors"
-                            >
-                              📞 Call
-                            </a>
-                            {isOrganizer && (
-                              <form action={hideOptionAction}>
-                                <input type="hidden" name="outingId" value={detail.outing.id} />
-                                <input type="hidden" name="collection" value="golfCourseOptions" />
-                                <input type="hidden" name="optionId" value={course.id} />
-                                <button type="submit" className="rounded-full px-2.5 py-1.5 text-xs text-charcoal/35 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hide this option">
-                                  × Hide
-                                </button>
-                              </form>
-                            )}
+                              {isOrganizer && (
+                                <OrganizerPickButton
+                                  outingId={detail.outing.id}
+                                  entityType="golf_course"
+                                  entityId={course.id}
+                                  isFeatured={inTrip}
+                                />
+                              )}
+                              {/* Scheduling controls — only when course is in the trip */}
+                              {isOrganizer && inTrip && (
+                                <RoundsSelector
+                                  outingId={detail.outing.id}
+                                  courseId={course.id}
+                                  scheduleRounds={course.scheduleRounds ?? 1}
+                                />
+                              )}
+                              {isOrganizer && inTrip && visibleCourses.length > 1 && (
+                                <CourseScheduleSelector
+                                  outingId={detail.outing.id}
+                                  courseId={course.id}
+                                  scheduleDay={course.scheduleDay ?? null}
+                                  maxDays={nights}
+                                />
+                              )}
+                              <a
+                                href={`https://www.google.com/search?q=${encodeURIComponent(
+                                  [
+                                    course.name,
+                                    course.locationLabel,
+                                    "tee times",
+                                    tripWindow ? new Date(tripWindow.start + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
+                                    `${players} players`
+                                  ].filter(Boolean).join(" ")
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
+                              >
+                                Find tee times →
+                              </a>
+                              <a
+                                href={`https://www.google.com/search?q=${encodeURIComponent(`${course.name}${course.locationLabel ? " " + course.locationLabel : ""} phone number`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Look up phone number"
+                                className="inline-flex items-center gap-1 rounded-full border border-charcoal/15 bg-white px-3 py-1.5 text-xs font-medium text-charcoal/60 hover:border-charcoal/30 hover:text-charcoal transition-colors"
+                              >
+                                📞 Call
+                              </a>
+                              {/* Hide button — organizer only, and only for candidates (not in-trip items) to prevent accidentally hiding a committed pick */}
+                              {isOrganizer && !inTrip && (
+                                <form action={hideOptionAction}>
+                                  <input type="hidden" name="outingId" value={detail.outing.id} />
+                                  <input type="hidden" name="collection" value="golfCourseOptions" />
+                                  <input type="hidden" name="optionId" value={course.id} />
+                                  <button type="submit" className="rounded-full px-2.5 py-1.5 text-xs text-charcoal/35 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hide this option">
+                                    × Hide
+                                  </button>
+                                </form>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      );
+                    };
+                    const pinned = selectedCourses.map(renderCourseCard);
+                    const rest = visibleCourses.filter((c) => !c.featured).map(renderCourseCard);
+                    return (
+                      <CollapsibleOptions
+                        pinned={pinned}
+                        rest={rest}
+                        itemLabel="course"
+                        initialVisibleCount={3}
+                      />
                     );
-                  })}
+                  })()}
 
                   {/* Hidden courses — restore section (organizer only) */}
                   {isOrganizer && hiddenCourses.length > 0 && (
@@ -1196,7 +1294,7 @@ export default async function OutingDetailPage({
               </Card>
             )}
 
-            {!golfOnly && <Card>
+            {!golfOnly && <Card id="lodging" className="scroll-mt-20">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">🏨 Lodging options</h2>
@@ -1215,76 +1313,90 @@ export default async function OutingDetailPage({
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {sortedVisibleLodging.map((stay) => {
-                    const isTop = stay.id === detail.insights.topLodging?.id;
-                    const tally = voteTally("lodging", stay.id);
-                    const favCount = favoriteCount("lodging", stay.id);
-                    const favByMe = isFavoritedByMe("lodging", stay.id);
-                    return (
-                      <div key={stay.id} className={`rounded-[22px] border p-4 transition-colors ${stay.featured ? "border-emerald-200 bg-emerald-50/40" : "border-charcoal/8 bg-cream"}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold text-charcoal">{stay.name}</p>
-                              {stay.featured && <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>}
-                              {isTop && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
-                              {stay.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
-                              {tally > 0 && votingOpen && (
-                                <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
+                  {(() => {
+                    const renderLodgingCard = (stay: typeof sortedVisibleLodging[number]) => {
+                      const isTop = stay.id === detail.insights.topLodging?.id;
+                      const tally = voteTally("lodging", stay.id);
+                      const favCount = favoriteCount("lodging", stay.id);
+                      const favByMe = isFavoritedByMe("lodging", stay.id);
+                      const inTrip = stay.featured ?? false;
+                      return (
+                        <div key={stay.id} className={`rounded-[22px] border p-4 transition-colors ${inTrip ? "border-emerald-200 bg-emerald-50/40" : "border-charcoal/8 bg-cream"}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold text-charcoal">{stay.name}</p>
+                                {inTrip && <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>}
+                                {isTop && !inTrip && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
+                                {stay.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
+                                {tally > 0 && votingOpen && (
+                                  <Badge className="bg-amber-100 text-amber-800">{tally} vote{tally !== 1 ? "s" : ""}</Badge>
+                                )}
+                              </div>
+                              <p className="mt-0.5 text-sm capitalize text-charcoal/55">
+                                {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
+                              </p>
+                            </div>
+                            <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} />
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
+                              <span>Sleeps {stay.sleeps}</span>
+                              {stay.refundable !== null && stay.refundable !== undefined && (
+                                <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
                               )}
                             </div>
-                            <p className="mt-0.5 text-sm capitalize text-charcoal/55">
-                              {labelize(stay.lodgingType)}{stay.city ? ` · ${stay.city}${stay.state ? `, ${stay.state}` : ""}` : ""}
-                            </p>
-                          </div>
-                          <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} />
-                        </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
-                            <span>Sleeps {stay.sleeps}</span>
-                            {stay.refundable !== null && stay.refundable !== undefined && (
-                              <span>{stay.refundable ? "Refundable" : "Non-refundable"}</span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center justify-end gap-2">
-                            <FavoriteButton
-                              outingId={detail.outing.id}
-                              entityType="lodging"
-                              entityId={stay.id}
-                              isFavorited={favByMe}
-                              totalCount={favCount}
-                            />
-                            {isOrganizer && (
-                              <OrganizerPickButton
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              <FavoriteButton
                                 outingId={detail.outing.id}
                                 entityType="lodging"
                                 entityId={stay.id}
-                                isFeatured={stay.featured ?? false}
+                                isFavorited={favByMe}
+                                totalCount={favCount}
                               />
-                            )}
-                            <a
-                              href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
-                            >
-                              View on Maps →
-                            </a>
-                            {isOrganizer && (
-                              <form action={hideOptionAction}>
-                                <input type="hidden" name="outingId" value={detail.outing.id} />
-                                <input type="hidden" name="collection" value="lodgingOptions" />
-                                <input type="hidden" name="optionId" value={stay.id} />
-                                <button type="submit" className="rounded-full px-2.5 py-1.5 text-xs text-charcoal/35 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hide this option">
-                                  × Hide
-                                </button>
-                              </form>
-                            )}
+                              {isOrganizer && (
+                                <OrganizerPickButton
+                                  outingId={detail.outing.id}
+                                  entityType="lodging"
+                                  entityId={stay.id}
+                                  isFeatured={inTrip}
+                                />
+                              )}
+                              <a
+                                href={`https://maps.google.com/maps/search/${encodeURIComponent(stay.name + (stay.city ? " " + stay.city : "") + (stay.state ? " " + stay.state : ""))}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-full bg-forest-900 px-3 py-1.5 text-xs font-medium text-cream hover:bg-forest-900/90 transition-colors"
+                              >
+                                View on Maps →
+                              </a>
+                              {/* Hide button — organizer only, and only for candidates (not in-trip items) */}
+                              {isOrganizer && !inTrip && (
+                                <form action={hideOptionAction}>
+                                  <input type="hidden" name="outingId" value={detail.outing.id} />
+                                  <input type="hidden" name="collection" value="lodgingOptions" />
+                                  <input type="hidden" name="optionId" value={stay.id} />
+                                  <button type="submit" className="rounded-full px-2.5 py-1.5 text-xs text-charcoal/35 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hide this option">
+                                    × Hide
+                                  </button>
+                                </form>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      );
+                    };
+                    const pinned = selectedLodgingOption ? [renderLodgingCard(selectedLodgingOption)] : [];
+                    const rest = visibleLodging.filter((l) => !l.featured).map(renderLodgingCard);
+                    return (
+                      <CollapsibleOptions
+                        pinned={pinned}
+                        rest={rest}
+                        itemLabel="hotel"
+                        initialVisibleCount={3}
+                      />
                     );
-                  })}
+                  })()}
 
                   {/* Hidden lodging — restore section (organizer only) */}
                   {isOrganizer && hiddenLodging.length > 0 && (

@@ -35,17 +35,19 @@ export function FavoriteButton({ outingId, entityType, entityId, isFavorited, to
     <button
       onClick={handleClick}
       disabled={isPending}
-      title={optimistic.favorited ? "Remove from favorites" : "Add to favorites"}
+      title={optimistic.favorited ? "Remove your like" : "Like this"}
+      aria-pressed={optimistic.favorited}
       className={[
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50",
         optimistic.favorited
-          ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-          : "border border-charcoal/15 bg-white text-charcoal/50 hover:border-amber-300 hover:text-amber-600"
+          ? "bg-rose-100 text-rose-700 hover:bg-rose-200"
+          : "border border-charcoal/15 bg-white text-charcoal/60 hover:border-rose-300 hover:text-rose-600"
       ].join(" ")}
     >
-      <span>{optimistic.favorited ? "★" : "☆"}</span>
+      <span aria-hidden="true">{optimistic.favorited ? "♥" : "♡"}</span>
+      <span>{optimistic.favorited ? "Liked" : "Like"}</span>
       {optimistic.count > 0 && (
-        <span>{optimistic.count}</span>
+        <span className="text-[11px] opacity-70">· {optimistic.count}</span>
       )}
     </button>
   );

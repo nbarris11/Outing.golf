@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { BackButton } from "@/components/common/back-button";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
-import { ComparePanel } from "@/components/outings/compare-panel";
 import { LodgingSearchPanel } from "@/components/outings/lodging-search-panel";
 import { RentalListingPanel } from "@/components/outings/rental-listing-panel";
 import { Badge } from "@/components/ui/badge";
@@ -58,15 +58,10 @@ export default async function ComparePage({
     return true;
   });
 
-  // Attach fit scores for the interactive panel
-  const coursesWithScores = detail.golfCourses.map((course) => ({
-    ...course,
-    fitScore: detail.recommendation.golfScores.find((s) => s.id === course.id)?.score ?? 0
-  }));
-  const lodgingWithScores = dedupedLodging.map((stay) => ({
-    ...stay,
-    fitScore: detail.recommendation.lodgingScores.find((s) => s.id === stay.id)?.score ?? 0
-  }));
+  // Summary of what's already "in the trip" (real organizer picks, not a sandbox)
+  const pickedCourses = detail.golfCourses.filter((c) => c.featured && !c.hidden);
+  const pickedLodging = dedupedLodging.find((l) => l.featured && !l.hidden) ?? null;
+  const picksCount = pickedCourses.length + (pickedLodging ? 1 : 0);
 
   return (
     <PageShell>
@@ -74,15 +69,49 @@ export default async function ComparePage({
         <div className="mb-6">
           <BackButton fallback={`/outings/${outingId}`} label="Back to outing" />
         </div>
-        <div className="max-w-3xl">
-          <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Compare options</p>
-          <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
-            Compare destinations, golf, and lodging side by side
-          </h1>
-          <p className="mt-4 text-base leading-7 text-charcoal/68">
-            Select a course and a lodging option below — the cost breakdown per person updates instantly.
-          </p>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Trip overview</p>
+            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
+              The whole trip at a glance
+            </h1>
+            <p className="mt-4 text-base leading-7 text-charcoal/68">
+              Read-only summary: recommendations, destination costs, and rental options. To add or change picks, head back to the Organize page.
+            </p>
+          </div>
+          <Link
+            href={`/outings/${outingId}`}
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-forest-900 px-5 text-sm font-semibold text-cream shadow-[0_4px_14px_rgba(20,58,44,0.25)] hover:bg-forest-900/90 transition-colors"
+          >
+            {picksCount > 0 ? "Edit picks on Organize →" : "Pick courses on Organize →"}
+          </Link>
         </div>
+
+        {/* ── Current picks summary (what's already "in the trip") ── */}
+        {picksCount > 0 && (
+          <Card className="mt-8 border-emerald-200 bg-emerald-50/30">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-emerald-700/80">In the trip</p>
+                <p className="mt-1 text-sm text-charcoal/75">
+                  {pickedCourses.length > 0 && (
+                    <>
+                      {pickedCourses.length} course{pickedCourses.length !== 1 ? "s" : ""}: {pickedCourses.map((c) => c.name).join(", ")}
+                    </>
+                  )}
+                  {pickedCourses.length > 0 && pickedLodging && " · "}
+                  {pickedLodging && <>Hotel: {pickedLodging.name}</>}
+                </p>
+              </div>
+              <Link
+                href={`/outings/${outingId}`}
+                className="shrink-0 text-sm font-semibold text-forest-900 underline underline-offset-2 hover:no-underline"
+              >
+                Change picks →
+              </Link>
+            </div>
+          </Card>
+        )}
 
         {detail.destinations.length === 0 ? (
           <div className="mt-8">
@@ -208,15 +237,6 @@ export default async function ComparePage({
                 })}
               </div>
             </Card>
-
-            {/* ── Interactive course + lodging selection ── */}
-            <ComparePanel
-              courses={coursesWithScores}
-              lodging={lodgingWithScores}
-              nights={nights}
-              players={players}
-              roundsPerPlayer={roundsPerPlayer}
-            />
 
             {/* ── Airbnb / VRBO (everyone) + manual listing (organizer only) ── */}
             <RentalListingPanel
