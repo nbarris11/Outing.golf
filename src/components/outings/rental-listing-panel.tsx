@@ -58,6 +58,7 @@ export function RentalListingPanel({
 
   // Manual listing form state
   const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
   const [url, setUrl] = useState("");
   const [nightlyRate, setNightlyRate] = useState("");
   const [sleeps, setSleeps] = useState(String(guests));
@@ -118,7 +119,7 @@ export function RentalListingPanel({
                 ? `See listing for cancellation policy: ${url.trim()}`
                 : null,
               refundable: null,
-              hotelAddress: null,
+              hotelAddress: address.trim() || null,
               city: destination,
               state: null,
               country: "US",
@@ -142,6 +143,7 @@ export function RentalListingPanel({
 
         setSuccess(`"${name.trim()}" saved to the outing.`);
         setName("");
+        setAddress("");
         setUrl("");
         setNightlyRate("");
         setSleeps(String(guests));
@@ -227,6 +229,16 @@ export function RentalListingPanel({
               />
             </label>
           </div>
+
+          <label className="block text-sm text-charcoal/68">
+            Address (optional)
+            <input
+              className="mt-2 w-full rounded-2xl border border-charcoal/10 bg-white px-4 py-3 text-charcoal placeholder:text-charcoal/35"
+              placeholder="e.g. 123 Lakeside Dr, Harrison, MI 48625"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm text-charcoal/68">
