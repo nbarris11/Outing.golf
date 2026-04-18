@@ -13,6 +13,7 @@ import { DateAvailabilityPicker } from "@/components/outings/date-availability-p
 import { FavoriteButton } from "@/components/outings/favorite-button";
 import { CoursePriceDisplay } from "@/components/outings/course-price-display";
 import { LodgingRoomRate } from "@/components/outings/lodging-room-rate";
+import { CoursePriceEditor } from "@/components/outings/course-price-editor";
 import { GolfOnlyToggle } from "@/components/outings/golf-only-toggle";
 import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-context";
 import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
@@ -1150,13 +1151,20 @@ export default async function OutingDetailPage({
                               </div>
                               <p className="mt-0.5 text-sm text-charcoal/55">{course.locationLabel}</p>
                             </div>
-                            <div className="shrink-0">
+                            <div className="shrink-0 text-right">
                               <CoursePriceDisplay
                                 courseName={course.name}
                                 locationLabel={course.locationLabel}
                                 rounds={courseRounds}
-                                storedGreensFee={course.providerKey === "custom" ? course.averageGreensFee : 0}
+                                storedGreensFee={course.averageGreensFee > 0 ? course.averageGreensFee : 0}
                               />
+                              {isOrganizer && (
+                                <CoursePriceEditor
+                                  courseId={course.id}
+                                  outingId={detail.outing.id}
+                                  currentPrice={course.averageGreensFee}
+                                />
+                              )}
                             </div>
                           </div>
                           {/* Bottom row — info left, actions right; scheduling controls only appear once the course is in the trip */}
