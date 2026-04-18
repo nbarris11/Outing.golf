@@ -59,7 +59,9 @@ const envSchema = z.object({
   HOTELBEDS_SECRET: z.string().optional(),
   HOTELBEDS_BASE_URL: z.string().url().default("https://api.hotelbeds.com"),
   // Booking.com affiliate (Awin publisher ID)
-  NEXT_PUBLIC_BOOKING_AFFILIATE_ID: z.string().optional()
+  NEXT_PUBLIC_BOOKING_AFFILIATE_ID: z.string().optional(),
+  // Anthropic API — used for live course pricing enrichment via web search
+  ANTHROPIC_API_KEY: z.string().optional()
 });
 
 const parsed = envSchema.safeParse(process.env);

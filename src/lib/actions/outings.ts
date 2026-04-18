@@ -2023,7 +2023,7 @@ export async function addCustomDestinationAction(formData: FormData) {
   if (!outingId || !name) return;
 
   const newOption: DestinationOption = {
-    id: generateId("dest"),
+    id: isDemoMode ? generateId("dest") : randomUUID(),
     outingId,
     providerKey: "custom",
     name,
@@ -2049,7 +2049,7 @@ export async function addCustomDestinationAction(formData: FormData) {
   const { data: outing } = await supabase.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
   if (!outing || outing.organizer_id !== profile.id) return;
 
-  await supabase.from("destination_options").insert({
+  const { error: insertDestError } = await supabase.from("destination_options").insert({
     id: newOption.id,
     outing_id: outingId,
     provider_key: "custom",
@@ -2064,6 +2064,10 @@ export async function addCustomDestinationAction(formData: FormData) {
     featured: false,
     hidden: false
   });
+  if (insertDestError) {
+    logError("Failed to insert custom destination", insertDestError, { outingId });
+    throw new Error(`Could not add destination: ${insertDestError.message}`);
+  }
   revalidatePath(`/outings/${outingId}`);
 }
 
@@ -2078,7 +2082,7 @@ export async function addCustomGolfCourseAction(formData: FormData) {
   if (!outingId || !name) return;
 
   const newOption: GolfCourseOption = {
-    id: generateId("course"),
+    id: isDemoMode ? generateId("course") : randomUUID(),
     outingId,
     destinationOptionId,
     providerKey: "custom",
@@ -2108,7 +2112,7 @@ export async function addCustomGolfCourseAction(formData: FormData) {
   const { data: outing } = await supabase.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
   if (!outing || outing.organizer_id !== profile.id) return;
 
-  await supabase.from("golf_course_options").insert({
+  const { error: insertCourseError } = await supabase.from("golf_course_options").insert({
     id: newOption.id,
     outing_id: outingId,
     destination_option_id: destinationOptionId || null,
@@ -2127,6 +2131,10 @@ export async function addCustomGolfCourseAction(formData: FormData) {
     schedule_rounds: 1,
     day_label: null
   });
+  if (insertCourseError) {
+    logError("Failed to insert custom golf course", insertCourseError, { outingId });
+    throw new Error(`Could not add course: ${insertCourseError.message}`);
+  }
   revalidatePath(`/outings/${outingId}`);
 }
 
@@ -2142,7 +2150,7 @@ export async function addCustomLodgingAction(formData: FormData) {
   if (!outingId || !name) return;
 
   const newOption: LodgingOption = {
-    id: generateId("lodging"),
+    id: isDemoMode ? generateId("lodging") : randomUUID(),
     outingId,
     destinationOptionId,
     providerKey: "custom",
@@ -2167,7 +2175,7 @@ export async function addCustomLodgingAction(formData: FormData) {
   const { data: outing } = await supabase.from("outings").select("organizer_id").eq("id", outingId).maybeSingle();
   if (!outing || outing.organizer_id !== profile.id) return;
 
-  await supabase.from("lodging_options").insert({
+  const { error: insertLodgingError } = await supabase.from("lodging_options").insert({
     id: newOption.id,
     outing_id: outingId,
     destination_option_id: destinationOptionId || null,
@@ -2181,6 +2189,10 @@ export async function addCustomLodgingAction(formData: FormData) {
     featured: false,
     hidden: false
   });
+  if (insertLodgingError) {
+    logError("Failed to insert custom lodging", insertLodgingError, { outingId });
+    throw new Error(`Could not add lodging: ${insertLodgingError.message}`);
+  }
   revalidatePath(`/outings/${outingId}`);
 }
 

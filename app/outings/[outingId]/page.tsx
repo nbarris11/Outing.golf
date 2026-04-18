@@ -11,6 +11,7 @@ import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
 import { FavoriteButton } from "@/components/outings/favorite-button";
+import { CoursePriceDisplay } from "@/components/outings/course-price-display";
 import { LodgingRoomRate } from "@/components/outings/lodging-room-rate";
 import { GolfOnlyToggle } from "@/components/outings/golf-only-toggle";
 import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-context";
@@ -426,12 +427,14 @@ export default async function OutingDetailPage({
                 <div className="mt-3 flex flex-wrap gap-3">
                   <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
                     <span className="text-charcoal/55">Greens fee </span>
-                    <span className="font-semibold text-charcoal">{currency(topCourse.averageGreensFee)}</span>
+                    <span className="font-semibold text-charcoal">{topCourse.averageGreensFee > 0 ? currency(topCourse.averageGreensFee) : "Call for rate"}</span>
                   </div>
-                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
-                    <span className="text-charcoal/55">{roundsStep3} round{roundsStep3 !== 1 ? "s" : ""} · </span>
-                    <span className="font-semibold text-charcoal">{currency(topCourse.averageGreensFee * roundsStep3)} per person</span>
-                  </div>
+                  {topCourse.averageGreensFee > 0 && (
+                    <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
+                      <span className="text-charcoal/55">{roundsStep3} round{roundsStep3 !== 1 ? "s" : ""} · </span>
+                      <span className="font-semibold text-charcoal">{currency(topCourse.averageGreensFee * roundsStep3)} per person</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : null}
@@ -971,7 +974,7 @@ export default async function OutingDetailPage({
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className={["font-semibold", isMyPick ? "text-cream" : "text-charcoal"].join(" ")}>{course.name}</p>
-                              <p className={["text-sm", isMyPick ? "text-cream/60" : "text-charcoal/55"].join(" ")}>{currency(course.averageGreensFee)}/round</p>
+                              <p className={["text-sm", isMyPick ? "text-cream/60" : "text-charcoal/55"].join(" ")}>{course.averageGreensFee > 0 ? `${currency(course.averageGreensFee)}/round` : "Call for rate"}</p>
                             </div>
                             <VoteButton
                               outingId={detail.outing.id}
@@ -1144,9 +1147,13 @@ export default async function OutingDetailPage({
                               </div>
                               <p className="mt-0.5 text-sm text-charcoal/55">{course.locationLabel}</p>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="font-semibold text-charcoal">{currency(courseGolfCost)}<span className="ml-1 text-xs font-normal text-charcoal/50">/person</span></p>
-                              <p className="mt-0.5 text-xs text-charcoal/45">{currency(course.averageGreensFee)} × {courseRounds}rnd</p>
+                            <div className="shrink-0">
+                              <CoursePriceDisplay
+                                courseName={course.name}
+                                locationLabel={course.locationLabel}
+                                rounds={courseRounds}
+                                storedGreensFee={course.providerKey === "custom" ? course.averageGreensFee : 0}
+                              />
                             </div>
                           </div>
                           {/* Bottom row — info left, actions right; scheduling controls only appear once the course is in the trip */}

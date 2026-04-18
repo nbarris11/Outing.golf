@@ -17,7 +17,7 @@ const GOOGLE_PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:s
 const GOOGLE_PLACES_NEARBY_SEARCH_URL = "https://places.googleapis.com/v1/places:searchNearby";
 const DEFAULT_SEARCH_RADIUS_METERS = 50_000;
 const DEFAULT_DESTINATION_LIMIT = 8;
-const DEFAULT_GOLF_LIMIT = 4;
+const DEFAULT_GOLF_LIMIT = 15;
 const LOCATION_TYPES = new Set([
   "administrative_area_level_1",
   "administrative_area_level_2",
@@ -175,34 +175,6 @@ function isGeographicalPlace(place: GooglePlace) {
   return Array.from(types).some((type) => LOCATION_TYPES.has(type as string));
 }
 
-function estimateDestinationNightlyRate(outing: Outing, index: number) {
-  const baseByStyle = {
-    value: 210,
-    classic: 280,
-    premium: 390,
-    bucket_list: 540
-  } as const;
-
-  return baseByStyle[outing.tripStyle] + index * 25;
-}
-
-function estimateDestinationRoundCost(outing: Outing, index: number) {
-  const baseByIntensity = {
-    light: 95,
-    balanced: 145,
-    golf_first: 185
-  } as const;
-
-  const tripStyleLift = {
-    value: 0,
-    classic: 18,
-    premium: 45,
-    bucket_list: 95
-  } as const;
-
-  return baseByIntensity[outing.golfIntensity] + tripStyleLift[outing.tripStyle] + index * 12;
-}
-
 function destinationSummary(place: GooglePlace, query: string) {
   const address = place.formattedAddress ? ` around ${place.formattedAddress}` : "";
   return `Live Google Places match for ${query}${address}. Travel, stay, and golf pricing stay estimated until more inventory partners are connected.`;
@@ -216,12 +188,6 @@ function destinationTags(place: GooglePlace) {
   ];
 
   return Array.from(new Set(tags));
-}
-
-function estimateGreensFee(outing: Outing, place: GooglePlace, index: number) {
-  const ratingLift = place.rating ? Math.round((place.rating - 4) * 45) : 0;
-  const styleLift = outing.tripStyle === "premium" ? 35 : outing.tripStyle === "bucket_list" ? 80 : 0;
-  return Math.max(95, 125 + ratingLift + styleLift + index * 10);
 }
 
 function estimateQualityScore(place: GooglePlace, index: number) {
@@ -393,8 +359,8 @@ export const googlePlacesDestinationProvider: DestinationSearchProvider = {
           region: extractRegion(place),
           driveHours: null,
           flightHours: Number((2.3 + index * 0.35).toFixed(1)),
-          averageNightlyRate: estimateDestinationNightlyRate(outing, index),
-          averageRoundCost: estimateDestinationRoundCost(outing, index),
+          averageNightlyRate: 0,
+          averageRoundCost: 0,
           tags: destinationTags(place),
           summary: destinationSummary(place, normalizedQuery),
           featured: index === 0,
@@ -500,7 +466,7 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
             providerKey: golfDefinition.key,
             name: getPlaceName(place),
             locationLabel: place.formattedAddress?.trim() || `${destination.name}, ${destination.region}`,
-            averageGreensFee: estimateGreensFee(outing, place, index),
+            averageGreensFee: 0,
             qualityScore: estimateQualityScore(place, index),
             rideFriendly: true,
             walkingFriendly: (place.rating ?? 0) >= 4.2 || index % 2 === 0,
