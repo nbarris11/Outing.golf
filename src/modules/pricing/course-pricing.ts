@@ -624,40 +624,6 @@ function hostFromUrl(url: string): string {
   }
 }
 
-// ─── GolfNow fallback scraper ─────────────────────────────────────────────────
-// GolfNow lists tee-time prices for thousands of public US courses. We search
-// by course name + state, parse the listed rates from the results page.
-
-async function scrapeGolfNow(
-  name: string,
-  location: string
-): Promise<{ prices: number[]; pageUrl: string } | null> {
-  // Build a slug-style search query
-  const query = encodeURIComponent(`${name} ${location}`);
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const url = `https://www.golfnow.com/tee-times/search#sort=deal&view=list&holes=18&time=0700-1800&date=${today}&q=${query}`;
-  const html = await fetchHtml(url);
-  if (!html) return null;
-  const text = stripHtml(html);
-  const prices = extractRatePrices(text);
-  if (prices.length === 0) return null;
-  return { prices, pageUrl: url };
-}
-
-// ─── TeeOff fallback scraper ──────────────────────────────────────────────────
-async function scrapeTeeOff(
-  name: string,
-  location: string
-): Promise<{ prices: number[]; pageUrl: string } | null> {
-  const query = encodeURIComponent(`${name} ${location}`);
-  const url = `https://www.teeoff.com/tee-times?q=${query}`;
-  const html = await fetchHtml(url);
-  if (!html) return null;
-  const text = stripHtml(html);
-  const prices = extractRatePrices(text);
-  if (prices.length === 0) return null;
-  return { prices, pageUrl: url };
-}
 
 export async function fetchAndCacheCoursePricing(
   name: string,
@@ -699,29 +665,6 @@ export async function fetchAndCacheCoursePricing(
     }
 
     if (!built) built = buildPricingFromDetails(details);
-
-    // Fallback: try GolfNow and TeeOff if Google has no usable signals
-    if (!built) {
-      const [golfNow, teeOff] = await Promise.all([
-        scrapeGolfNow(name, location),
-        scrapeTeeOff(name, location)
-      ]);
-      const fallback = golfNow ?? teeOff;
-      if (fallback && fallback.prices.length > 0) {
-        const avg = average(fallback.prices);
-        if (avg) {
-          built = {
-            avgRate: avg,
-            weekdayRate: Math.min(...fallback.prices),
-            weekendRate: Math.max(...fallback.prices),
-            sourceUrl: fallback.pageUrl,
-            sourceName: hostFromUrl(fallback.pageUrl),
-            notes: `Avg of ${fallback.prices.length} tee-time rate${fallback.prices.length !== 1 ? "s" : ""} on ${hostFromUrl(fallback.pageUrl)}`,
-            confidence: fallback.prices.length >= 3 ? "medium" : "low"
-          };
-        }
-      }
-    }
 
     if (!built) {
       logInfo("No usable pricing signals from any source", { name, location });

@@ -8,7 +8,7 @@
  *   npx tsx scripts/retry-failed-pricing.ts --limit 100
  */
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { createSupabaseAdminClient } from "../src/lib/supabase/admin";
 import { env } from "../src/lib/env";
@@ -342,16 +342,26 @@ async function saveToDb(
 async function run() {
   // Load progress file to get all processed lookup keys
   const progressPath = resolve(__dirname, "scraping-progress.json");
+  if (!existsSync(progressPath)) {
+    console.error(`Progress file not found: ${progressPath}`);
+    console.error("Run scrape-course-pricing-bulk.ts first to generate this file.");
+    process.exit(1);
+  }
   const progress = JSON.parse(readFileSync(progressPath, "utf8")) as { processedKeys: string[] };
   const allKeys = progress.processedKeys;
 
-  // Find which keys are missing from the DB
+  // Find which keys are missing from the DB — batch to stay under URL limits
   const supabase = createSupabaseAdminClient();
   if (!supabase) { console.error("No Supabase client"); process.exit(1); }
 
   console.log(`Checking ${allKeys.length} processed keys against DB…`);
-  const { data: existing } = await supabase.from("course_pricing").select("lookup_key").in("lookup_key", allKeys);
-  const existingSet = new Set((existing ?? []).map((r: { lookup_key: string }) => r.lookup_key));
+  const BATCH_SIZE = 150;
+  const existingSet = new Set<string>();
+  for (let i = 0; i < allKeys.length; i += BATCH_SIZE) {
+    const batch = allKeys.slice(i, i + BATCH_SIZE);
+    const { data } = await supabase.from("course_pricing").select("lookup_key").in("lookup_key", batch);
+    (data ?? []).forEach((r: { lookup_key: string }) => existingSet.add(r.lookup_key));
+  }
 
   const failed = allKeys.filter(k => !existingSet.has(k));
   console.log(`Found ${failed.length} courses with no pricing data — retrying with enhanced methods\n`);
