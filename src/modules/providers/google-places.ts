@@ -205,9 +205,20 @@ function golfSummary(_place: GooglePlace, _destination: DestinationOption) {
 
 const NON_COURSE_NAME_PATTERNS = /pro\s?shop|golf shop|golf store|golf academy|instruction|driving range/i;
 
+// Private/invite-only clubs that should never appear in search results.
+// These courses don't accept public tee times so showing them is pointless.
+const PRIVATE_CLUB_PATTERNS = /\b(country\s+club|athletic\s+club|hunt\s+club|polo\s+club|yacht\s+&?\s*country|golf\s+&?\s*country|tennis\s+&?\s*country|swim\s+&?\s*country)\b/i;
+const EXPLICIT_PRIVATE_PATTERNS = /[-–—]\s*private\b|\bprivate\s*[-–—]|\bmembers?\s+only\b|\binvite[\s-]only\b|\bprivate\s+club\b/i;
+
 function isActualCourse(place: GooglePlace): boolean {
-  const name = getPlaceName(place).toLowerCase();
-  return !NON_COURSE_NAME_PATTERNS.test(name);
+  const name = getPlaceName(place);
+  const nameLower = name.toLowerCase();
+  if (NON_COURSE_NAME_PATTERNS.test(nameLower)) return false;
+  // Explicitly labelled private — "Lost Dunes - PRIVATE", "Members Only", etc.
+  if (EXPLICIT_PRIVATE_PATTERNS.test(name)) return false;
+  // Name suggests private club AND very few public reviews (private clubs stay under ~75)
+  if (PRIVATE_CLUB_PATTERNS.test(nameLower) && (place.userRatingCount ?? 0) < 75) return false;
+  return true;
 }
 
 function golfTags(place: GooglePlace) {

@@ -497,9 +497,13 @@ export default async function OutingDetailPage({
     return true;
   });
 
+  // Filter out private/invite-only courses regardless of hidden flag
+  const PRIVATE_DISPLAY_RE = /[-–—]\s*private\b|\bprivate\s*[-–—]|\bmembers?\s+only\b|\binvite[\s-]only\b|\bprivate\s+club\b/i;
+  const isPrivateCourse = (name: string) => PRIVATE_DISPLAY_RE.test(name);
+
   // Split visible / hidden options (organizer sees both; members only see visible)
-  const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
-  const hiddenCourses = isOrganizer ? detail.golfCourses.filter((c) => c.hidden) : [];
+  const visibleCourses = detail.golfCourses.filter((c) => !c.hidden && !isPrivateCourse(c.name));
+  const hiddenCourses = isOrganizer ? detail.golfCourses.filter((c) => c.hidden && !isPrivateCourse(c.name)) : [];
   const visibleLodging = dedupedLodging.filter((s) => !s.hidden);
   const hiddenLodging = isOrganizer ? dedupedLodging.filter((s) => s.hidden) : [];
   // First destination for linking custom courses/lodging

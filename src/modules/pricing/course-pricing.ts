@@ -211,6 +211,11 @@ function extractPricesFromReviews(reviews: PlaceDetails["reviews"]): number[] {
   return prices;
 }
 
+function average(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return Math.round(values.reduce((s, v) => s + v, 0) / values.length);
+}
+
 function median(values: number[]): number | null {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -241,9 +246,25 @@ interface BuiltPricing {
 
 // ─── Course website scraping ──────────────────────────────────────────────────
 
-const RATE_PATHS = ["/rates", "/green-fees", "/greens-fees", "/fees", "/pricing", "/tee-times", "/golf/rates", "/course/rates"];
-const RATE_CONTEXT_WORDS = /\b(greens?\s*fees?|rate|round|18\s*holes?|9\s*holes?|weekday|weekend|twilight|morning|afternoon|cart|walk(?:ing)?|golf)\b/i;
-const SCRAPE_TIMEOUT_MS = 4000;
+const RATE_PATHS = [
+  "/rates", "/green-fees", "/greens-fees", "/fees", "/pricing",
+  "/tee-times", "/golf/rates", "/course/rates",
+  // Common booking-system and CMS patterns
+  "/golf-fees", "/golf-rates", "/golf/fees", "/golf/pricing", "/golf/green-fees",
+  "/play", "/play/golf", "/play/rates", "/play/fees", "/play/green-fees",
+  "/visitors", "/visitor-rates", "/visitor-fees", "/public", "/public-rates",
+  "/daily-fee", "/daily-fees", "/daily-rates",
+  "/rate-sheet", "/rate-card", "/fee-schedule",
+  "/book", "/book-a-tee-time", "/reserve",
+  "/course/fees", "/course/pricing",
+  "/golf-course/rates", "/golf-course/fees",
+  "/membership/public-rates", "/public-play",
+  "/tee-time-rates", "/tee-time-fees",
+];
+const RATE_CONTEXT_WORDS = /\b(greens?\s*fees?|rate|round|18\s*holes?|9\s*holes?|weekday|weekend|twilight|morning|afternoon|cart|walk(?:ing)?|golf|per\s*person|green\s*fee|trail\s*fee|riding|replay)\b/i;
+const NINE_HOLE_RE = /\b(9[\s-]holes?|nine[\s-]holes?|front\s*9|back\s*9|9[\s-]hole\s*rate|9[\s-]hole\s*fee)\b/i;
+const EIGHTEEN_HOLE_RE = /\b(18[\s-]holes?|eighteen[\s-]holes?|full\s*round|18[\s-]hole\s*rate|18[\s-]hole\s*fee)\b/i;
+const SCRAPE_TIMEOUT_MS = 5000;
 
 function stripHtml(html: string): string {
   return html
@@ -279,18 +300,207 @@ async function fetchHtml(url: string): Promise<string | null> {
   }
 }
 
-// Extract prices that appear within ~60 chars of rate-related keywords.
-function extractRatePrices(text: string): number[] {
-  const prices: number[] = [];
-  const pattern = /\$\s?(\d{2,4})(?:\.\d{1,2})?/g;
-  for (const match of text.matchAll(pattern)) {
-    const value = Number(match[1]);
-    if (!Number.isFinite(value) || value < 20 || value > 500) continue;
-    const idx = match.index ?? 0;
-    const window = text.slice(Math.max(0, idx - 60), idx + 60);
-    if (RATE_CONTEXT_WORDS.test(window)) prices.push(value);
+interface TaggedPrice { value: number; is9Hole: boolean; is18Hole: boolean; }
+
+// Extract prices tagged by hole count. Within ~80 chars of rate-related keywords.
+function extractTaggedPrices(text: string): TaggedPrice[] {
+  const seen = new Set<string>();
+  const prices: TaggedPrice[] = [];
+
+  function addPrice(value: number, idx: number, key: string) {
+    if (seen.has(key)) return;
+    seen.add(key);
+    const ctx = text.slice(Math.max(0, idx - 100), idx + 100);
+    const is9Hole = NINE_HOLE_RE.test(ctx);
+    const is18Hole = EIGHTEEN_HOLE_RE.test(ctx);
+    prices.push({ value, is9Hole, is18Hole });
   }
+
+  // Pattern 1: dollar-sign prices "$85", "$85.00", "$ 85"
+  const dollarPattern = /\$\s?(\d{2,4})(?:\.\d{1,2})?/g;
+  for (const match of text.matchAll(dollarPattern)) {
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value < 18 || value > 600) continue;
+    const idx = match.index ?? 0;
+    const ctx = text.slice(Math.max(0, idx - 80), idx + 80);
+    if (!RATE_CONTEXT_WORDS.test(ctx)) continue;
+    addPrice(value, idx, `${idx}`);
+  }
+
+  // Pattern 2: plain numbers near rate keywords — "Weekday: 65", "75/person"
+  const plainPattern = /\b(\d{2,3})(?:\.\d{2})?\s*(?:\/\s*(?:person|player|golfer|round|hole))?\b/g;
+  for (const match of text.matchAll(plainPattern)) {
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value < 18 || value > 400) continue;
+    const idx = match.index ?? 0;
+    const ctx = text.slice(Math.max(0, idx - 40), idx + 40);
+    if (!RATE_CONTEXT_WORDS.test(ctx)) continue;
+    if (value >= 200 && !/weekend|weekday|twilight|morning|afternoon/.test(ctx)) continue;
+    addPrice(value, idx, `plain:${idx}`);
+  }
+
   return prices;
+}
+
+// Return only 18-hole prices. If none are explicitly labeled, return all prices
+// that aren't explicitly labeled as 9-hole. If only 9-hole prices exist, double them.
+function extractRatePrices(text: string): number[] {
+  const tagged = extractTaggedPrices(text);
+  if (tagged.length === 0) return [];
+
+  const explicit18 = tagged.filter((p) => p.is18Hole && !p.is9Hole).map((p) => p.value);
+  if (explicit18.length > 0) return explicit18;
+
+  const ambiguous = tagged.filter((p) => !p.is9Hole).map((p) => p.value);
+  if (ambiguous.length > 0) return ambiguous;
+
+  // Only 9-hole prices found — double them as a 18-hole estimate
+  return tagged.map((p) => Math.round(p.value * 2));
+}
+
+// ─── Booking platform API scrapers ───────────────────────────────────────────
+// Many courses outsource their tee-time booking to SaaS platforms (TeeItUp,
+// ForeUp, Chronogolf). These platforms expose JSON APIs that return real
+// current prices — far more accurate than scraping static HTML.
+
+// Detect booking platform links in the homepage HTML and extract IDs/slugs.
+function detectBookingPlatform(html: string, base: URL): {
+  platform: "teeitup" | "foreup" | "chronogolf" | "lightspeed";
+  id: string;
+} | null {
+  // TeeItUp: href contains "book.teeitup.com" or "teeitup.com" with ?course=NNN
+  const teeitupHref = /book\.teeitup\.com[^"']*[?&]course=(\d+)/i;
+  const teeitupMatch = html.match(teeitupHref);
+  if (teeitupMatch) return { platform: "teeitup", id: teeitupMatch[1] };
+
+  // ForeUp: foreupsoftware.com/index.php/booking/NNN or book.foreup.com
+  const foreupHref = /foreupsoftware\.com\/index\.php\/booking\/(\d+)/i;
+  const foreupMatch = html.match(foreupHref);
+  if (foreupMatch) return { platform: "foreup", id: foreupMatch[1] };
+
+  const foreupBook = /href=["'][^"']*book\.foreup\.com\/[^"']*schedule_id=(\d+)/i;
+  const foreupBookMatch = html.match(foreupBook);
+  if (foreupBookMatch) return { platform: "foreup", id: foreupBookMatch[1] };
+
+  // Chronogolf / Lightspeed Golf
+  const chronoHref = /href=["'][^"']*chronogolf\.com[^"']*club\/(\d+)/i;
+  const chronoMatch = html.match(chronoHref);
+  if (chronoMatch) return { platform: "chronogolf", id: chronoMatch[1] };
+
+  return null;
+}
+
+async function fetchTeeitupPrices(courseId: string): Promise<number[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const url = `https://phx.book.teeitup.com/api/tee-time-results?courseId=${courseId}&date=${today}&holes=18&players=4`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" }
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as { teeTimes?: Array<{ price?: number; rates?: Array<{ greenFee?: number }> }> };
+    const prices: number[] = [];
+    for (const tt of data.teeTimes ?? []) {
+      if (tt.price && tt.price >= 15 && tt.price <= 600) prices.push(tt.price);
+      for (const r of tt.rates ?? []) {
+        if (r.greenFee && r.greenFee >= 15 && r.greenFee <= 600) prices.push(r.greenFee);
+      }
+    }
+    return prices;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function fetchForeupPrices(scheduleId: string): Promise<number[]> {
+  const today = new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }).replace(/\//g, "-");
+  const url = `https://foreupsoftware.com/index.php/api/booking/times?time=all&date=${today}&holes=18&players=4&schedule_id=${scheduleId}&api_key=no_limits`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" }
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as Array<{ green_fee?: number; price?: number }>;
+    if (!Array.isArray(data)) return [];
+    return data
+      .map((t) => t.green_fee ?? t.price ?? 0)
+      .filter((p) => p >= 15 && p <= 600);
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function fetchBookingPlatformPrices(
+  html: string,
+  base: URL
+): Promise<{ prices: number[]; sourceUrl: string; sourceName: string } | null> {
+  const detected = detectBookingPlatform(html, base);
+  if (!detected) return null;
+
+  let prices: number[] = [];
+  let sourceUrl = base.href;
+
+  if (detected.platform === "teeitup") {
+    prices = await fetchTeeitupPrices(detected.id);
+    sourceUrl = `https://phx.book.teeitup.com (course ${detected.id})`;
+  } else if (detected.platform === "foreup") {
+    prices = await fetchForeupPrices(detected.id);
+    sourceUrl = `https://foreupsoftware.com (schedule ${detected.id})`;
+  }
+
+  if (prices.length === 0) return null;
+  return { prices, sourceUrl, sourceName: detected.platform === "teeitup" ? "TeeItUp" : "ForeUp" };
+}
+
+// Link text / href patterns that strongly indicate a rates page.
+const RATES_LINK_RE = /\b(green[\s-]?fees?|greens[\s-]?fees?|rates?|fee\s*schedule|pricing|golf\s*fees?|green\s*fee|daily\s*fees?|public\s*rates?|visitor\s*rates?|play\s*golf|tee\s*times?|book\s*(?:a\s*)?tee|reserve)\b/i;
+
+// Extract all internal hrefs from raw HTML that look like rates pages.
+function findRatesLinks(html: string, base: URL): string[] {
+  const found: string[] = [];
+  const hrefRe = /href=["']([^"'#?][^"']*?)["']/gi;
+  for (const match of html.matchAll(hrefRe)) {
+    const raw = match[1];
+    // Only follow same-domain paths or relative URLs
+    let resolved: URL;
+    try {
+      resolved = new URL(raw, base);
+    } catch {
+      continue;
+    }
+    if (resolved.hostname !== base.hostname) continue;
+    const path = resolved.pathname.toLowerCase();
+    // Check the path itself for rate-related keywords
+    if (RATES_LINK_RE.test(path.replace(/[-_/]/g, " "))) {
+      found.push(resolved.href);
+    }
+  }
+  // Also check anchor text — extract <a ...>text</a> and match both href and text
+  const anchorRe = /<a\s[^>]*href=["']([^"'#?][^"']*?)["'][^>]*>([\s\S]{1,80}?)<\/a>/gi;
+  for (const match of html.matchAll(anchorRe)) {
+    const raw = match[1];
+    const text = match[2].replace(/<[^>]+>/g, "").trim();
+    if (!RATES_LINK_RE.test(text)) continue;
+    let resolved: URL;
+    try {
+      resolved = new URL(raw, base);
+    } catch {
+      continue;
+    }
+    if (resolved.hostname !== base.hostname) continue;
+    found.push(resolved.href);
+  }
+  return Array.from(new Set(found)).slice(0, 8); // cap discovered links
 }
 
 async function scrapeCourseWebsite(
@@ -303,12 +513,30 @@ async function scrapeCourseWebsite(
     return null;
   }
 
-  const urls = [base.href, ...RATE_PATHS.map((p) => new URL(p, base).href)];
-  const unique = Array.from(new Set(urls));
+  // Step 1: fetch the homepage.
+  const homepageHtml = await fetchHtml(base.href);
+  if (!homepageHtml) return null;
 
+  // Step 2: check for a booking platform (TeeItUp, ForeUp, etc.) — highest accuracy.
+  const platformResult = await fetchBookingPlatformPrices(homepageHtml, base);
+  if (platformResult && platformResult.prices.length > 0) {
+    return { prices: platformResult.prices, pageUrl: platformResult.sourceUrl };
+  }
+
+  // Step 3: discover actual rates links from navigation/anchors in the homepage.
+  const discoveredLinks = findRatesLinks(homepageHtml, base);
+
+  // Step 4: also try our known common path patterns.
+  const guessedUrls = RATE_PATHS.map((p) => new URL(p, base).href);
+
+  // Prioritise discovered links (real), then guesses, then homepage itself.
+  const ordered = [...discoveredLinks, ...guessedUrls, base.href];
+  const unique = Array.from(new Set(ordered));
+
+  // Fetch all candidates in parallel (homepage already fetched, reuse it).
   const results = await Promise.all(
     unique.map(async (url) => {
-      const html = await fetchHtml(url);
+      const html = url === base.href ? homepageHtml : await fetchHtml(url);
       if (!html) return null;
       const text = stripHtml(html);
       const prices = extractRatePrices(text);
@@ -316,7 +544,7 @@ async function scrapeCourseWebsite(
     })
   );
 
-  // Prefer a dedicated rates page over the homepage when both have prices.
+  // Prefer a dedicated rates page over the homepage.
   const ratesHit = results.find((r) => r && r.url !== base.href);
   const winner = ratesHit ?? results.find((r) => r !== null);
   if (!winner) return null;
@@ -396,6 +624,41 @@ function hostFromUrl(url: string): string {
   }
 }
 
+// ─── GolfNow fallback scraper ─────────────────────────────────────────────────
+// GolfNow lists tee-time prices for thousands of public US courses. We search
+// by course name + state, parse the listed rates from the results page.
+
+async function scrapeGolfNow(
+  name: string,
+  location: string
+): Promise<{ prices: number[]; pageUrl: string } | null> {
+  // Build a slug-style search query
+  const query = encodeURIComponent(`${name} ${location}`);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const url = `https://www.golfnow.com/tee-times/search#sort=deal&view=list&holes=18&time=0700-1800&date=${today}&q=${query}`;
+  const html = await fetchHtml(url);
+  if (!html) return null;
+  const text = stripHtml(html);
+  const prices = extractRatePrices(text);
+  if (prices.length === 0) return null;
+  return { prices, pageUrl: url };
+}
+
+// ─── TeeOff fallback scraper ──────────────────────────────────────────────────
+async function scrapeTeeOff(
+  name: string,
+  location: string
+): Promise<{ prices: number[]; pageUrl: string } | null> {
+  const query = encodeURIComponent(`${name} ${location}`);
+  const url = `https://www.teeoff.com/tee-times?q=${query}`;
+  const html = await fetchHtml(url);
+  if (!html) return null;
+  const text = stripHtml(html);
+  const prices = extractRatePrices(text);
+  if (prices.length === 0) return null;
+  return { prices, pageUrl: url };
+}
+
 export async function fetchAndCacheCoursePricing(
   name: string,
   location: string
@@ -420,15 +683,15 @@ export async function fetchAndCacheCoursePricing(
     if (details.websiteUri) {
       const scraped = await scrapeCourseWebsite(details.websiteUri);
       if (scraped && scraped.prices.length > 0) {
-        const med = median(scraped.prices);
-        if (med) {
+        const avg = average(scraped.prices);
+        if (avg) {
           built = {
-            avgRate: med,
+            avgRate: avg,
             weekdayRate: Math.min(...scraped.prices),
             weekendRate: Math.max(...scraped.prices),
             sourceUrl: scraped.pageUrl,
             sourceName: hostFromUrl(scraped.pageUrl),
-            notes: `From ${scraped.prices.length} rate${scraped.prices.length !== 1 ? "s" : ""} on course website`,
+            notes: `Avg of ${scraped.prices.length} rate${scraped.prices.length !== 1 ? "s" : ""} on course website`,
             confidence: scraped.prices.length >= 2 ? "high" : "medium"
           };
         }
@@ -436,8 +699,32 @@ export async function fetchAndCacheCoursePricing(
     }
 
     if (!built) built = buildPricingFromDetails(details);
+
+    // Fallback: try GolfNow and TeeOff if Google has no usable signals
     if (!built) {
-      logInfo("Google Places returned no usable pricing signals", { name, location });
+      const [golfNow, teeOff] = await Promise.all([
+        scrapeGolfNow(name, location),
+        scrapeTeeOff(name, location)
+      ]);
+      const fallback = golfNow ?? teeOff;
+      if (fallback && fallback.prices.length > 0) {
+        const avg = average(fallback.prices);
+        if (avg) {
+          built = {
+            avgRate: avg,
+            weekdayRate: Math.min(...fallback.prices),
+            weekendRate: Math.max(...fallback.prices),
+            sourceUrl: fallback.pageUrl,
+            sourceName: hostFromUrl(fallback.pageUrl),
+            notes: `Avg of ${fallback.prices.length} tee-time rate${fallback.prices.length !== 1 ? "s" : ""} on ${hostFromUrl(fallback.pageUrl)}`,
+            confidence: fallback.prices.length >= 3 ? "medium" : "low"
+          };
+        }
+      }
+    }
+
+    if (!built) {
+      logInfo("No usable pricing signals from any source", { name, location });
       return null;
     }
 
