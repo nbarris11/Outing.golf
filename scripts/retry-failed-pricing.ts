@@ -337,6 +337,26 @@ async function saveToDb(
   await supabase.from("course_pricing").upsert(row, { onConflict: "lookup_key" });
 }
 
+// ─── SinglePlatform ───────────────────────────────────────────────────────────
+
+function toSinglePlatformSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+async function scrapeSinglePlatform(name: string): Promise<number[]> {
+  const slug = toSinglePlatformSlug(name);
+  for (const url of [
+    `https://places.singleplatform.com/${slug}-0/menu`,
+    `https://places.singleplatform.com/${slug}/menu`,
+  ]) {
+    const html = await fetchText(url);
+    if (!html) continue;
+    const prices = selectPrices(extractTagged(stripHtml(html)));
+    if (prices.length) return prices;
+  }
+  return [];
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function run() {
@@ -416,6 +436,21 @@ async function run() {
       console.log(`$${a} via GolfNow`);
       await saveToDb(lookupKey, name, location, gnP, `https://www.golfnow.com`, "GolfNow",
         `Avg of ${gnP.length} tee-time rates from GolfNow`, "medium");
+      priced++;
+      await sleep(DELAY_MS);
+      continue;
+    }
+
+    // Strategy 4: SinglePlatform — Google Maps surfaces these "Menu" pages for
+    // many courses with green fee listings; slug constructed from course name.
+    const spP = await scrapeSinglePlatform(name);
+    if (spP.length) {
+      const a = avg(spP);
+      console.log(`$${a} via SinglePlatform`);
+      await saveToDb(lookupKey, name, location, spP,
+        `https://places.singleplatform.com/${toSinglePlatformSlug(name)}-0/menu`,
+        "SinglePlatform", `Avg of ${spP.length} rates from SinglePlatform`,
+        spP.length >= 2 ? "medium" : "low");
       priced++;
       await sleep(DELAY_MS);
       continue;

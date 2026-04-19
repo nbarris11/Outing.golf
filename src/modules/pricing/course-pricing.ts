@@ -624,6 +624,36 @@ function hostFromUrl(url: string): string {
   }
 }
 
+// ─── SinglePlatform fallback ──────────────────────────────────────────────────
+// Google Maps surfaces SinglePlatform "Menu" pages for many courses that list
+// green fees. The Places API doesn't expose this URL, so we construct the slug
+// from the course name and try the two most common suffix variants (-0, no suffix).
+
+function toSinglePlatformSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function scrapeSinglePlatform(
+  name: string
+): Promise<{ prices: number[]; pageUrl: string } | null> {
+  const slug = toSinglePlatformSlug(name);
+  const candidates = [
+    `https://places.singleplatform.com/${slug}-0/menu`,
+    `https://places.singleplatform.com/${slug}/menu`,
+  ];
+  for (const url of candidates) {
+    const html = await fetchHtml(url);
+    if (!html) continue;
+    const text = stripHtml(html);
+    const prices = extractRatePrices(text);
+    if (prices.length > 0) return { prices, pageUrl: url };
+  }
+  return null;
+}
+
 
 export async function fetchAndCacheCoursePricing(
   name: string,
@@ -665,6 +695,26 @@ export async function fetchAndCacheCoursePricing(
     }
 
     if (!built) built = buildPricingFromDetails(details);
+
+    // Fallback: try SinglePlatform — Google Maps surfaces these "Menu" pages for
+    // many courses with green fee listings, but the Places API doesn't expose the URL.
+    if (!built) {
+      const sp = await scrapeSinglePlatform(name);
+      if (sp && sp.prices.length > 0) {
+        const avg = average(sp.prices);
+        if (avg) {
+          built = {
+            avgRate: avg,
+            weekdayRate: Math.min(...sp.prices),
+            weekendRate: Math.max(...sp.prices),
+            sourceUrl: sp.pageUrl,
+            sourceName: "SinglePlatform",
+            notes: `Avg of ${sp.prices.length} rate${sp.prices.length !== 1 ? "s" : ""} on SinglePlatform`,
+            confidence: sp.prices.length >= 2 ? "medium" : "low"
+          };
+        }
+      }
+    }
 
     if (!built) {
       logInfo("No usable pricing signals from any source", { name, location });
