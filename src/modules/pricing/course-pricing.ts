@@ -284,15 +284,18 @@ async function fetchHtml(url: string): Promise<string | null> {
       signal: controller.signal,
       redirect: "follow",
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; OutingGolfBot/1.0; +https://outing.golf)",
-        Accept: "text/html,application/xhtml+xml"
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
       }
     });
     if (!response.ok) return null;
     const ct = response.headers.get("content-type") ?? "";
     if (!ct.includes("text/html")) return null;
     const text = await response.text();
-    return text.slice(0, 400_000); // cap to 400KB
+    // Cloudflare/bot-protection challenge pages — no real content
+    if (text.includes("cf_chl_opt") || text.includes("Just a moment") || text.includes("Enable JavaScript and cookies")) return null;
+    return text.slice(0, 400_000);
   } catch {
     return null;
   } finally {

@@ -44,7 +44,9 @@ async function fetchText(url: string): Promise<string | null> {
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") ?? "";
     if (!ct.includes("text/html") && !ct.includes("application/json")) return null;
-    return (await res.text()).slice(0, 500_000);
+    const text = (await res.text()).slice(0, 500_000);
+    if (text.includes("cf_chl_opt") || text.includes("Just a moment") || text.includes("Enable JavaScript and cookies")) return null;
+    return text;
   } catch { return null; }
   finally { clearTimeout(id); }
 }
