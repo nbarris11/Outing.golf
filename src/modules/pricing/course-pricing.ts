@@ -195,7 +195,7 @@ async function fetchPlaceDetails(placeId: string): Promise<PlaceDetails | null> 
 // "paid $60", etc. Filters to reasonable golf-price range.
 function extractPricesFromReviews(reviews: PlaceDetails["reviews"]): number[] {
   if (!reviews?.length) return [];
-  const pattern = /\$\s?(\d{2,4})(?:\.\d{1,2})?/g;
+  const pattern = /[$£€]\s?(\d{2,4})(?:\.\d{1,2})?/g;
   const prices: number[] = [];
   for (const review of reviews) {
     const text = review.text?.text;
@@ -261,9 +261,9 @@ const RATE_PATHS = [
   "/membership/public-rates", "/public-play",
   "/tee-time-rates", "/tee-time-fees",
 ];
-const RATE_CONTEXT_WORDS = /\b(greens?\s*fees?|rate|round|18\s*holes?|9\s*holes?|weekday|weekend|twilight|morning|afternoon|cart|walk(?:ing)?|golf|per\s*person|green\s*fee|trail\s*fee|riding|replay)\b/i;
+const RATE_CONTEXT_WORDS = /\b(greens?\s*fees?|rate|round|18\s*holes?|9\s*holes?|weekday|weekend|twilight|morning|afternoon|cart|walk(?:ing)?|golf|per\s*person|green\s*fee|trail\s*fee|riding|replay|visitor|per\s*round|society|buggy|trolley)\b/i;
 const NINE_HOLE_RE = /\b(9[\s-]holes?|nine[\s-]holes?|front\s*9|back\s*9|9[\s-]hole\s*rate|9[\s-]hole\s*fee)\b/i;
-const EIGHTEEN_HOLE_RE = /\b(18[\s-]holes?|eighteen[\s-]holes?|full\s*round|18[\s-]hole\s*rate|18[\s-]hole\s*fee)\b/i;
+const EIGHTEEN_HOLE_RE = /\b(18[\s-]holes?|eighteen[\s-]holes?|full\s*round|per\s*round|18[\s-]hole\s*rate|18[\s-]hole\s*fee)\b/i;
 const SCRAPE_TIMEOUT_MS = 5000;
 
 function stripHtml(html: string): string {
@@ -316,11 +316,11 @@ function extractTaggedPrices(text: string): TaggedPrice[] {
     prices.push({ value, is9Hole, is18Hole });
   }
 
-  // Pattern 1: dollar-sign prices "$85", "$85.00", "$ 85"
-  const dollarPattern = /\$\s?(\d{2,4})(?:\.\d{1,2})?/g;
-  for (const match of text.matchAll(dollarPattern)) {
+  // Pattern 1: currency prices "$85", "£65", "€75", "$ 85", "£ 65"
+  const currencyPattern = /[$£€]\s?(\d{2,4})(?:\.\d{1,2})?/g;
+  for (const match of text.matchAll(currencyPattern)) {
     const value = Number(match[1]);
-    if (!Number.isFinite(value) || value < 18 || value > 600) continue;
+    if (!Number.isFinite(value) || value < 15 || value > 600) continue;
     const idx = match.index ?? 0;
     const ctx = text.slice(Math.max(0, idx - 80), idx + 80);
     if (!RATE_CONTEXT_WORDS.test(ctx)) continue;

@@ -21,8 +21,8 @@ const TIMEOUT_MS = 6000;
 // ─── Regex ────────────────────────────────────────────────────────────────────
 
 const NINE_HOLE_RE   = /\b(9[\s-]holes?|nine[\s-]holes?|front\s*9|back\s*9)\b/i;
-const EIGHTEEN_HOLE_RE = /\b(18[\s-]holes?|eighteen[\s-]holes?|full\s*round)\b/i;
-const RATE_CONTEXT   = /\b(greens?\s*fee|rate|round|18\s*holes?|9\s*holes?|weekday|weekend|twilight|morning|afternoon|cart|walk|golf|per\s*person|green\s*fee)\b/i;
+const EIGHTEEN_HOLE_RE = /\b(18[\s-]holes?|eighteen[\s-]holes?|full\s*round|per\s*round)\b/i;
+const RATE_CONTEXT   = /\b(greens?\s*fee|rate|round|18\s*holes?|9\s*holes?|weekday|weekend|twilight|morning|afternoon|cart|walk|golf|per\s*person|green\s*fee|visitor|per\s*round|society|buggy|trolley)\b/i;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,10 +73,10 @@ function extractTagged(text: string): TaggedPrice[] {
     out.push({ value, is9: NINE_HOLE_RE.test(ctx), is18: EIGHTEEN_HOLE_RE.test(ctx) });
   };
 
-  for (const m of text.matchAll(/\$\s?(\d{2,4})(?:\.\d{1,2})?/g)) {
+  for (const m of text.matchAll(/[$£€]\s?(\d{2,4})(?:\.\d{1,2})?/g)) {
     const v = Number(m[1]);
     const ctx = text.slice(Math.max(0, (m.index ?? 0) - 80), (m.index ?? 0) + 80);
-    if (RATE_CONTEXT.test(ctx)) add(v, m.index ?? 0, `$${m.index}`);
+    if (RATE_CONTEXT.test(ctx)) add(v, m.index ?? 0, `c${m.index}`);
   }
 
   for (const m of text.matchAll(/\b(\d{2,3})(?:\.\d{2})?\s*(?:\/\s*(?:person|player|golfer|round))?\b/g)) {
@@ -113,12 +113,12 @@ function extractJsonLdPrices(html: string): number[] {
       const obj = JSON.parse(m[1]);
       const items = Array.isArray(obj) ? obj : [obj];
       for (const item of items) {
-        // priceRange: "$45 - $85" or "$65"
+        // priceRange: "$45 - $85", "£65", "€75", or plain "65"
         const pr: string = item.priceRange ?? item.price ?? "";
         if (pr) {
-          for (const nm of pr.matchAll(/\$?\s?(\d{2,3})/g)) {
+          for (const nm of pr.matchAll(/[$£€]?\s?(\d{2,3})/g)) {
             const v = Number(nm[1]);
-            if (v >= 18 && v <= 500) prices.push(v);
+            if (v >= 15 && v <= 500) prices.push(v);
           }
         }
         // offers array
