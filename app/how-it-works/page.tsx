@@ -4,6 +4,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { ProcessSteps } from "@/components/marketing/process-steps";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getCurrentProfile } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "How Outing.golf Works — Group Golf Trip Planning Tool",
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function HowItWorksPage() {
+  const profile = await getCurrentProfile();
+  const ctaHref = profile ? "/outings/new" : "/sign-up";
   return (
     <PageShell>
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
@@ -103,7 +106,7 @@ export default async function HowItWorksPage() {
             actually make a decision.
           </p>
           <div className="mt-8">
-            <Button href="/sign-up" className="bg-cream text-charcoal hover:bg-white">
+            <Button href={ctaHref} className="bg-cream text-charcoal hover:bg-white">
               Start Planning Free
             </Button>
           </div>
