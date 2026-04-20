@@ -9,7 +9,8 @@ interface CoursePricing {
   sourceUrl: string | null;
   sourceName: string | null;
   notes: string | null;
-  confidence: "high" | "medium" | "low" | null;
+  confidence: "high" | "medium" | "low" | "none" | null;
+  courseAccessType: "public" | "semi_private" | "private" | "resort" | "unknown" | null;
 }
 
 interface Props {
@@ -39,11 +40,12 @@ export function CoursePriceDisplay({
           sourceUrl: null,
           sourceName: null,
           notes: null,
-          confidence: null
+          confidence: null,
+          courseAccessType: null
         }
       : null
   );
-  const [state, setState] = useState<"idle" | "loading" | "done" | "unavailable">(
+  const [state, setState] = useState<"idle" | "loading" | "done" | "unavailable" | "private">(
     storedGreensFee && storedGreensFee > 0 ? "done" : "idle"
   );
   const fetchedRef = useRef(false);
@@ -61,8 +63,19 @@ export function CoursePriceDisplay({
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { pricing: CoursePricing | null } | null) => {
-        if (data?.pricing && data.pricing.avgRate) {
-          setPricing(data.pricing);
+        if (!data?.pricing) {
+          setState("unavailable");
+          return;
+        }
+        const p = data.pricing;
+        // Private club with no public pricing
+        if (p.confidence === "none" && p.courseAccessType === "private") {
+          setPricing(p);
+          setState("private");
+          return;
+        }
+        if (p.avgRate) {
+          setPricing(p);
           setState("done");
         } else {
           setState("unavailable");
@@ -75,6 +88,15 @@ export function CoursePriceDisplay({
     return (
       <div className="text-right">
         <p className="text-sm text-charcoal/45 animate-pulse">Finding rate…</p>
+      </div>
+    );
+  }
+
+  if (state === "private") {
+    return (
+      <div className="text-right">
+        <p className="text-sm font-medium text-charcoal/50">Private club</p>
+        <p className="mt-0.5 text-[10px] text-charcoal/40">Not open to the public</p>
       </div>
     );
   }
@@ -97,17 +119,26 @@ export function CoursePriceDisplay({
     );
   }
 
+  const isLowConfidence = pricing.confidence === "low";
+  const isSemiPrivate = pricing.courseAccessType === "semi_private";
   const total = pricing.avgRate * rounds;
+  const rateDisplay = isLowConfidence ? `~${currency(pricing.avgRate)}` : currency(pricing.avgRate);
+  const totalDisplay = isLowConfidence ? `~${currency(total)}` : currency(total);
 
   return (
     <div className="text-right">
       <p className="font-semibold text-charcoal">
-        {currency(total)}
+        {totalDisplay}
         <span className="ml-1 text-xs font-normal text-charcoal/50">/person</span>
       </p>
       <p className="mt-0.5 text-xs text-charcoal/45">
-        {currency(pricing.avgRate)} × {rounds}rnd
+        {rateDisplay} × {rounds}rnd
       </p>
+      {isSemiPrivate && (
+        <p className="mt-1 text-[10px] text-amber-600 font-medium">
+          Limited public access — confirm with course
+        </p>
+      )}
       {pricing.sourceName && pricing.sourceUrl && (
         <a
           href={pricing.sourceUrl}

@@ -315,6 +315,137 @@ const MARKETS: Array<{ label: string; lat: number; lng: number; radiusM: number 
   { label: "Joplin, MO",          lat: 37.0842, lng: -94.5133, radiusM: 25_000 },
   { label: "Bowling Green, KY",   lat: 36.9685, lng: -86.4808, radiusM: 25_000 },
   { label: "Paducah, KY",         lat: 37.0834, lng: -88.6001, radiusM: 25_000 },
+
+  // ── Scotland ──────────────────────────────────────────────────────────────
+  { label: "St Andrews, Scotland",    lat: 56.3398, lng: -2.7967,  radiusM: 30_000 },
+  { label: "Edinburgh, Scotland",     lat: 55.9533, lng: -3.1883,  radiusM: 40_000 },
+  { label: "Glasgow, Scotland",       lat: 55.8642, lng: -4.2518,  radiusM: 40_000 },
+  { label: "Carnoustie, Scotland",    lat: 56.5022, lng: -2.7069,  radiusM: 25_000 },
+  { label: "Turnberry, Scotland",     lat: 55.3219, lng: -4.8333,  radiusM: 25_000 },
+  { label: "Royal Dornoch, Scotland", lat: 57.8789, lng: -4.0269,  radiusM: 20_000 },
+  { label: "Inverness, Scotland",     lat: 57.4778, lng: -4.2247,  radiusM: 30_000 },
+  { label: "Aberdeen, Scotland",      lat: 57.1497, lng: -2.0943,  radiusM: 35_000 },
+  { label: "Gleneagles, Scotland",    lat: 56.2799, lng: -3.7389,  radiusM: 20_000 },
+
+  // ── Ireland / Northern Ireland ─────────────────────────────────────────────
+  { label: "Dublin, Ireland",         lat: 53.3498, lng: -6.2603,  radiusM: 40_000 },
+  { label: "Cork, Ireland",           lat: 51.8985, lng: -8.4756,  radiusM: 35_000 },
+  { label: "Lahinch, Ireland",        lat: 52.9328, lng: -9.3444,  radiusM: 25_000 },
+  { label: "Ballybunion, Ireland",    lat: 52.5080, lng: -9.6720,  radiusM: 20_000 },
+  { label: "Galway, Ireland",         lat: 53.2707, lng: -9.0568,  radiusM: 30_000 },
+  { label: "Kerry, Ireland",          lat: 52.1545, lng: -9.5669,  radiusM: 30_000 },
+  { label: "Belfast, N. Ireland",     lat: 54.5973, lng: -5.9301,  radiusM: 35_000 },
+  { label: "Royal Portrush, N. Ireland", lat: 55.2050, lng: -6.6558, radiusM: 20_000 },
+
+  // ── England ────────────────────────────────────────────────────────────────
+  { label: "London, England",         lat: 51.5074, lng: -0.1278,  radiusM: 50_000 },
+  { label: "Royal Birkdale, England", lat: 53.6133, lng: -3.0283,  radiusM: 25_000 },
+  { label: "Sandwich, England",       lat: 51.2762, lng: 1.3434,   radiusM: 20_000 },
+  { label: "Sunningdale, England",    lat: 51.3920, lng: -0.6247,  radiusM: 20_000 },
+  { label: "Manchester, England",     lat: 53.4808, lng: -2.2426,  radiusM: 35_000 },
+  { label: "Birmingham, England",     lat: 52.4862, lng: -1.8904,  radiusM: 35_000 },
+  { label: "Bristol, England",        lat: 51.4545, lng: -2.5879,  radiusM: 30_000 },
+
+  // ── Portugal ───────────────────────────────────────────────────────────────
+  { label: "Algarve, Portugal",       lat: 37.1358, lng: -8.5376,  radiusM: 60_000 },
+  { label: "Lisbon, Portugal",        lat: 38.7223, lng: -9.1393,  radiusM: 40_000 },
+  { label: "Porto, Portugal",         lat: 41.1579, lng: -8.6291,  radiusM: 35_000 },
+  { label: "Madeira, Portugal",       lat: 32.7607, lng: -16.9595, radiusM: 30_000 },
+
+  // ── Spain ──────────────────────────────────────────────────────────────────
+  { label: "Costa del Sol, Spain",    lat: 36.5297, lng: -4.8834,  radiusM: 50_000 },
+  { label: "Madrid, Spain",           lat: 40.4168, lng: -3.7038,  radiusM: 40_000 },
+  { label: "Barcelona, Spain",        lat: 41.3851, lng: 2.1734,   radiusM: 40_000 },
+  { label: "Sotogrande, Spain",       lat: 36.2893, lng: -5.2529,  radiusM: 25_000 },
+  { label: "Majorca, Spain",          lat: 39.6953, lng: 3.0176,   radiusM: 40_000 },
+  { label: "Tenerife, Spain",         lat: 28.2916, lng: -16.6291, radiusM: 40_000 },
+
+  // ── France ────────────────────────────────────────────────────────────────
+  { label: "Paris, France",           lat: 48.8566, lng: 2.3522,   radiusM: 45_000 },
+  { label: "Côte d'Azur, France",     lat: 43.7102, lng: 7.2620,   radiusM: 40_000 },
+  { label: "Biarritz, France",        lat: 43.4832, lng: -1.5586,  radiusM: 25_000 },
+
+  // ── Italy ─────────────────────────────────────────────────────────────────
+  { label: "Rome, Italy",             lat: 41.9028, lng: 12.4964,  radiusM: 40_000 },
+  { label: "Milan, Italy",            lat: 45.4654, lng: 9.1859,   radiusM: 40_000 },
+  { label: "Tuscany, Italy",          lat: 43.7711, lng: 11.2486,  radiusM: 50_000 },
+  { label: "Lake Como, Italy",        lat: 45.9917, lng: 9.1568,   radiusM: 30_000 },
+  { label: "Sicily, Italy",           lat: 37.5999, lng: 14.0154,  radiusM: 50_000 },
+
+  // ── Germany / Switzerland / Austria ───────────────────────────────────────
+  { label: "Munich, Germany",         lat: 48.1351, lng: 11.5820,  radiusM: 40_000 },
+  { label: "Frankfurt, Germany",      lat: 50.1109, lng: 8.6821,   radiusM: 35_000 },
+  { label: "Hamburg, Germany",        lat: 53.5753, lng: 10.0153,  radiusM: 35_000 },
+  { label: "Zurich, Switzerland",     lat: 47.3769, lng: 8.5417,   radiusM: 35_000 },
+  { label: "Geneva, Switzerland",     lat: 46.2044, lng: 6.1432,   radiusM: 30_000 },
+  { label: "Vienna, Austria",         lat: 48.2082, lng: 16.3738,  radiusM: 35_000 },
+
+  // ── Netherlands / Belgium / Scandinavia ───────────────────────────────────
+  { label: "Amsterdam, Netherlands",  lat: 52.3676, lng: 4.9041,   radiusM: 35_000 },
+  { label: "Stockholm, Sweden",       lat: 59.3293, lng: 18.0686,  radiusM: 40_000 },
+  { label: "Copenhagen, Denmark",     lat: 55.6761, lng: 12.5683,  radiusM: 35_000 },
+  { label: "Oslo, Norway",            lat: 59.9139, lng: 10.7522,  radiusM: 35_000 },
+
+  // ── Caribbean ─────────────────────────────────────────────────────────────
+  { label: "Punta Cana, Dominican Republic", lat: 18.5820, lng: -68.4033, radiusM: 40_000 },
+  { label: "Santo Domingo, DR",       lat: 18.4861, lng: -69.9312, radiusM: 35_000 },
+  { label: "Nassau, Bahamas",         lat: 25.0480, lng: -77.3554, radiusM: 30_000 },
+  { label: "Montego Bay, Jamaica",    lat: 18.4762, lng: -77.8939, radiusM: 30_000 },
+  { label: "Ocho Rios, Jamaica",      lat: 18.4043, lng: -77.1040, radiusM: 25_000 },
+  { label: "Turks and Caicos",        lat: 21.6940, lng: -71.7979, radiusM: 30_000 },
+  { label: "Barbados",                lat: 13.1939, lng: -59.5432, radiusM: 30_000 },
+  { label: "Puerto Rico",             lat: 18.2208, lng: -66.5901, radiusM: 50_000 },
+  { label: "Aruba",                   lat: 12.5211, lng: -69.9683, radiusM: 20_000 },
+  { label: "St. Kitts",               lat: 17.3578, lng: -62.7830, radiusM: 20_000 },
+  { label: "Bermuda",                 lat: 32.3078, lng: -64.7505, radiusM: 25_000 },
+
+  // ── Mexico ────────────────────────────────────────────────────────────────
+  { label: "Los Cabos, Mexico",       lat: 22.8905, lng: -109.9167, radiusM: 40_000 },
+  { label: "Puerto Vallarta, Mexico", lat: 20.6534, lng: -105.2253, radiusM: 35_000 },
+  { label: "Cancun, Mexico",          lat: 21.1619, lng: -86.8515, radiusM: 35_000 },
+  { label: "Riviera Maya, Mexico",    lat: 20.4230, lng: -87.2751, radiusM: 40_000 },
+  { label: "Mazatlan, Mexico",        lat: 23.2494, lng: -106.4111, radiusM: 30_000 },
+  { label: "Mexico City, Mexico",     lat: 19.4326, lng: -99.1332, radiusM: 45_000 },
+
+  // ── Canada ────────────────────────────────────────────────────────────────
+  { label: "Banff, Canada",           lat: 51.1784, lng: -115.5708, radiusM: 30_000 },
+  { label: "Whistler, Canada",        lat: 50.1163, lng: -122.9574, radiusM: 25_000 },
+  { label: "Vancouver, Canada",       lat: 49.2827, lng: -123.1207, radiusM: 45_000 },
+  { label: "Toronto, Canada",         lat: 43.6532, lng: -79.3832, radiusM: 50_000 },
+  { label: "Montreal, Canada",        lat: 45.5017, lng: -73.5673, radiusM: 45_000 },
+  { label: "Muskoka, Canada",         lat: 45.0000, lng: -79.3000, radiusM: 35_000 },
+  { label: "Prince Edward Island, Canada", lat: 46.2382, lng: -63.1311, radiusM: 35_000 },
+  { label: "Calgary, Canada",         lat: 51.0447, lng: -114.0719, radiusM: 40_000 },
+  { label: "Halifax, Canada",         lat: 44.6488, lng: -63.5752, radiusM: 30_000 },
+
+  // ── Australia / New Zealand ───────────────────────────────────────────────
+  { label: "Sydney, Australia",       lat: -33.8688, lng: 151.2093, radiusM: 50_000 },
+  { label: "Melbourne, Australia",    lat: -37.8136, lng: 144.9631, radiusM: 50_000 },
+  { label: "Queensland, Australia",   lat: -26.4390, lng: 153.0351, radiusM: 50_000 },
+  { label: "Perth, Australia",        lat: -31.9505, lng: 115.8605, radiusM: 45_000 },
+  { label: "Adelaide, Australia",     lat: -34.9285, lng: 138.6007, radiusM: 40_000 },
+  { label: "Auckland, New Zealand",   lat: -36.8509, lng: 174.7645, radiusM: 40_000 },
+  { label: "Queenstown, New Zealand", lat: -45.0312, lng: 168.6626, radiusM: 30_000 },
+
+  // ── Asia ──────────────────────────────────────────────────────────────────
+  { label: "Tokyo, Japan",            lat: 35.6762, lng: 139.6503, radiusM: 50_000 },
+  { label: "Osaka, Japan",            lat: 34.6937, lng: 135.5023, radiusM: 40_000 },
+  { label: "Seoul, South Korea",      lat: 37.5665, lng: 126.9780, radiusM: 45_000 },
+  { label: "Singapore",               lat: 1.3521,  lng: 103.8198, radiusM: 30_000 },
+  { label: "Bangkok, Thailand",       lat: 13.7563, lng: 100.5018, radiusM: 50_000 },
+  { label: "Phuket, Thailand",        lat: 7.8804,  lng: 98.3923,  radiusM: 35_000 },
+  { label: "Bali, Indonesia",         lat: -8.4095, lng: 115.1889, radiusM: 40_000 },
+  { label: "Hong Kong",               lat: 22.3193, lng: 114.1694, radiusM: 30_000 },
+  { label: "Shanghai, China",         lat: 31.2304, lng: 121.4737, radiusM: 45_000 },
+  { label: "Beijing, China",          lat: 39.9042, lng: 116.4074, radiusM: 45_000 },
+
+  // ── Middle East / Africa ──────────────────────────────────────────────────
+  { label: "Dubai, UAE",              lat: 25.2048, lng: 55.2708,  radiusM: 40_000 },
+  { label: "Abu Dhabi, UAE",          lat: 24.4539, lng: 54.3773,  radiusM: 35_000 },
+  { label: "Cape Town, South Africa", lat: -33.9249, lng: 18.4241, radiusM: 40_000 },
+  { label: "Johannesburg, South Africa", lat: -26.2041, lng: 28.0473, radiusM: 45_000 },
+  { label: "Sun City, South Africa",  lat: -25.3394, lng: 27.0978, radiusM: 20_000 },
+  { label: "Marrakech, Morocco",      lat: 31.6295, lng: -7.9811,  radiusM: 35_000 },
 ];
 
 
