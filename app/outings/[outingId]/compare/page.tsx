@@ -332,7 +332,10 @@ export default async function ComparePage({
                               {course.walkingFriendly && <span>🚶 Walking friendly</span>}
                               {course.rideFriendly && <span>🛺 Ride-friendly</span>}
                             </div>
-                            <p className="text-lg font-semibold text-forest-900">{score?.score ?? 0}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-charcoal/56">Overall fit score</p>
+                              <p className="text-lg font-semibold text-forest-900">{score?.score ?? 0}</p>
+                            </div>
                           </div>
                         </div>
                       );
