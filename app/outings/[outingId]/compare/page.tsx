@@ -52,13 +52,15 @@ export default async function ComparePage({
         : 3);
   const players = detail.outing.numberOfPlayers;
 
-  // Deduplicate lodging by name for display
+  // Deduplicate lodging by name — sort featured first so the featured entry wins when names collide
   const seenLodgingNames = new Set<string>();
-  const dedupedLodging = detail.lodging.filter((stay) => {
-    if (seenLodgingNames.has(stay.name)) return false;
-    seenLodgingNames.add(stay.name);
-    return true;
-  });
+  const dedupedLodging = [...detail.lodging]
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    .filter((stay) => {
+      if (seenLodgingNames.has(stay.name)) return false;
+      seenLodgingNames.add(stay.name);
+      return true;
+    });
 
   // Summary of what's already "in the trip" (real organizer picks, not a sandbox)
   const pickedCourses = detail.golfCourses.filter((c) => c.featured && !c.hidden);
@@ -262,6 +264,83 @@ export default async function ComparePage({
                 })}
               </div>
             </Card>
+
+            {/* ── Golf course shortlist ── */}
+            {(() => {
+              const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
+              if (visibleCourses.length === 0) return null;
+              const sortedCourses = [
+                ...visibleCourses.filter((c) => c.featured),
+                ...visibleCourses.filter((c) => !c.featured)
+              ];
+              return (
+                <Card>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold tracking-[-0.03em]">Golf course shortlist</h2>
+                      <p className="mt-1 text-sm text-charcoal/60">Compare courses by quality, walkability, and price.</p>
+                    </div>
+                    <Badge>{visibleCourses.length} courses</Badge>
+                  </div>
+                  <div className="mt-5 grid gap-4">
+                    {sortedCourses.map((course) => {
+                      const score = detail.recommendation.golfScores.find((s) => s.id === course.id);
+                      return (
+                        <div
+                          key={course.id}
+                          className={`rounded-[28px] border p-5 ${course.featured ? "border-emerald-200 bg-emerald-50/30" : "border-charcoal/8 bg-cream"}`}
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-lg font-semibold tracking-[-0.03em]">{course.name}</h3>
+                                {course.featured && (
+                                  <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>
+                                )}
+                              </div>
+                              {course.locationLabel && (
+                                <p className="mt-1 text-sm text-charcoal/60">{course.locationLabel}</p>
+                              )}
+                              {course.summary && (
+                                <p className="mt-2 max-w-2xl text-sm leading-6 text-charcoal/68">{course.summary}</p>
+                              )}
+                              {course.tags.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {course.tags.map((tag) => (
+                                    <span key={tag} className="rounded-full bg-white px-3 py-1 text-xs text-charcoal/60">{tag}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 flex-wrap gap-3 lg:flex-col lg:items-end">
+                              {course.averageGreensFee > 0 && (
+                                <div className="rounded-[20px] bg-white px-4 py-3 text-right">
+                                  <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Greens fee</p>
+                                  <p className="mt-1 text-sm font-semibold">${course.averageGreensFee}/round</p>
+                                </div>
+                              )}
+                              {course.qualityScore > 0 && (
+                                <div className="rounded-[20px] bg-white px-4 py-3 text-right">
+                                  <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Quality</p>
+                                  <p className="mt-1 text-sm font-semibold">{course.qualityScore}/10</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex flex-wrap gap-3 text-xs text-charcoal/55">
+                              {course.walkingFriendly && <span>🚶 Walking friendly</span>}
+                              {course.rideFriendly && <span>🛺 Ride-friendly</span>}
+                            </div>
+                            <p className="text-lg font-semibold text-forest-900">{score?.score ?? 0}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              );
+            })()}
 
             {/* ── Airbnb / VRBO (everyone) + manual listing (organizer only) ── */}
             <RentalListingPanel

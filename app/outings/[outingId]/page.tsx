@@ -489,13 +489,15 @@ export default async function OutingDetailPage({
     ? Math.round((detail.insights.respondedCount / progressTarget) * 100)
     : 0;
 
-  // Deduplicate lodging
+  // Deduplicate lodging — sort featured first so the featured entry wins when names collide
   const seenLodgingNames = new Set<string>();
-  const dedupedLodging = detail.lodging.filter((stay) => {
-    if (seenLodgingNames.has(stay.name)) return false;
-    seenLodgingNames.add(stay.name);
-    return true;
-  });
+  const dedupedLodging = [...detail.lodging]
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    .filter((stay) => {
+      if (seenLodgingNames.has(stay.name)) return false;
+      seenLodgingNames.add(stay.name);
+      return true;
+    });
 
   // Filter out private/invite-only courses regardless of hidden flag
   const PRIVATE_DISPLAY_RE = /[-–—]\s*private\b|\bprivate\s*[-–—]|\bmembers?\s+only\b|\binvite[\s-]only\b|\bprivate\s+club\b/i;
