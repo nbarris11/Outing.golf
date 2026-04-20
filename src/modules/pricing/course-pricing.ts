@@ -405,20 +405,39 @@ function extractJsonLdPrices(html: string): number[] {
 
 // ─── Booking platform APIs ────────────────────────────────────────────────────
 
+// Platforms whose pricing is entirely JS-rendered — no static HTML prices available.
+// Detecting these early lets us skip the full link-following crawl (~30 requests)
+// and fall through to Google Places signals instead.
+const JS_ONLY_PLATFORMS = new Set([
+  "golfnow", "ezlinks", "chronogolf", "lightspeed", "clubprophet", "teeon", "golfmanager",
+]);
+
 function detectBookingPlatform(html: string): { platform: string; id: string } | null {
   const patterns: Array<[RegExp, string]> = [
+    // ── Platforms with working APIs ────────────────────────────────────────────
     [/book\.teeitup\.com[^"']*[?&]course=(\d+)/i, "teeitup"],
+    [/phx\.book\.teeitup\.com[^"']*[?&]course=(\d+)/i, "teeitup"],
     [/foreupsoftware\.com\/index\.php\/booking\/(\d+)/i, "foreup"],
     [/book\.foreup\.com[^"']*schedule_id=(\d+)/i, "foreup"],
-    [/ezlinksgolf\.com[^"']*facilityId=(\d+)/i, "ezlinks"],
-    [/chronogolf\.com[^"']*club\/(\d+)/i, "chronogolf"],
-    [/lightspeedgolf\.com[^"']*id=(\d+)/i, "lightspeed"],
-    [/clubprophet\.com[^"']*club=(\d+)/i, "clubprophet"],
-    [/tee-on\.com[^"']*course[_-]?id=(\d+)/i, "teeon"],
+    // ── GolfNow / Golf Channel Solutions / EZLinks (all same company, JS-only) ─
+    [/golfnow-customize/i, "golfnow"],
+    [/golf.?channel.?solutions/i, "golfnow"],
+    [/golfnow\.com\/book/i, "golfnow"],
+    [/golfnow\.com\/widgets/i, "golfnow"],
+    [/golfnow\.com\/tee-times\/facility/i, "golfnow"],
+    [/ezlinksgolf\.com/i, "golfnow"],
+    [/powered\s+by\s+golf\s+channel/i, "golfnow"],
+    // ── Other JS-only platforms ────────────────────────────────────────────────
+    [/chronogolf\.com[^"']*club\//i, "chronogolf"],
+    [/app\.chronogolf\.com/i, "chronogolf"],
+    [/lightspeedgolf\.com/i, "lightspeed"],
+    [/clubprophet\.com/i, "clubprophet"],
+    [/tee-on\.com[^"']*course/i, "teeon"],
+    [/golfmanager\.com/i, "golfmanager"],
   ];
   for (const [re, platform] of patterns) {
     const m = html.match(re);
-    if (m) return { platform, id: m[1] };
+    if (m) return { platform, id: m[1] ?? "detected" };
   }
   return null;
 }
@@ -493,9 +512,17 @@ async function scrapeCourseWebsite(
   const homepageHtml = await fetchHtml(base.href);
   if (!homepageHtml) return null;
 
-  // 1. Booking platform APIs — most accurate
+  // 1. Booking platform detection
   const platform = detectBookingPlatform(homepageHtml);
   if (platform) {
+    // JS-only platforms: all pricing is rendered client-side, static scraping
+    // will never find prices. Skip the entire crawl and fall through to
+    // Google Places signals — much faster and more accurate than 30 empty fetches.
+    if (JS_ONLY_PLATFORMS.has(platform.platform)) {
+      logInfo(`[skip-scrape] ${base.hostname} — ${platform.platform} booking widget (JS-only, falling back to Google Places)`);
+      return null;
+    }
+    // Platforms with accessible APIs
     let prices: number[] = [];
     if (platform.platform === "teeitup") prices = await fetchTeeitupPrices(platform.id);
     else if (platform.platform === "foreup") prices = await fetchForeupPrices(platform.id);

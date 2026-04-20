@@ -134,26 +134,44 @@ function extractJsonLdPrices(html: string): number[] {
   return prices;
 }
 
-// ─── Additional booking platform detection ───────────────────────────────────
+// ─── Booking platform detection ──────────────────────────────────────────────
+
+// Platforms whose pricing is entirely JS-rendered — scraping their HTML will
+// never find prices. Detect them early to skip the full crawl.
+const JS_ONLY_PLATFORMS = new Set([
+  "golfnow", "ezlinks", "chronogolf", "lightspeed", "clubprophet", "teeon",
+  "golfmanager", "golfregistrations",
+]);
 
 interface PlatformHit { platform: string; id: string; }
 
 function detectPlatform(html: string): PlatformHit | null {
   const patterns: Array<[RegExp, string]> = [
+    // ── Working APIs ──────────────────────────────────────────────────────────
     [/book\.teeitup\.com[^"']*[?&]course=(\d+)/i, "teeitup"],
+    [/phx\.book\.teeitup\.com[^"']*[?&]course=(\d+)/i, "teeitup"],
     [/foreupsoftware\.com\/index\.php\/booking\/(\d+)/i, "foreup"],
     [/book\.foreup\.com[^"']*schedule_id=(\d+)/i, "foreup"],
-    [/ezlinksgolf\.com[^"']*facilityId=(\d+)/i, "ezlinks"],
-    [/golfnow\.com\/tee-times\/facility\/(\d+)/i, "golfnow_facility"],
-    [/chronogolf\.com[^"']*club\/(\d+)/i, "chronogolf"],
-    [/tee-on\.com[^"']*course[_-]?id=(\d+)/i, "teeon"],
-    [/lightspeedgolf\.com[^"']*id=(\d+)/i, "lightspeed"],
+    // ── GolfNow / Golf Channel Solutions / EZLinks (same company, JS-only) ────
+    [/golfnow-customize/i, "golfnow"],
+    [/golf.?channel.?solutions/i, "golfnow"],
+    [/golfnow\.com\/book/i, "golfnow"],
+    [/golfnow\.com\/widgets/i, "golfnow"],
+    [/golfnow\.com\/tee-times\/facility/i, "golfnow"],
+    [/ezlinksgolf\.com/i, "golfnow"],
+    [/powered\s+by\s+golf\s+channel/i, "golfnow"],
+    // ── Other JS-only platforms ───────────────────────────────────────────────
+    [/app\.chronogolf\.com/i, "chronogolf"],
+    [/chronogolf\.com[^"']*club\//i, "chronogolf"],
+    [/lightspeedgolf\.com/i, "lightspeed"],
+    [/clubprophet\.com/i, "clubprophet"],
+    [/tee-on\.com[^"']*course/i, "teeon"],
+    [/golfmanager\.com/i, "golfmanager"],
     [/golfregistrations\.com[^"']*cid=(\d+)/i, "golfregistrations"],
-    [/clubprophet\.com[^"']*club=(\d+)/i, "clubprophet"],
   ];
   for (const [re, platform] of patterns) {
     const m = html.match(re);
-    if (m) return { platform, id: m[1] };
+    if (m) return { platform, id: m[1] ?? "detected" };
   }
   return null;
 }
@@ -249,9 +267,13 @@ async function deepScrapeWebsite(websiteUri: string): Promise<{ prices: number[]
   const jsonLd18 = selectPrices(jsonLdPrices.map(v => ({ value: v, is9: false, is18: false })));
   if (jsonLd18.length) return { prices: jsonLd18, pageUrl: base.href };
 
-  // Booking platform API
+  // Booking platform detection
   const platform = detectPlatform(homepageHtml);
   if (platform) {
+    // JS-only: all pricing rendered client-side, skip crawl entirely
+    if (JS_ONLY_PLATFORMS.has(platform.platform)) {
+      return null;
+    }
     let apiPrices: number[] = [];
     if (platform.platform === "foreup") apiPrices = await fetchForeupPrices(platform.id);
     else if (platform.platform === "teeitup") apiPrices = await fetchTeeitupPrices(platform.id);
