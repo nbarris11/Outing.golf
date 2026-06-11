@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Golf Trip Itinerary Template — Day-by-Day Group Trip Planner",
   description:
     "A day-by-day itinerary template for group golf trips. Arrival through departure, with time slots, pre-trip tasks, and a 2-day weekend version.",
-  alternates: { canonical: "https://www.outing.golf/golf-trip-itinerary-template" }
-};
+  path: "/golf-trip-itinerary-template"
+});
 
 const days = [
   {
@@ -53,6 +59,20 @@ const days = [
 export default function GolfTripItineraryTemplatePage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Golf Trip Itinerary Template — Day-by-Day Group Trip Planner",
+          description:
+            "A day-by-day itinerary template for group golf trips. Arrival through departure, with time slots, pre-trip tasks, and a 2-day weekend version.",
+          path: "/golf-trip-itinerary-template"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Golf trip itinerary template", path: "/golf-trip-itinerary-template" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -60,10 +80,13 @@ export default function GolfTripItineraryTemplatePage() {
             Golf trip itinerary template
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            A golf trip itinerary does two things: it gives the organizer a framework to build around, and it gives
-            the group a shared picture of what the trip looks like. This template covers a standard 3 to 4 day group
-            trip and explains what needs to be decided before you start filling it in.
+            The standard group golf trip itinerary is 3 to 4 days with 3 rounds: travel plus an afternoon round on
+            Day 1, your marquee course with a morning tee time on Day 2, a second main round on Day 3, and an
+            optional early round before departure on Day 4. The full template below covers each day slot by slot —
+            plus a compressed 2-day weekend version — and explains what needs to be decided before you start
+            filling it in.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -226,6 +249,31 @@ export default function GolfTripItineraryTemplatePage() {
           </aside>
         </div>
       </section>
+
+      <FaqSection
+        faqs={[
+          {
+            question: "How many rounds of golf should a 4-day trip include?",
+            answer:
+              "Three rounds is the standard for a 3 to 4 day trip — one each on Days 1–3, with an optional early 9 or quick 18 on departure day if flights allow. Adding a fourth full round can add $150–$400 per person and most groups hit a physical wall by Day 3 afternoon anyway."
+          },
+          {
+            question: "When should the marquee course go on the schedule?",
+            answer:
+              "Day 2 or Day 3 with a morning tee time. Day 1 is for travel and an easier afternoon round — flights get delayed and bags take time, so a marquee morning slot on arrival day is asking for trouble. Morning rounds at the big course mean better conditions and a free afternoon."
+          },
+          {
+            question: "When should you build the itinerary?",
+            answer:
+              "Last. Before assigning courses to days you need a confirmed date window, an agreed budget range, a destination that fits both, a course shortlist the group has voted on, and lodging that is booked or close to it. Building the itinerary first just means rebuilding it later."
+          },
+          {
+            question: "What is the best way to share a golf trip itinerary with the group?",
+            answer:
+              "A shared doc works for the schedule itself, but tee times, lodging confirmations, and packing lists tend to scatter across threads. Keeping the itinerary, course schedule, and lodging in one shared view — like Outing.golf's Trip HQ — means the organizer never has to re-forward the plan."
+          }
+        ]}
+      />
 
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-24">
         <Card className="bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] p-8 text-center text-cream sm:p-10">

@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Golf Trip Budget Breakdown: Greens Fees, Lodging & More",
   description:
     "How to break down greens fees, lodging, travel, food, and extras across your group's golf trip — and what moves each cost category most.",
-  alternates: { canonical: "https://www.outing.golf/golf-trip-budget-breakdown" }
-};
+  path: "/golf-trip-budget-breakdown"
+});
 
 const categories = [
   {
@@ -67,6 +73,20 @@ const categories = [
 export default function GolfTripBudgetBreakdownPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Golf Trip Budget Breakdown: Greens Fees, Lodging & More",
+          description:
+            "How to break down greens fees, lodging, travel, food, and extras across your group's golf trip — and what moves each cost category most.",
+          path: "/golf-trip-budget-breakdown"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Golf trip budget breakdown", path: "/golf-trip-budget-breakdown" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -74,11 +94,13 @@ export default function GolfTripBudgetBreakdownPage() {
             Golf trip budget breakdown
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            Most golf trip budgets fall apart because people only think about greens fees. The actual per-person
-            number includes greens fees, lodging, travel, food, and a handful of extras that everyone forgets
-            until they are on the trip. This breakdown covers all of it so you know what the trip actually costs
-            before anyone commits.
+            A group golf trip budget breaks down into five categories: greens fees (40–55% of the total), lodging
+            (20–35%), travel (10–25%), food and drink (10–20%), and extras (5–10%). For a 4-day, 3-round trip
+            that works out to roughly $550–$1,700 per person on a budget trip and $1,600–$3,500 on a premium one.
+            Most budgets fall apart because people only think about greens fees — this breakdown covers all five
+            buckets so you know what the trip actually costs before anyone commits.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -179,7 +201,11 @@ export default function GolfTripBudgetBreakdownPage() {
                 </div>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-6 text-charcoal/60">
+            <p className="mt-4 text-sm leading-6 text-charcoal/50">
+              Ranges compiled from published 2026 greens fees and lodging rates at major group golf destinations;
+              updated June 2026.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-charcoal/60">
               The spread is wide because destination tier drives nearly every number. See{" "}
               <a href="/golf-trip-cost-per-person" className="text-forest-900 underline-offset-2 hover:underline">
                 golf trip cost per person
@@ -206,6 +232,31 @@ export default function GolfTripBudgetBreakdownPage() {
 
         </div>
       </section>
+
+      <FaqSection
+        faqs={[
+          {
+            question: "What percentage of a golf trip budget goes to greens fees?",
+            answer:
+              "Typically 40–55% of the total per-person cost. It is the biggest single bucket on nearly every group trip, which is why the course mix — one marquee round plus value courses versus premium rounds every day — moves the total more than anything else."
+          },
+          {
+            question: "How much should we budget for food and drink on a golf trip?",
+            answer:
+              "Plan on $80–$150 per person per day for a typical group trip — meals, drinks at the turn, post-round drinks, and 2–3 group dinners. A rental house with a kitchen cuts the breakfast line significantly."
+          },
+          {
+            question: "Is a rental house or hotel cheaper for a group golf trip?",
+            answer:
+              "For groups of 6 or more, a shared rental house is usually the best per-person value — a 4-bedroom house split among 8 players typically costs less than individual hotel rooms. On-property resort lodging adds 20–40% to the lodging line but removes transportation logistics."
+          },
+          {
+            question: "What costs do golf trip groups most often forget?",
+            answer:
+              "Caddie fees ($80–$150 per player per round at walking courses like Bandon or Pinehurst), ground transportation ($50–$100 per person per day on a fly-to trip), airline bag fees for clubs, and tips. Add a 5% buffer for the things that always come up."
+          }
+        ]}
+      />
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>

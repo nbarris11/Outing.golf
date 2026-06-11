@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema, howToSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Golf Weekend Planning Checklist for Groups | Outing.golf",
   description:
-    "A practical planning checklist for a 2-day golf weekend with a group — what to lock in before the weekend, what to handle day-of, and how to keep a short trip from turning into logistics overhead."
-};
+    "A practical planning checklist for a 2-day golf weekend with a group — what to lock in before the weekend, what to handle day-of, and how to keep a short trip from turning into logistics overhead.",
+  path: "/golf-weekend-planning-checklist"
+});
 
 const beforeWeekend = [
   {
@@ -81,9 +88,64 @@ const keepItShortTips = [
   }
 ];
 
+const faqs = [
+  {
+    question: "How many rounds should a golf weekend include?",
+    answer:
+      "Two rounds across two days. Three rounds in two days is possible but usually leaves everyone tired by Sunday. Two rounds with a good dinner in the middle is the format that ages best."
+  },
+  {
+    question: "When should you book tee times for a golf weekend?",
+    answer:
+      "As soon as the group is confirmed — ideally two to three weeks out. Weekend morning slots fill up, and last-minute additions break tee time configurations, so lock the headcount first."
+  },
+  {
+    question: "Are morning or afternoon tee times better for a weekend trip?",
+    answer:
+      "Morning, both days. Saturday mornings give you cooler conditions and a full day after the round. An 8am Sunday tee time means everyone is done by 1pm and can travel comfortably — afternoon Sunday tee times are a gamble against flights."
+  },
+  {
+    question: "How should a group settle costs on a golf weekend?",
+    answer:
+      "Before anyone leaves on Sunday. Settle scores and side bets right after each round, then collect what is owed and confirm splits after the final round — money that gets sorted out three weeks later is the most common weekend-trip failure."
+  }
+];
+
 export default function GolfWeekendPlanningChecklistPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Golf Weekend Planning Checklist for Groups | Outing.golf",
+          description:
+            "A practical planning checklist for a 2-day golf weekend with a group — what to lock in before the weekend, what to handle day-of, and how to keep a short trip from turning into logistics overhead.",
+          path: "/golf-weekend-planning-checklist"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Golf weekend planning checklist", path: "/golf-weekend-planning-checklist" }
+        ])}
+      />
+      <JsonLd
+        data={howToSchema({
+          name: "Golf weekend planning checklist",
+          description:
+            "What to lock in before a 2-day group golf weekend and how to run the weekend itself — tee times, lodging, format, and money.",
+          path: "/golf-weekend-planning-checklist",
+          steps: [
+            ...beforeWeekend.map((phase) => ({
+              name: phase.phase,
+              text: phase.items.join(". ")
+            })),
+            ...dayOf.map((day) => ({
+              name: day.day,
+              text: day.items.map((slot) => `${slot.time}: ${slot.what}`).join(" ")
+            }))
+          ]
+        })}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -91,11 +153,14 @@ export default function GolfWeekendPlanningChecklistPage() {
             Golf weekend planning checklist
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            A golf weekend — two days, two rounds, a group of 4 to 12 — sounds simple enough to not need much
-            planning. That is how most of the logistics overhead happens: tee times that do not fit together,
-            lodging confusion, format debates on the first tee, and money that gets sorted out three weeks later.
-            This checklist covers what to handle before the weekend so the weekend itself is just golf.
+            Planning a golf weekend takes three checkpoints: confirm the group, budget, and tee times two to
+            three weeks out; send logistics and make the Saturday dinner reservation one week out; and put
+            everything in a single message the day before. A two-day, two-round trip for 4 to 12 players sounds
+            simple enough to not need much planning — which is exactly how the logistics overhead happens: tee
+            times that do not fit together, lodging confusion, format debates on the first tee, and money that
+            gets sorted out three weeks later.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -194,6 +259,8 @@ export default function GolfWeekendPlanningChecklistPage() {
           </aside>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-24">
         <Card className="bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] p-8 text-center text-cream sm:p-10">

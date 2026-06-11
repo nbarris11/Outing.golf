@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="dark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#143a2c"/>
+      <stop offset="100%" stop-color="#10231b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#dark)"/>
+  <g transform="translate(800 380)" text-anchor="middle" font-family="Georgia, serif" fill="#f7f4ee">
+    <circle cx="0" cy="-80" r="48" fill="rgba(247,244,238,0.06)"/>
+    <polygon points="-14,-95 18,-80 -14,-65" fill="#c8932e"/>
+    <text font-size="48" font-weight="600" letter-spacing="-1">Outing<tspan fill="#c8932e">.</tspan>golf — in motion</text>
+    <text y="60" font-size="22" font-family="-apple-system,BlinkMacSystemFont,sans-serif" fill="rgba(247,244,238,0.6)" letter-spacing="4">DEMO LOOP · 12 SECONDS</text>
+  </g>
+</svg>

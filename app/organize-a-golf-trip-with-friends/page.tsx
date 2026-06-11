@@ -1,19 +1,69 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { articleSchema, breadcrumbSchema, howToSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "How to Organize a Golf Trip with Friends | Outing.golf",
   description:
     "How to get your friend group from scattered interest to a confirmed golf trip — what to collect, in what order, and how to make the call.",
-  alternates: { canonical: "https://www.outing.golf/organize-a-golf-trip-with-friends" }
-};
+  path: "/organize-a-golf-trip-with-friends"
+});
 
 export default function OrganizeAGolfTripWithFriendsPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "How to Organize a Golf Trip with Friends | Outing.golf",
+          description:
+            "How to get your friend group from scattered interest to a confirmed golf trip — what to collect, in what order, and how to make the call.",
+          path: "/organize-a-golf-trip-with-friends"
+        })}
+      />
+      <JsonLd
+        data={howToSchema({
+          name: "How to organize a golf trip with friends",
+          description:
+            "The five-step sequence for getting a friend group from scattered interest to a confirmed golf trip.",
+          path: "/organize-a-golf-trip-with-friends",
+          steps: [
+            {
+              name: "Get input before you form opinions",
+              text: "Collect each person's budget range, available dates, and trip preferences individually and privately before proposing any destination — group discussions anchor around whoever speaks first."
+            },
+            {
+              name: "Lock in the budget window first",
+              text: "Ask everyone for an all-in per-person range, not a yes-or-no to a specific number. The overlap of responses defines the destination tier you are planning for."
+            },
+            {
+              name: "Find the date window that works for most people",
+              text: "Aim for a window that works for 70–80% of the core group and set a specific deadline for availability responses — open-ended requests sit in inboxes indefinitely."
+            },
+            {
+              name: "Build a shortlist the group can vote on",
+              text: "Narrow to two or three real options with specific courses, lodging, and a per-person price attached, then collect votes instead of opening another discussion."
+            },
+            {
+              name: "Make the call and book the lodging",
+              text: "Pick the strongest option and book lodging to lock the dates. Courses, tee times, and dinners follow from there — the group adjusts to the plan once it exists."
+            }
+          ]
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Organize a golf trip with friends", path: "/organize-a-golf-trip-with-friends" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -21,10 +71,13 @@ export default function OrganizeAGolfTripWithFriendsPage() {
             How to organize a golf trip with friends
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            Someone always ends up running the trip. If that person is you, this guide covers the actual job —
-            what to collect from the group, in what order, and how to move from scattered interest to a confirmed
-            plan without spending three weeks in a group chat that goes nowhere.
+            Organizing a golf trip with friends takes five steps in a specific order: collect budgets and dates
+            privately before sharing any ideas, lock the budget window, find a date that works for 70–80% of the
+            core group, present a shortlist of two or three priced options, and book the lodging to lock it in.
+            Someone always ends up running the trip — if that person is you, this guide covers the actual job,
+            step by step, without spending three weeks in a group chat that goes nowhere.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -151,12 +204,39 @@ export default function OrganizeAGolfTripWithFriendsPage() {
                 <li><a href="/golf-trip-planning-checklist" className="text-forest-900 underline-offset-2 hover:underline">Golf trip planning checklist</a></li>
                 <li><a href="/golf-trip-cost-per-person" className="text-forest-900 underline-offset-2 hover:underline">Golf trip cost per person</a></li>
                 <li><a href="/golf-trip-itinerary-template" className="text-forest-900 underline-offset-2 hover:underline">Golf trip itinerary template</a></li>
+                <li><a href="/buddies-golf-trip-planner" className="text-forest-900 underline-offset-2 hover:underline">Buddies golf trip planner</a></li>
+                <li><a href="/golf-weekend-planning-checklist" className="text-forest-900 underline-offset-2 hover:underline">Golf weekend planning checklist</a></li>
                 <li><a href="/how-it-works" className="text-forest-900 underline-offset-2 hover:underline">How Outing.golf works</a></li>
               </ul>
             </Card>
           </aside>
         </div>
       </section>
+
+      <FaqSection
+        faqs={[
+          {
+            question: "What order should you plan a golf trip in?",
+            answer:
+              "Budget first, then dates, then destination, then courses and lodging, then the itinerary. Budget determines everything downstream — skip it and you will almost certainly build a shortlist the group cannot afford. The itinerary comes last, once everything else is decided."
+          },
+          {
+            question: "How do you get friends to actually commit to a golf trip?",
+            answer:
+              "Deadlines and a booked deposit. Set a specific date for availability responses — 'let me know before the 15th' — instead of an open-ended ask, and once the group aligns, book the lodging. Lodging locks the dates, and the group commits to a plan that exists far faster than to an idea."
+          },
+          {
+            question: "How many destination options should you present to the group?",
+            answer:
+              "Two or three, each with specific courses, lodging, and a per-person price attached. 'Myrtle Beach, 3 nights, 3 rounds, roughly $850 per person' is something people can vote on. An open-ended 'where should we go?' just produces another round of opinions."
+          },
+          {
+            question: "Do you need everyone to be available before booking?",
+            answer:
+              "No — waiting for perfect attendance is how trips never get booked. Aim for a window that works for 70–80% of the core group, make the call, and let the schedule firm up around the people who can make it."
+          }
+        ]}
+      />
 
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-24">
         <Card className="bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] p-8 text-center text-cream sm:p-10">

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 
 import { LogRocketInit } from "@/components/logrocket-init";
-import { getCurrentProfile } from "@/lib/auth";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -38,18 +37,13 @@ export const metadata: Metadata = {
   }
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
-  const profile = await getCurrentProfile();
-  const user = profile
-    ? { id: profile.id, email: profile.email, name: profile.fullName }
-    : null;
-
   return (
     <html lang="en" className={`${manrope.variable} ${cormorant.variable}`}>
       <body>
-        <LogRocketInit user={user} />
+        <LogRocketInit />
         {children}
       </body>
     </html>

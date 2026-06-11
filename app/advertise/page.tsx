@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { AdvertiseForm } from "@/components/advertise-form";
 import { PageShell } from "@/components/layout/page-shell";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Advertise with Us | Outing.golf",
-  description: "Reach golf trip organizers and groups. Get in touch to learn about advertising opportunities on Outing.golf."
-};
+  description:
+    "Reach golf trip organizers and groups. Get in touch to learn about advertising opportunities on Outing.golf.",
+  path: "/advertise"
+});
 
 export default function AdvertisePage() {
   return (

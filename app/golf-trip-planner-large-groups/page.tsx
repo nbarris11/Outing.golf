@@ -1,19 +1,62 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Golf Trip Planner for Large Groups (8, 12, or 16 Players)",
   description:
     "What changes when you're planning for 8, 12, or 16 players — and how to keep the decision-making from falling apart.",
-  alternates: { canonical: "https://www.outing.golf/golf-trip-planner-large-groups" }
-};
+  path: "/golf-trip-planner-large-groups"
+});
+
+const faqs = [
+  {
+    question: "How far in advance should you plan a golf trip for a large group?",
+    answer:
+      "Start collecting availability 3 to 4 months out. That is not premature for 8 to 12 players — it is the minimum lead time you need to find a workable date window. Set a specific response deadline ('respond by the 15th') or availability requests will sit in inboxes for weeks."
+  },
+  {
+    question: "How do tee times work for a group of 12?",
+    answer:
+      "Golf is played in foursomes, so 12 players is three foursomes with staggered tee times. Groups of 10 or 14 are the logistical wrinkle — someone goes out in a non-standard group, and many courses have preferences or restrictions about that. Confirm the final headcount before booking."
+  },
+  {
+    question: "What about groups of 16 or more?",
+    answer:
+      "At 16+, ask courses about exclusive shotgun starts or full-course buyouts. They often need to be arranged weeks in advance, but they solve the staggered tee time problem and keep the whole group on the course at once."
+  },
+  {
+    question: "Is a rental house or hotel better for a large golf group?",
+    answer:
+      "For 8 players, a single rental house usually wins on cost and logistics. For 12 to 16, you may need multiple properties or a villa/condo complex — Myrtle Beach and Scottsdale both have options that hold 8 to 16 in one footprint. Either way, book early; right-size properties fill fast."
+  }
+];
 
 export default function GolfTripPlannerLargeGroupsPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Golf Trip Planner for Large Groups (8, 12, or 16 Players)",
+          description:
+            "What changes when you're planning for 8, 12, or 16 players — and how to keep the decision-making from falling apart.",
+          path: "/golf-trip-planner-large-groups"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Golf trip planner for large groups", path: "/golf-trip-planner-large-groups" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Use case</p>
@@ -21,10 +64,13 @@ export default function GolfTripPlannerLargeGroupsPage() {
             Golf trip planner for large groups
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            Planning a golf trip for 4 people is manageable in a group chat. Planning for 8, 12, or 16 is a
-            different job. Every planning problem that exists for a small group gets amplified — budget ranges
-            spread wider, date alignment gets harder, opinions multiply, and the organizer's inbox fills up fast.
+            Planning a golf trip for 8, 12, or 16 players comes down to four things: collect budget ranges
+            privately (expect a $600–$800 spread in a group of 12), gather availability 3 to 4 months out with a
+            hard response deadline, plan tee times in foursomes from the start, and lock group lodging before the
+            right-size properties fill. Every planning problem that exists for a group of 4 gets amplified at
+            this scale — and the organizer's inbox fills up fast.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -121,6 +167,8 @@ export default function GolfTripPlannerLargeGroupsPage() {
           </div>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>

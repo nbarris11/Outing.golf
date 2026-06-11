@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import { buildMetadata } from "@/lib/seo";
 import Link from "next/link";
 
 import { TripBoardingPass } from "@/components/trip/trip-boarding-pass";
@@ -7,19 +9,12 @@ import { TripLineup } from "@/components/trip/trip-lineup";
 import { TripTeeTimes } from "@/components/trip/trip-tee-times";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Sample Trip HQ · Outing.golf",
   description:
     "See what your group gets when the plan locks in. A fully populated Trip HQ — courses, schedule, packing list, countdown — in one shared view.",
-  alternates: {
-    canonical: "/sample-trip"
-  },
-  openGraph: {
-    title: "Sample Trip HQ · Outing.golf",
-    description: "See what your group gets when the plan locks in.",
-    type: "website"
-  }
-};
+  path: "/sample-trip"
+});
 
 // ── Sample data ──────────────────────────────────────────────────────────────
 
@@ -204,7 +199,17 @@ export default function SampleTripPage() {
             </div>
           </div>
 
-          <div className="mt-12 pb-8" />
+          <div className="mt-12 pb-32" />
+        </div>
+      </div>
+
+      {/* Sticky bottom CTA bar */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-cream/12 bg-forest-950/95 px-4 py-4 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4">
+          <p className="text-sm text-cream/80">Like what you see? Build one for your group.</p>
+          <Button href="/sign-up" className="bg-gold text-charcoal hover:bg-gold-soft">
+            Plan my trip →
+          </Button>
         </div>
       </div>
     </div>

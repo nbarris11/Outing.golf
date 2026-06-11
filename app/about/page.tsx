@@ -1,21 +1,41 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FOUNDER } from "@/lib/schema";
+import { SITE_URL } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "About Outing.golf | Built for Golf Trip Organizers",
   description:
     "Why Outing.golf exists, who it's for, and the story behind building a better way for groups to plan golf trips together.",
-  alternates: {
-    canonical: "https://www.outing.golf/about"
+  path: "/about"
+});
+
+const aboutPageSchema = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  url: `${SITE_URL}/about`,
+  name: "About Outing.golf",
+  description:
+    "Outing.golf is a free golf trip planning app that collects dates, budgets, and course votes from a whole group in one place. Founded by Neil Barris.",
+  mainEntity: {
+    "@type": "Organization",
+    name: "Outing.golf",
+    url: SITE_URL,
+    email: "hello@outing.golf",
+    founder: { ...FOUNDER }
   }
 };
 
 export default function AboutPage() {
   return (
     <PageShell>
+      <JsonLd data={aboutPageSchema} />
       <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">About</p>
         <h1 className="mt-4 font-serif text-5xl font-semibold leading-[0.94] tracking-[-0.05em] text-charcoal sm:text-6xl">

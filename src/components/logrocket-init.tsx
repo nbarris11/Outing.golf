@@ -3,29 +3,21 @@
 import { useEffect } from "react";
 import LogRocket from "logrocket";
 
-interface LogRocketUser {
-  id: string;
-  email: string;
-  name: string;
-}
+import { fetchMe } from "@/components/auth/use-me";
 
-interface Props {
-  user?: LogRocketUser | null;
-}
-
-export function LogRocketInit({ user }: Props) {
+export function LogRocketInit() {
   useEffect(() => {
     LogRocket.init("rpxxno/outinggolf");
-  }, []);
 
-  useEffect(() => {
-    if (user) {
-      LogRocket.identify(user.id, {
-        name: user.name,
-        email: user.email
-      });
-    }
-  }, [user?.id]);
+    fetchMe().then(({ profile }) => {
+      if (profile) {
+        LogRocket.identify(profile.id, {
+          name: profile.fullName,
+          email: profile.email
+        });
+      }
+    });
+  }, []);
 
   return null;
 }

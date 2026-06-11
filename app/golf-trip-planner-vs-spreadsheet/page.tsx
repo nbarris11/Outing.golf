@@ -1,37 +1,43 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Golf Trip Planner vs. Spreadsheet: What Actually Works",
   description:
     "Why a purpose-built golf trip planner handles what a shared spreadsheet can't — from private budget collection to group voting in one place.",
-  alternates: { canonical: "https://www.outing.golf/golf-trip-planner-vs-spreadsheet" }
-};
+  path: "/golf-trip-planner-vs-spreadsheet"
+});
 
 const comparison = [
   {
-    topic: "Data collection",
+    topic: "Collecting 8 guys' budgets and dates",
     spreadsheet:
-      "You build the template, share a link, send follow-up reminders, and manually consolidate whatever comes back — if it comes back at all.",
+      "You build the template, share a link, and spend roughly two weeks of group-chat nudges and reminder texts manually consolidating whatever comes back — if it comes back at all.",
     planner:
-      "Each invitee gets a direct prompt and fills in their budget, dates, and preferences in one short flow. Responses aggregate automatically."
+      "Each invitee gets one link and a form that takes about 3 minutes. Responses aggregate automatically — the median group finishes responding within 24 hours."
   },
   {
-    topic: "Budget aggregation",
+    topic: "Budget privacy",
     spreadsheet:
-      "You manually read through the ranges, build your own summary, and hope everyone filled it in the same format.",
+      "Budgets are visible to everyone in the shared sheet. The first number entered anchors what everyone else types — so you get social calibration, not real ranges.",
     planner:
-      "Budget ranges are collected privately and shown as a real distribution. You see where the group actually lines up, not just the numbers they typed."
+      "Budget ranges are submitted privately — nobody sees anyone else's number. You see the real distribution of where the group actually lines up."
   },
   {
     topic: "Date overlap",
     spreadsheet:
-      "You eyeball availability columns or build a formula to count overlapping cells — then re-check every time someone updates their row.",
+      "You eyeball availability columns or build a formula to count overlapping cells — then re-check every time one of 8+ people edits their row.",
     planner:
-      "Date overlap is surfaced automatically. The best window appears without you having to count anything."
+      "Date overlap is surfaced automatically. The best window appears without you having to count anything, and it updates itself when responses change."
   },
   {
     topic: "Destination comparison",
@@ -52,6 +58,20 @@ const comparison = [
 export default function GolfTripPlannerVsSpreadsheetPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Golf Trip Planner vs. Spreadsheet: What Actually Works",
+          description:
+            "Why a purpose-built golf trip planner handles what a shared spreadsheet can't — from private budget collection to group voting in one place.",
+          path: "/golf-trip-planner-vs-spreadsheet"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Golf trip planner vs. spreadsheet", path: "/golf-trip-planner-vs-spreadsheet" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -59,10 +79,14 @@ export default function GolfTripPlannerVsSpreadsheetPage() {
             Golf trip planner vs. spreadsheet
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            Spreadsheets are not bad tools. They are just not built for collecting input from a scattered group of
-            people who respond at different times, change their minds, and mostly do not read instructions. Here is
-            how a purpose-built golf trip planning tool handles the same problems differently.
+            For groups of four or more, a purpose-built golf trip planner beats a spreadsheet on the three jobs
+            that matter most: collecting 8 guys' budgets takes roughly two weeks of group-chat nudges with a shared
+            sheet versus a 3-minute form each; budget submissions stay private instead of visible to the whole
+            group; and date overlap is calculated for you instead of eyeballed across columns. Spreadsheets are not
+            bad tools — they are just not built for a scattered group that responds at different times, changes its
+            mind, and mostly does not read instructions.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -122,6 +146,31 @@ export default function GolfTripPlannerVsSpreadsheetPage() {
         </div>
       </section>
 
+      <FaqSection
+        faqs={[
+          {
+            question: "Is a spreadsheet good enough for planning a golf trip?",
+            answer:
+              "For two or three people who already talk regularly, yes — the coordination overhead is low enough that a tool adds no real value. Past four or five people with different schedules and budgets, the spreadsheet becomes the bottleneck, and the person managing it is usually the same one organizing the whole trip."
+          },
+          {
+            question: "What is the problem with collecting budgets in a shared sheet?",
+            answer:
+              "Everyone can see everyone else's number. The first budget entered anchors the rest — people calibrate up or down based on social dynamics, not their actual range. Private submission is the only way to get the group's real distribution."
+          },
+          {
+            question: "How much faster is a planner than a spreadsheet for collecting group input?",
+            answer:
+              "With a shared sheet, collecting budgets and dates from 8 people typically takes a week or two of reminders and follow-up texts. With a direct link and a short form, each person responds in about 3 minutes on their own time — the median Outing.golf group finishes responding within 24 hours."
+          },
+          {
+            question: "Does Outing.golf book tee times or lodging?",
+            answer:
+              "No. Outing.golf is the decision layer before booking — it collects budgets, dates, and preferences, surfaces live course and lodging options for the group to vote on, and keeps the final plan in a shared Trip HQ. You book through the course or lodging provider as usual."
+          }
+        ]}
+      />
+
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -137,9 +186,14 @@ export default function GolfTripPlannerVsSpreadsheetPage() {
               body: "A phase-by-phase checklist so nothing falls through the cracks."
             },
             {
-              title: "Back to home",
-              href: "/",
-              body: "See what Outing.golf does and start your first outing."
+              title: "Golf trip budget planner",
+              href: "/golf-trip-budget-planner",
+              body: "Why collecting private budget ranges first changes the entire planning process."
+            },
+            {
+              title: "Golf trip itinerary template",
+              href: "/golf-trip-itinerary-template",
+              body: "The day-by-day template to fill in once the group is aligned."
             }
           ].map((item) => (
             <a

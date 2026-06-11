@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#245240"/>
+      <stop offset="100%" stop-color="#143a2c"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="100" fill="url(#bg)"/>
+  <!-- Stylized golfer silhouette -->
+  <circle cx="100" cy="78" r="22" fill="#f7f4ee" opacity="0.85"/>
+  <path d="M58 178 Q58 124 100 124 Q142 124 142 178 Z" fill="#f7f4ee" opacity="0.85"/>
+  <!-- Gold flag accent -->
+  <rect x="145" y="48" width="2" height="40" fill="#e8dcc4"/>
+  <path d="M147 50 L165 54 L147 58 Z" fill="#c8932e"/>
+</svg>

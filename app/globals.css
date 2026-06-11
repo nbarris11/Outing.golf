@@ -10,6 +10,9 @@
   --color-sand: #e8dcc4;
   --color-sand-strong: #d9c8a7;
   --color-charcoal: #212423;
+  --color-gold: #c8932e;
+  --color-gold-soft: #e6c275;
+  --color-flag-red: #b8302f;
   --font-sans: var(--font-manrope);
   --font-serif: var(--font-cormorant);
 }
@@ -23,6 +26,16 @@ body {
   color: var(--color-charcoal);
   text-rendering: optimizeLegibility;
 }
+
+/* Marketing pages use a larger, editorial body size.
+   App / dashboard surfaces stay at default via Tailwind. */
+.prose-marketing {
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.prose-marketing p { max-width: 62ch; }
+.prose-marketing p + p { margin-top: 1em; }
 
 a {
   text-decoration: none;

@@ -1,19 +1,62 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Bachelor Golf Trip Planner: How to Organize the Outing",
   description:
     "How to organize a bachelor golf trip when the group has mixed budgets, a hard deadline, and high expectations.",
-  alternates: { canonical: "https://www.outing.golf/bachelor-golf-trip-planner" }
-};
+  path: "/bachelor-golf-trip-planner"
+});
+
+const faqs = [
+  {
+    question: "How long should a bachelor golf trip be?",
+    answer:
+      "Three to four days is the standard. That is enough for two to three rounds, one proper night out, and travel on either end — without exhausting the group or burning more vacation days than the wedding itself."
+  },
+  {
+    question: "What are the best destinations for a bachelor golf trip?",
+    answer:
+      "Scottsdale, Myrtle Beach, and Las Vegas work best for most bachelor groups because they pair strong golf with non-golf options. Pure golf destinations like Bandon Dunes or Pinehurst fit better when everyone in the group is serious about the game."
+  },
+  {
+    question: "How do you handle mixed budgets on a bachelor trip?",
+    answer:
+      "Collect budget ranges privately from each person before any group discussion. Bachelor trips have the widest budget spread of any group golf trip, and private collection prevents anyone from feeling pressure to overspend — or from tanking the trip with a low anchor number."
+  },
+  {
+    question: "Should the groom help plan the bachelor golf trip?",
+    answer:
+      "No — but ask early whether he has a bucket-list course or destination in mind. The organizer's job is to handle the logistics so the groom just shows up. If it is a surprise, you have more flexibility, but someone still has to make the calls."
+  }
+];
 
 export default function BachelorGolfTripPlannerPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Bachelor Golf Trip Planner: How to Organize the Outing",
+          description:
+            "How to organize a bachelor golf trip when the group has mixed budgets, a hard deadline, and high expectations.",
+          path: "/bachelor-golf-trip-planner"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Bachelor golf trip planner", path: "/bachelor-golf-trip-planner" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Use case</p>
@@ -21,10 +64,13 @@ export default function BachelorGolfTripPlannerPage() {
             Bachelor golf trip planner
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            A bachelor golf trip has one extra layer of complexity: the groom may or may not know what is being
-            planned, and the group usually has a wider spread of budgets, availability, and golf experience than a
-            regular buddies trip. Someone has to organize it, and that job is harder than it looks.
+            Organizing a bachelor golf trip comes down to five moves: confirm who is coming, collect budget ranges
+            privately, lock a 3-to-4-day window around the wedding timeline, pick a destination that fits the
+            whole crew — not just the golfers — and keep lodging in one place. The extra layer of complexity: the
+            groom may or may not know what is being planned, and the group usually has a wider spread of budgets,
+            availability, and golf experience than a regular buddies trip.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -106,6 +152,8 @@ export default function BachelorGolfTripPlannerPage() {
           </div>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>

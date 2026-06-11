@@ -1,0 +1,39 @@
+# Outing.golf
+
+> Outing.golf is a free golf trip planning app that collects dates, budgets,
+> and course votes from a whole group in one place, so the organizer can turn
+> a group-chat idea into a booked trip. Built by Neil Barris.
+
+Outing.golf helps groups of 4–16 golfers plan buddies golf trips. The organizer
+creates an outing, shares one link, and every group member submits the dates
+that work, their real budget range, and destination preferences. The group then
+votes on live course and lodging options, and the final plan lives in a shared
+Trip HQ with the round-by-round schedule and packing list. It is free for the
+organizer and free for every group member.
+
+## Product
+- [How It Works](https://www.outing.golf/how-it-works): What the tool does, step by step
+- [Pricing](https://www.outing.golf/pricing): Free for organizers and group members
+- [Sample Trip HQ](https://www.outing.golf/sample-trip): A fully populated example trip
+
+## Planning Guides
+- [How to Plan a Golf Trip](https://www.outing.golf/how-to-plan-a-golf-trip): Step-by-step guide for organizers
+- [Golf Trip Cost Per Person](https://www.outing.golf/golf-trip-cost-per-person): Cost ranges by destination tier
+- [Golf Trip Budget Breakdown](https://www.outing.golf/golf-trip-budget-breakdown): Five-category cost framework
+- [Golf Trip Planning Checklist](https://www.outing.golf/golf-trip-planning-checklist): Phase-by-phase organizer checklist
+- [Golf Trip Itinerary Template](https://www.outing.golf/golf-trip-itinerary-template): Day-by-day itinerary template
+- [Best Golf Trip Planner Apps](https://www.outing.golf/best-golf-trip-planner-apps): Honest comparison of planning tools
+- [Golf Outing Organizer](https://www.outing.golf/golf-outing-organizer): Organizing scramble events vs. golf trips
+
+## Destinations
+- [Best Golf Trip Destinations](https://www.outing.golf/best-golf-trip-destinations): Destination comparison for groups
+- [Myrtle Beach](https://www.outing.golf/myrtle-beach-golf-trip-planner)
+- [Scottsdale](https://www.outing.golf/scottsdale-golf-trip-planner)
+- [Pinehurst](https://www.outing.golf/pinehurst-golf-trip-planner)
+- [Palm Springs](https://www.outing.golf/palm-springs-golf-trip-planner)
+- [Kiawah Island](https://www.outing.golf/kiawah-island-golf-trip-planner)
+- [Pebble Beach](https://www.outing.golf/pebble-beach-golf-trip-planner)
+
+## Company
+- [About](https://www.outing.golf/about): Founder story — Neil Barris
+- Contact: hello@outing.golf

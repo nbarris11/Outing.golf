@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Best Budget Golf Trip Destinations for Groups | Outing.golf",
   description:
     "The best golf trip destinations for budget-conscious groups — strong courses and a real trip experience without the premium destination price tag.",
-  alternates: { canonical: "https://www.outing.golf/best-budget-golf-trip-destinations" }
-};
+  path: "/best-budget-golf-trip-destinations"
+});
 
 const destinations = [
   {
@@ -54,9 +60,46 @@ const destinations = [
   }
 ];
 
+const faqs = [
+  {
+    question: "How much does a budget golf trip cost per person?",
+    answer:
+      "As of 2026, a budget group golf trip runs roughly $400–$900 per person for 3 rounds and shared lodging. Wisconsin ($400–$800) and regional drive-to trips ($300–$600) sit at the low end; Myrtle Beach and the Gulf Coast run $500–$900."
+  },
+  {
+    question: "What is the cheapest golf trip destination for a group?",
+    answer:
+      "A regional drive-to trip is almost always cheapest — $300–$600 per person as of 2026 — because it eliminates flights entirely. Among fly-to or marquee destinations, Wisconsin and Myrtle Beach deliver the most golf per dollar."
+  },
+  {
+    question: "How can a group cut golf trip costs without ruining the trip?",
+    answer:
+      "Play one marquee course and fill the rest of the schedule with value options, book a rental house instead of hotel rooms once the group hits 6+, and travel in shoulder season — a 3-week timing shift can cut costs 20–30% at popular destinations."
+  },
+  {
+    question: "Is Pinehurst doable on a budget?",
+    answer:
+      "Mostly yes. Pinehurst runs $700–$1,100 per person as of 2026 — higher than the other destinations on this list, but strong value for serious golfers. Mid Pines and Pine Needles keep greens fees down while one round on No. 2 covers the bucket-list box."
+  }
+];
+
 export default function BestBudgetGolfTripDestinationsPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Best Budget Golf Trip Destinations for Groups | Outing.golf",
+          description:
+            "The best golf trip destinations for budget-conscious groups — strong courses and a real trip experience without the premium destination price tag.",
+          path: "/best-budget-golf-trip-destinations"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Best budget golf trip destinations", path: "/best-budget-golf-trip-destinations" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Destination guide</p>
@@ -64,10 +107,15 @@ export default function BestBudgetGolfTripDestinationsPage() {
             Best budget golf trip destinations for groups
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            A strong group golf trip does not require a $2,000 per-person budget. The destinations below deliver
-            real golf experiences — good courses, manageable logistics, solid lodging — without the premium price
-            tag. What they have in common: value-friendly course options, lodging that works for groups, and
-            infrastructure that does not require a resort account.
+            The best budget golf trip destinations for groups as of 2026 are Myrtle Beach ($500–$900 per person),
+            Wisconsin ($400–$800), and the Gulf Coast ($500–$900) — each delivers 3 quality rounds plus shared
+            group lodging for under $900 all-in. Ranked by group value: course quality per dollar, lodging that
+            fits 8+, and logistics. What they have in common: value-friendly course options, lodging that works
+            for groups, and infrastructure that does not require a resort account.
+          </p>
+          <ArticleByline />
+          <p className="mt-4 text-sm leading-6 text-charcoal/50">
+            Ranges compiled from published 2026 greens fees and lodging rates; updated June 2026.
           </p>
         </div>
       </section>
@@ -123,6 +171,8 @@ export default function BestBudgetGolfTripDestinationsPage() {
           </div>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>

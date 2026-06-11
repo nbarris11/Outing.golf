@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Best Golf Trip Destinations for Groups in 2026 | Outing.golf",
   description:
     "The best golf trip destinations for groups in 2026, compared by budget, group fit, and what organizers actually need to know.",
-  alternates: { canonical: "https://www.outing.golf/best-golf-trip-destinations" }
-};
+  path: "/best-golf-trip-destinations"
+});
 
 const destinations = [
   {
@@ -43,7 +49,7 @@ const destinations = [
       "Pinehurst is the closest thing the US has to a dedicated golf village. The entire area exists around golf, which makes it an exceptional destination for groups where everyone is genuinely there to play. The resort itself has nine courses, including No. 2 — one of the most famous courses in the world. It is a quieter, more golf-focused experience than Myrtle Beach or Scottsdale.",
     organizer:
       "Pinehurst is not a great fit for groups with non-golfers or people who need a lot of entertainment outside of the game. It is perfect for groups where golf is the entire point.",
-    slug: null
+    slug: "/pinehurst-golf-trip-planner"
   },
   {
     name: "Palm Springs, CA",
@@ -54,7 +60,7 @@ const destinations = [
       "Palm Springs and the surrounding Coachella Valley have more golf courses per capita than almost anywhere in the country. The combination of desert mountain scenery, reliable sunshine from November through April, and strong resort infrastructure makes it a strong choice for West Coast groups looking for a destination with a full resort experience attached.",
     organizer:
       "Summer is completely off the table — temperatures regularly hit 115°F. Plan for November through April. Like Scottsdale, timing significantly affects both pricing and playability.",
-    slug: null
+    slug: "/palm-springs-golf-trip-planner"
   },
   {
     name: "Bandon Dunes, OR",
@@ -91,42 +97,46 @@ const destinations = [
   }
 ];
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "Is Myrtle Beach good for group golf trips?",
-      acceptedAnswer: { "@type": "Answer", text: "Yes. Myrtle Beach is the most popular domestic golf trip destination, with 80+ courses, a wide pricing range ($500–$1,200 per person), and strong lodging options for groups of 4–16. The main challenge for organizers is narrowing the course shortlist." }
-    },
-    {
-      "@type": "Question",
-      name: "Is Scottsdale good for group golf trips?",
-      acceptedAnswer: { "@type": "Answer", text: "Scottsdale is the premier domestic destination for groups wanting a high-end experience ($1,000–$2,500 per person). It has world-class resort courses, reliable weather from October through April, and a strong food and nightlife scene." }
-    },
-    {
-      "@type": "Question",
-      name: "Is Pinehurst good for group golf trips?",
-      acceptedAnswer: { "@type": "Answer", text: "Pinehurst is ideal for groups where golf is the entire point ($800–$2,000 per person). It's a dedicated golf village with 40+ courses including the famous Pinehurst No. 2. Less suited for groups with non-golfers." }
-    },
-    {
-      "@type": "Question",
-      name: "Is Bandon Dunes good for group golf trips?",
-      acceptedAnswer: { "@type": "Answer", text: "Bandon Dunes is the best purely golf-focused destination in the US ($1,500–$3,000 per person). Five walking-only links courses on the Oregon coast. Best for smaller groups (4–8) of serious golfers." }
-    },
-    {
-      "@type": "Question",
-      name: "What is the best budget golf trip destination for groups?",
-      acceptedAnswer: { "@type": "Answer", text: "Myrtle Beach and Wisconsin offer the best value for budget-conscious groups. Myrtle Beach starts around $500 per person all-in. Wisconsin has courses at $400–$900 per person including access to Whistling Straits and Erin Hills." }
-    }
-  ]
-};
+const faqs = [
+  {
+    question: "Is Myrtle Beach good for group golf trips?",
+    answer:
+      "Yes. Myrtle Beach is the most popular domestic golf trip destination, with 80+ courses, a wide pricing range ($500–$1,200 per person as of 2026), and strong lodging options for groups of 4–16. The main challenge for organizers is narrowing the course shortlist."
+  },
+  {
+    question: "Is Scottsdale good for group golf trips?",
+    answer:
+      "Scottsdale is the premier domestic destination for groups wanting a high-end experience ($1,000–$2,500 per person as of 2026). It has world-class resort courses, reliable weather from October through April, and a strong food and nightlife scene."
+  },
+  {
+    question: "Is Pinehurst good for group golf trips?",
+    answer:
+      "Pinehurst is ideal for groups where golf is the entire point ($800–$2,000 per person as of 2026). It's a dedicated golf village with 40+ courses including the famous Pinehurst No. 2. Less suited for groups with non-golfers."
+  },
+  {
+    question: "What is the best budget golf trip destination for groups?",
+    answer:
+      "Myrtle Beach and Wisconsin offer the best value for budget-conscious groups. As of 2026, Myrtle Beach starts around $500 per person all-in, and Wisconsin runs $400–$900 per person including access to Whistling Straits and Erin Hills."
+  }
+];
 
 export default function BestGolfTripDestinationsPage() {
   return (
     <PageShell>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <JsonLd
+        data={articleSchema({
+          title: "Best Golf Trip Destinations for Groups in 2026 | Outing.golf",
+          description:
+            "The best golf trip destinations for groups in 2026, compared by budget, group fit, and what organizers actually need to know.",
+          path: "/best-golf-trip-destinations"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Best golf trip destinations", path: "/best-golf-trip-destinations" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -134,9 +144,16 @@ export default function BestGolfTripDestinationsPage() {
             Best golf trip destinations for groups
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            The best destination for your group depends on budget, group size, how seriously everyone plays, and
-            whether non-golf activities matter. This guide covers the major options from a group organizer's
+            The best golf trip destinations for groups in 2026 are Myrtle Beach ($500–$1,200 per person all-in),
+            Scottsdale ($1,000–$2,500), Pinehurst ($800–$2,000), and Palm Springs ($900–$2,200) — plus Bandon
+            Dunes, Streamsong, and Wisconsin for specific group types. Ranked by group value: course quality per
+            dollar, lodging that fits 8+, and logistics. This guide covers each from a group organizer's
             perspective — not just which courses are good, but what you actually need to know to plan there.
+          </p>
+          <ArticleByline />
+          <p className="mt-4 text-sm leading-6 text-charcoal/50">
+            Course counts and per-person figures are as of 2026. Ranges compiled from published 2026 greens fees
+            and lodging rates; updated June 2026.
           </p>
         </div>
       </section>
@@ -184,6 +201,8 @@ export default function BestGolfTripDestinationsPage() {
         </div>
       </section>
 
+      <FaqSection faqs={faqs} />
+
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -204,9 +223,9 @@ export default function BestGolfTripDestinationsPage() {
               body: "What to know when planning a group trip to the Grand Strand."
             },
             {
-              title: "How it works",
-              href: "/how-it-works",
-              body: "See how Outing.golf collects group input and gets everyone aligned."
+              title: "Best golf trip destinations for groups",
+              href: "/best-golf-trip-destinations-for-groups",
+              body: "How each top destination fits different group types, sizes, and budgets."
             }
           ].map((item) => (
             <a

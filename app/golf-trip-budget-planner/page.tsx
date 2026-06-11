@@ -1,18 +1,39 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Golf Trip Budget Planner for Groups | Outing.golf",
   description:
-    "Stop guessing what everyone can spend. Outing.golf collects individual budget ranges from your group so you can plan a golf trip that actually fits everyone."
-};
+    "Stop guessing what everyone can spend. Outing.golf collects individual budget ranges from your group so you can plan a trip that fits everyone.",
+  path: "/golf-trip-budget-planner"
+});
 
 export default function GolfTripBudgetPlannerPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Golf Trip Budget Planner for Groups | Outing.golf",
+          description:
+            "Stop guessing what everyone can spend. Outing.golf collects individual budget ranges from your group so you can plan a trip that fits everyone.",
+          path: "/golf-trip-budget-planner"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Golf trip budget planner", path: "/golf-trip-budget-planner" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -20,10 +41,14 @@ export default function GolfTripBudgetPlannerPage() {
             Golf trip budget planner for groups
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            Budget is the first thing that should get resolved and the last thing most groups actually talk about.
-            When nobody knows the real range, the organizer ends up planning a trip that does not fit — and finding
-            out after they have already spent hours researching it.
+            The right way to budget a group golf trip is to collect each player's all-in per-person range privately
+            before anyone proposes a destination — under $600 points to a drive-to trip, $600–$1,000 to a regional
+            fly-to like Myrtle Beach, $1,000–$1,800 to a premium market like Scottsdale or Pinehurst, and $1,800+
+            to bucket-list territory. Budget is the first thing that should get resolved and the last thing most
+            groups actually talk about — and when nobody knows the real range, the organizer ends up planning a
+            trip that does not fit.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -168,6 +193,31 @@ export default function GolfTripBudgetPlannerPage() {
         </div>
       </section>
 
+      <FaqSection
+        faqs={[
+          {
+            question: "Why should golf trip budgets be collected privately?",
+            answer:
+              "Because group chats anchor. The first number posted becomes the reference point and everyone else calibrates to it — up or down — based on social dynamics rather than their actual range. Private submissions give you the real distribution, which is the only number worth planning around."
+          },
+          {
+            question: "What budget question should the organizer actually ask?",
+            answer:
+              "Ask for an all-in per-person range — 'what range works for you, all-in for the trip?' — not a yes-or-no to a specific number. Ranges surface the overlap; a single proposed number just gets a polite yes that falls apart at booking time."
+          },
+          {
+            question: "What does each budget tier realistically buy?",
+            answer:
+              "As a rough 2026 guide, all-in per person: under $600 supports a drive-to regional trip on public daily-fee courses; $600–$1,000 covers a regional fly-to like Myrtle Beach with a mid-tier course mix; $1,000–$1,800 reaches premium markets like Scottsdale or Pinehurst with resort lodging; $1,800+ opens bucket-list destinations like Bandon Dunes."
+          },
+          {
+            question: "When in the planning process should budget be settled?",
+            answer:
+              "First — before destinations, dates research, or course shortlists. Destination tier, course quality, and lodging type all flow from the budget window, so settling it first means everything you research afterward is already affordable for the group."
+          }
+        ]}
+      />
+
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -188,9 +238,9 @@ export default function GolfTripBudgetPlannerPage() {
               body: "What each major destination costs and what to know before you plan there."
             },
             {
-              title: "Back to home",
-              href: "/",
-              body: "See what Outing.golf does and start your first outing."
+              title: "Golf trip budget breakdown",
+              href: "/golf-trip-budget-breakdown",
+              body: "How greens fees, lodging, travel, food, and extras split across the per-person total."
             }
           ].map((item) => (
             <a

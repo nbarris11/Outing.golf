@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Golf Trip Cost Per Person: What to Budget by Destination",
   description:
     "Realistic per-person cost ranges for the top golf trip destinations — from drive-to budget trips to bucket-list experiences.",
-  alternates: { canonical: "https://www.outing.golf/golf-trip-cost-per-person" }
-};
+  path: "/golf-trip-cost-per-person"
+});
 
 const tiers = [
   {
@@ -85,6 +91,20 @@ const variables = [
 export default function GolfTripCostPerPersonPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Golf Trip Cost Per Person: What to Budget by Destination",
+          description:
+            "Realistic per-person cost ranges for the top golf trip destinations — from drive-to budget trips to bucket-list experiences.",
+          path: "/golf-trip-cost-per-person"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Golf trip cost per person", path: "/golf-trip-cost-per-person" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -92,11 +112,13 @@ export default function GolfTripCostPerPersonPage() {
             Golf trip cost per person
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            The honest answer to "how much does a golf trip cost?" is that it depends almost entirely on destination
-            tier and how many rounds you play. A drive-to weekend with a few friends looks nothing like a 4-day
-            fly-to Scottsdale trip. Here are realistic ranges across the full spectrum — and the five variables
-            that move the number most.
+            A group golf trip costs $300–$700 per person for a drive-to regional weekend, $700–$1,400 for a
+            mid-range fly-to trip like Myrtle Beach, $1,400–$2,500 for a premium destination like Scottsdale or
+            Pinehurst, and $2,500–$5,000+ for a bucket-list trip like Bandon Dunes or Pebble Beach — all-in for
+            3 to 4 days with 3 rounds. Where your group lands depends almost entirely on destination tier and how
+            many rounds you play. Here are the full breakdowns — and the five variables that move the number most.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -109,6 +131,10 @@ export default function GolfTripCostPerPersonPage() {
             </h2>
             <p className="mt-4 text-base leading-7 text-charcoal/68">
               These ranges assume a 3 to 4 day trip with 3 rounds of golf. All numbers are per person.
+            </p>
+            <p className="mt-2 text-sm leading-6 text-charcoal/50">
+              Ranges compiled from published 2026 greens fees and lodging rates at major group golf destinations;
+              updated June 2026.
             </p>
             <div className="mt-6 space-y-4">
               {tiers.map((tier) => (
@@ -191,6 +217,31 @@ export default function GolfTripCostPerPersonPage() {
 
         </div>
       </section>
+
+      <FaqSection
+        faqs={[
+          {
+            question: "How much does a golf trip cost per person?",
+            answer:
+              "All-in for a 3 to 4 day trip with 3 rounds: $300–$700 per person for a drive-to regional trip, $700–$1,400 for a mid-range fly-to like Myrtle Beach, $1,400–$2,500 for a premium destination like Scottsdale or Pinehurst, and $2,500–$5,000+ for bucket-list trips like Bandon Dunes or Pebble Beach (as of 2026)."
+          },
+          {
+            question: "What is the biggest expense on a golf trip?",
+            answer:
+              "Greens fees, in almost every case — typically 40–55% of the total per-person cost. A single round ranges from roughly $40 at a quality daily-fee course to $300+ at a marquee resort, so the course mix moves the total more than any other decision."
+          },
+          {
+            question: "How can a group lower the per-person cost without ruining the trip?",
+            answer:
+              "Three levers work reliably: mix one marquee course with value courses instead of playing premium rounds every day, split a rental house instead of booking individual hotel rooms, and travel in shoulder season — peak-season greens fees and lodging run 30–50% higher at popular destinations."
+          },
+          {
+            question: "How do I find out what my group can actually afford?",
+            answer:
+              "Collect a per-person budget range from each player privately before any group discussion. Asked in a group chat, the first number posted anchors everyone else. Once you see the real distribution, the tier ranges above tell you which destinations are realistic."
+          }
+        ]}
+      />
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Related</p>

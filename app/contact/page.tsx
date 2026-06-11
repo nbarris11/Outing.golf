@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { ContactForm } from "@/components/contact-form";
 import { PageShell } from "@/components/layout/page-shell";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Feedback & Questions | Outing.golf",
-  description: "Have feedback on Outing.golf or a question? Fill out the form and we'll get back to you."
-};
+  description:
+    "Have feedback on Outing.golf or a question? Fill out the form and we'll get back to you.",
+  path: "/contact"
+});
 
 export default function ContactPage() {
   return (

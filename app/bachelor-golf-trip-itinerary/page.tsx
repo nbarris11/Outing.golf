@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Bachelor Golf Trip Itinerary — 4-Day Template for Groups",
   description:
     "A 4-day, day-by-day bachelor golf trip itinerary template — with time slots, one marquee round, and what the organizer needs to handle before anyone arrives.",
-  alternates: { canonical: "https://www.outing.golf/bachelor-golf-trip-itinerary" }
-};
+  path: "/bachelor-golf-trip-itinerary"
+});
 
 const days = [
   {
@@ -50,9 +56,41 @@ const days = [
   }
 ];
 
+const faqs = [
+  {
+    question: "How many rounds should a bachelor golf trip include?",
+    answer:
+      "Three rounds over four days, plus an optional warm-up nine on arrival day. Save the marquee course for Day 2 morning, run the competition round on Day 3, and keep Day 4 to an early round — or just 9 holes — so departures stay comfortable."
+  },
+  {
+    question: "Which day should the group play the marquee course?",
+    answer:
+      "Day 2, with a morning tee time. Conditions are stronger in the morning, the group is rested after arrival day, and there is a full day left after the round. Do not put the most expensive round on departure day."
+  },
+  {
+    question: "Do you need a golf format for a bachelor trip?",
+    answer:
+      "Yes. Skins, best ball, or match play gives the rounds a competitive structure and makes them more memorable. Set it up before the trip so nobody is arguing about format on the first tee."
+  }
+];
+
 export default function BachelorGolfTripItineraryPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Bachelor Golf Trip Itinerary — 4-Day Template for Groups",
+          description:
+            "A 4-day, day-by-day bachelor golf trip itinerary template — with time slots, one marquee round, and what the organizer needs to handle before anyone arrives.",
+          path: "/bachelor-golf-trip-itinerary"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Bachelor golf trip itinerary", path: "/bachelor-golf-trip-itinerary" }
+        ])}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -60,11 +98,13 @@ export default function BachelorGolfTripItineraryPage() {
             Bachelor golf trip itinerary
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            A 3 to 4 day bachelor golf trip has a specific structure: enough golf to justify calling it a golf
-            trip, enough flexibility that people are not exhausted by Day 3, and a few intentional moments that
-            mark it as the bachelor trip rather than just the annual buddies outing. This template walks through
-            the day-by-day structure and what needs to be sorted before you build the itinerary.
+            The standard bachelor golf trip itinerary runs four days: arrive Thursday with an optional warm-up
+            nine, play the marquee course Friday morning, run the competition round and the main bachelor dinner
+            Saturday, and finish with an early round Sunday before flights. That structure gives you enough golf
+            to justify calling it a golf trip, enough flexibility that nobody is exhausted by Day 3, and a few
+            intentional moments that mark it as the bachelor trip rather than just the annual buddies outing.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -171,6 +211,8 @@ export default function BachelorGolfTripItineraryPage() {
           </aside>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-24">
         <Card className="bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] p-8 text-center text-cream sm:p-10">

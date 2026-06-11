@@ -1,7 +1,8 @@
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { isDemoMode } from "@/lib/env";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabasePublicClient } from "@/lib/supabase/public";
 import type { LandingPageSettings, SiteProfileSettings } from "@/types/domain";
 
 export const defaultSiteProfileSettings: SiteProfileSettings = {
@@ -70,12 +71,20 @@ export const defaultLandingPageSettings: LandingPageSettings = {
   ],
   faqs: [
     {
-      question: "Do invitees need accounts?",
-      answer: "Yes — and it's fast. Invites go out as a simple link. Each person clicks it, signs up in under a minute, and fills out their preferences in one short flow. Most groups are fully responded within 24 hours. The account requirement keeps your outing private and ties every vote and response to a real group member."
+      question: "How fast does the group actually respond?",
+      answer: "Most groups have full responses within 24 hours. The invite is a single link, the form is mobile-first, and it takes a group member under three minutes from tap to submit — no PDF, no spreadsheet, no separate survey tool. The organizer sees responses land in real time."
+    },
+    {
+      question: "How do I get my friends to actually fill it out?",
+      answer: "You send one link. They click it from their phone, sign in once, and walk through a short flow: dates that work, budget range, destination lean, lodging style. It feels like answering a text, not filling out a form — which is why response rates are dramatically higher than what you'd see in a group chat poll."
     },
     {
       question: "How are golf courses and hotels found?",
       answer: "Course options are sourced via Google Places, filtered to your destination. Hotel options come from a live lodging API. Results are ranked by fit with your group's budget and trip style."
+    },
+    {
+      question: "Do invitees need accounts?",
+      answer: "So every vote and budget number is tied to a real person — no fake names, no duplicates, no spam. Sign-up takes under a minute via email or Google, and your outing stays private to the people you invited."
     },
     {
       question: "Can we schedule multiple courses across different days?",
@@ -168,6 +177,31 @@ export function normalizeLandingPageSettings(value: unknown): LandingPageSetting
   };
 }
 
+// Cookie-less read cached in the Next data cache so marketing pages stay
+// statically renderable. Settings changes appear within an hour.
+const getCachedSiteSettings = unstable_cache(
+  async () => {
+    const supabase = createSupabasePublicClient();
+
+    if (!supabase) {
+      return {
+        siteProfile: defaultSiteProfileSettings,
+        landingPage: defaultLandingPageSettings
+      };
+    }
+
+    const { data } = await supabase.from("admin_settings").select("key,value");
+    const settingsMap = new Map((data ?? []).map((row) => [row.key, row.value]));
+
+    return {
+      siteProfile: normalizeSiteProfileSettings(settingsMap.get("site_profile")),
+      landingPage: normalizeLandingPageSettings(settingsMap.get("landing_page"))
+    };
+  },
+  ["public-site-settings"],
+  { revalidate: 3600 }
+);
+
 export const getPublicSiteSettings = cache(async () => {
   if (isDemoMode) {
     return {
@@ -176,20 +210,5 @@ export const getPublicSiteSettings = cache(async () => {
     };
   }
 
-  const supabase = await createSupabaseServerClient();
-
-  if (!supabase) {
-    return {
-      siteProfile: defaultSiteProfileSettings,
-      landingPage: defaultLandingPageSettings
-    };
-  }
-
-  const { data } = await supabase.from("admin_settings").select("key,value");
-  const settingsMap = new Map((data ?? []).map((row) => [row.key, row.value]));
-
-  return {
-    siteProfile: normalizeSiteProfileSettings(settingsMap.get("site_profile")),
-    landingPage: normalizeLandingPageSettings(settingsMap.get("landing_page"))
-  };
+  return getCachedSiteSettings();
 });

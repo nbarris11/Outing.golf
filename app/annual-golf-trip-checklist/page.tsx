@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildMetadata } from "@/lib/seo";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArticleByline } from "@/components/marketing/article-byline";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema, howToSchema } from "@/lib/schema";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Annual Golf Trip Checklist for Recurring Group Organizers",
   description:
     "Built for recurring golf trip organizers — how to capture what worked, lock in the group early, and build a better trip every year.",
-  alternates: { canonical: "https://www.outing.golf/annual-golf-trip-checklist" }
-};
+  path: "/annual-golf-trip-checklist"
+});
 
 const phases = [
   {
@@ -87,9 +93,53 @@ const yearOverYearItems = [
   }
 ];
 
+const faqs = [
+  {
+    question: "When should you start planning next year's golf trip?",
+    answer:
+      "Before this year's trip ends. The easiest time to confirm next year's dates is when everyone is together and the trip is fresh — a tentative date agreed on in person gets a much better response rate than a message sent three months later."
+  },
+  {
+    question: "What should you record after each annual trip?",
+    answer:
+      "Four things while they are fresh: which courses the group ranked highest, which underperformed relative to price, the actual per-person cost, and any logistical friction worth avoiding next year. That archive becomes your planning baseline."
+  },
+  {
+    question: "How do you keep an annual golf trip from going stale?",
+    answer:
+      "Rotate who has input on the destination, adjust the golf format every other year so the same people do not always win, and use your trip archive to compare new courses against ones the group already loved."
+  }
+];
+
 export default function AnnualGolfTripChecklistPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={articleSchema({
+          title: "Annual Golf Trip Checklist for Recurring Group Organizers",
+          description:
+            "Built for recurring golf trip organizers — how to capture what worked, lock in the group early, and build a better trip every year.",
+          path: "/annual-golf-trip-checklist"
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Annual golf trip checklist", path: "/annual-golf-trip-checklist" }
+        ])}
+      />
+      <JsonLd
+        data={howToSchema({
+          name: "Annual golf trip checklist",
+          description:
+            "A phase-by-phase checklist for recurring golf trip organizers — capture what worked, lock in the group early, and build a better trip every year.",
+          path: "/annual-golf-trip-checklist",
+          steps: phases.map((phase) => ({
+            name: `${phase.label}: ${phase.title}`,
+            text: phase.items.join(". ")
+          }))
+        })}
+      />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Planning guide</p>
@@ -97,11 +147,14 @@ export default function AnnualGolfTripChecklistPage() {
             Annual golf trip checklist
           </h1>
           <p className="mt-5 text-lg leading-8 text-charcoal/68">
-            Organizing the same golf trip every year is a different job than organizing it for the first time. You
-            have institutional knowledge the group does not have — which courses worked, what the real cost was,
-            where the logistics broke down. The goal is to use that knowledge so the trip gets better year over
-            year instead of re-learning the same lessons on repeat.
+            An annual golf trip checklist runs in five phases: capture course rankings and the real per-person
+            cost right after this year's trip ends, send a save-the-date and collect budgets one to two months
+            out, book lodging and tee times six to eight weeks out, lock logistics and the golf format two to
+            three weeks out, and settle money during the trip itself. Organizing the same trip every year is a
+            different job than organizing it the first time — the goal is to use what you learned so the trip
+            gets better year over year instead of re-learning the same lessons on repeat.
           </p>
+          <ArticleByline />
         </div>
       </section>
 
@@ -195,6 +248,8 @@ export default function AnnualGolfTripChecklistPage() {
           </aside>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pb-24">
         <Card className="bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] p-8 text-center text-cream sm:p-10">

@@ -1,27 +1,27 @@
 import type { Metadata } from "next";
 import { CalendarRange, CheckCircle2, CircleDollarSign, MapPinned, MessageSquareText } from "lucide-react";
 
+import { buildMetadata } from "@/lib/seo";
+
+import { DemoLoop } from "@/components/marketing/demo-loop";
+import { FounderNote } from "@/components/marketing/founder-note";
 import { Testimonial } from "@/components/marketing/testimonial";
 
+import { AuthCta, SignedOutOnly } from "@/components/marketing/auth-cta";
 import { PageShell } from "@/components/layout/page-shell";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getPublicContentBlocks } from "@/lib/content";
 import { getPublicSiteSettings } from "@/lib/site-settings";
-import { getCurrentProfile } from "@/lib/auth";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "https://www.outing.golf" }
-};
+export const metadata: Metadata = buildMetadata({
+  title: "Golf Trip Planner for Groups | Outing.golf",
+  description:
+    "Collect dates, budgets, and course votes from your group in one place. Outing.golf is the planning tool built for golf trip organizers.",
+  path: "/"
+});
 
 export default async function LandingPage() {
-  const [contentBlocks, { siteProfile, landingPage }, profile] = await Promise.all([
-    getPublicContentBlocks(),
-    getPublicSiteSettings(),
-    getCurrentProfile()
-  ]);
-  const ctaHref = profile ? "/outings/new" : "/sign-up";
+  const { landingPage } = await getPublicSiteSettings();
 
   const softwareApplicationSchema = {
     "@context": "https://schema.org",
@@ -39,9 +39,10 @@ export default async function LandingPage() {
     "@type": "Organization",
     name: "Outing.golf",
     url: "https://www.outing.golf",
-    logo: "https://www.outing.golf/og-default.png",
+    logo: "https://www.outing.golf/icon.svg",
+    sameAs: ["https://www.instagram.com/outing.golf/"],
     contactPoint: { "@type": "ContactPoint", email: "hello@outing.golf", contactType: "customer support" },
-    founder: { "@type": "Person", name: "Neil Barris" }
+    founder: { "@type": "Person", name: "Neil Barris", url: "https://www.outing.golf/about" }
   };
 
   const websiteSchema = {
@@ -65,7 +66,6 @@ export default async function LandingPage() {
       acceptedAnswer: { "@type": "Answer", text: faq.answer }
     }))
   };
-  const hero = contentBlocks.find((block) => block.key === "hero");
   const outcomeIcons = [CircleDollarSign, CalendarRange, MapPinned, MessageSquareText];
 
   return (
@@ -75,114 +75,119 @@ export default async function LandingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 lg:px-8 lg:pb-20 lg:pt-10">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="max-w-2xl">
-            <p className="text-sm font-medium text-charcoal/50">{siteProfile.heroBadge}</p>
-            <h1 className="mt-3 font-serif text-5xl font-semibold leading-[0.94] tracking-[-0.06em] text-charcoal sm:text-6xl lg:text-7xl">
-              {hero?.title ?? "Plan golf trips without spreadsheets, group-text chaos, or budget confusion."}
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-charcoal/50">
+              For the one who plans the trip
+            </p>
+            <h1 className="mt-4 font-serif text-5xl font-semibold leading-[0.94] tracking-[-0.05em] text-charcoal sm:text-6xl lg:text-7xl">
+              Get your group to <span className="italic text-forest-900">Bandon</span> this fall.
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-charcoal/66">
-              {hero?.body ??
-                "Collect dates, budgets, and course votes from your group — and actually book the trip this year."}
+            <p className="mt-5 max-w-xl text-[17px] leading-[1.6] text-charcoal/68">
+              One link to the group, one shared Trip HQ when the plan locks in. No spreadsheet, no
+              four-text-thread tax — just real courses, real budgets, and a tee time on the books before
+              Labor Day.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button href={hero?.ctaHref ?? ctaHref} className="w-full sm:w-auto">
-                {hero?.ctaLabel ?? "Start Planning Free"}
-              </Button>
-              <Button href="/sample-trip" variant="ghost" className="w-full sm:w-auto">
-                See a sample Trip HQ
+              <AuthCta className="w-full sm:w-auto">
+                Plan my trip →
+              </AuthCta>
+              <Button href="/sample-trip" variant="secondary" className="w-full sm:w-auto">
+                See a real Trip HQ
               </Button>
             </div>
-            <p className="mt-2 text-sm text-charcoal/50">Free to start · No credit card · Invite your group in minutes</p>
-            <blockquote className="mt-5 border-l-2 border-forest-900/30 pl-4">
-              <p className="text-sm italic leading-6 text-charcoal/60">"The whole group responded in under a day and I had my shortlist by Sunday night."</p>
-              <cite className="mt-1 block text-xs not-italic text-charcoal/45">— Mike R., annual Pinehurst trip organizer</cite>
-            </blockquote>
-            {!profile && (
-              <p className="mt-4 text-sm text-charcoal/60">
+            <p className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm text-charcoal/55">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+                Free for the organizer
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+                Group members never pay
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+                24h median response time
+              </span>
+            </p>
+            <SignedOutOnly>
+              <p className="mt-4 hidden text-sm text-charcoal/60 sm:block">
                 Already have an account?{" "}
                 <a href="/sign-in" className="font-medium text-forest-900 underline-offset-2 hover:underline">
                   Sign in
                 </a>
               </p>
-            )}
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {[
-                "Live courses and hotels matched to your group",
-                "Group voting without the group-text chaos",
-                "One Trip HQ the whole group can see"
-              ].map((line) => (
-                <div key={line} className="rounded-[22px] bg-white/84 px-4 py-4 text-sm text-charcoal/68 ring-1 ring-charcoal/8">
-                  {line}
-                </div>
-              ))}
-            </div>
+            </SignedOutOnly>
           </div>
 
+          {/* TODO: replace placeholder hero illustration with real Bandon Dunes photograph (1600×2000, ≤250kb). Path: /hero/bandon-dunes.jpg */}
           <div className="relative">
-            <div className="absolute inset-0 rounded-[42px] bg-[radial-gradient(circle_at_top,rgba(217,200,167,0.26),transparent_42%),linear-gradient(135deg,rgba(20,58,44,0.2),transparent_65%)] blur-2xl" />
-            <Card className="relative overflow-hidden rounded-[40px] border-none bg-white/90 p-0 shadow-[0_30px_90px_rgba(33,36,35,0.1)]">
-              <div className="border-b border-charcoal/8 bg-[linear-gradient(135deg,rgba(20,58,44,0.98),rgba(45,71,60,0.92))] px-5 py-5 text-cream sm:px-6">
-                <div className="flex items-start justify-between gap-4">
+            <div className="absolute inset-0 rounded-[40px] bg-[radial-gradient(circle_at_top,rgba(217,200,167,0.26),transparent_42%),linear-gradient(135deg,rgba(20,58,44,0.2),transparent_65%)] blur-2xl" />
+            <div className="relative overflow-hidden rounded-[40px] shadow-[0_30px_90px_rgba(33,36,35,0.18)]">
+              <div
+                className="relative aspect-[4/5] bg-cover bg-center"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(180deg, rgba(255,229,178,0.5) 0%, rgba(217,200,167,0.7) 22%, rgba(110,138,127,0.85) 55%, rgba(20,58,44,0.95) 92%), radial-gradient(ellipse 80% 30% at 50% 100%, rgba(10,24,18,0.95), transparent 60%)"
+                }}
+              >
+                {/* Stylized dune silhouette */}
+                <svg className="absolute inset-x-0 bottom-0 h-2/5 w-full" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M0 200 L0 130 Q 60 90 120 110 T 240 100 T 400 80 L400 200 Z" fill="#143a2c" opacity="0.85" />
+                  <path d="M0 200 L0 160 Q 80 130 160 145 T 320 140 T 400 130 L400 200 Z" fill="#10231b" />
+                  {/* Flagstick */}
+                  <rect x="290" y="50" width="1.5" height="92" fill="#f7f4ee" />
+                  <path d="M291 52 L312 58 L291 64 Z" fill="#c8932e" />
+                </svg>
+              </div>
+
+              {/* Overlays */}
+              <div className="absolute inset-0 flex flex-col justify-between p-6 text-cream">
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-cream/95 px-3 py-1 text-xs font-semibold text-forest-900">
+                  <span className="h-2 w-2 rounded-full bg-flag-red" />
+                  4 of 4 responded · Trip HQ live
+                </span>
+                <div className="mt-auto flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.24em] text-cream/55">Trip HQ</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Myrtle Beach · 4 players · June</h2>
-                    <p className="mt-2 text-sm text-cream/72">The shared home base your whole group can see the moment the plan comes together.</p>
+                    <h3 className="font-serif text-3xl tracking-[-0.03em]">Bandon Dunes</h3>
+                    <p className="mt-1 text-sm text-cream/80">June 12–15 · Pacific Dunes, Old Mac, Bandon Trails</p>
                   </div>
-                  <Badge className="bg-white/10 text-cream">{siteProfile.launchStatusLabel}</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-4 p-5 sm:p-6">
-                <div className="rounded-[28px] bg-cream p-5">
-                  <div className="flex items-end justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-charcoal/48">Group responses in</p>
-                      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-charcoal">4 / 4</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-charcoal/48">Best date overlap</p>
-                      <p className="mt-2 text-sm font-medium text-charcoal">June 12–15</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 h-2.5 rounded-full bg-white">
-                    <div className="h-2.5 w-full rounded-full bg-forest-900" />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-[26px] border border-charcoal/8 bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-charcoal/38">Top-voted course</p>
-                    <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-charcoal">Caledonia Golf &amp; Fish Club</p>
-                    <p className="mt-2 text-sm leading-6 text-charcoal/62">3 votes · Assigned to Day 1 of the schedule.</p>
-                  </div>
-                  <div className="rounded-[26px] border border-charcoal/8 bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-charcoal/38">Budget window</p>
-                    <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-charcoal">$800–$1,200</p>
-                    <p className="mt-2 text-sm leading-6 text-charcoal/62">All four players fall comfortably inside this range.</p>
-                  </div>
-                </div>
-
-                <div className="rounded-[28px] border border-charcoal/8 bg-white p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-charcoal">What's locked in</p>
-                    <Badge>Ready to book</Badge>
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    {[
-                      "2 courses voted on and assigned to specific days",
-                      "Hotel shortlist with current availability and rates",
-                      "Shared packing list — 6 items checked off, 2 outstanding"
-                    ].map((line) => (
-                      <div key={line} className="flex items-start gap-3 rounded-[20px] bg-cream px-4 py-3">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-forest-900" />
-                        <p className="text-sm leading-6 text-charcoal/68">{line}</p>
-                      </div>
-                    ))}
+                  <div className="text-right font-serif">
+                    <p className="text-3xl leading-none text-gold-soft">$1,180</p>
+                    <p className="mt-1 font-sans text-xs font-medium uppercase tracking-wider text-cream/70">per player</p>
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* 3-up benefits — moved below hero photo per Sprint 2.8 mobile diet */}
+        <div className="mt-12 hidden gap-3 sm:grid sm:grid-cols-3">
+          {[
+            "Live courses and hotels matched to your group",
+            "Group voting without the group-text chaos",
+            "One Trip HQ the whole group can see"
+          ].map((line) => (
+            <div key={line} className="rounded-[22px] bg-white/84 px-4 py-4 text-sm text-charcoal/68 ring-1 ring-charcoal/8">
+              {line}
+            </div>
+          ))}
+        </div>
+        <div className="mt-10 sm:hidden">
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory">
+            {[
+              "Live courses and hotels matched to your group",
+              "Group voting without the group-text chaos",
+              "One Trip HQ the whole group can see"
+            ].map((line) => (
+              <div
+                key={line}
+                className="snap-start shrink-0 w-[78%] rounded-[22px] bg-white/84 px-4 py-4 text-sm text-charcoal/68 ring-1 ring-charcoal/8"
+              >
+                {line}
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -194,7 +199,7 @@ export default async function LandingPage() {
             <h2 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.04em] text-charcoal">
               {landingPage.painPointsTitle}
             </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-charcoal/66">
+            <p className="mt-4 max-w-xl text-[17px] leading-[1.65] text-charcoal/68">
               {landingPage.painPointsBody}
             </p>
           </div>
@@ -222,8 +227,26 @@ export default async function LandingPage() {
                 {item.step}
               </div>
               <h3 className="mt-5 text-xl font-semibold tracking-[-0.03em] text-charcoal">{item.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-charcoal/66">{item.body}</p>
+              <p className="mt-3 text-[15.5px] leading-[1.6] text-charcoal/68">{item.body}</p>
             </Card>
+          ))}
+        </div>
+      </section>
+
+      <DemoLoop />
+
+      {/* Stats bar — TODO: pull live counts from Supabase via daily ISR (export const revalidate = 86400) */}
+      <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-3 gap-4 rounded-[28px] border border-charcoal/8 bg-white/86 p-6 sm:p-8">
+          {[
+            { value: "18", label: "Trips planned in preview" },
+            { value: "24", label: "Group responses collected" },
+            { value: "24h", label: "Median group response time" }
+          ].map((stat) => (
+            <div key={stat.label} className="text-center">
+              <p className="font-serif text-4xl font-semibold tracking-[-0.04em] text-gold sm:text-5xl">{stat.value}</p>
+              <p className="mt-2 text-xs uppercase tracking-[0.18em] text-charcoal/50">{stat.label}</p>
+            </div>
           ))}
         </div>
       </section>
@@ -261,8 +284,25 @@ export default async function LandingPage() {
       {/* CTA after testimonials — peak persuasion moment */}
       <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center">
-          <Button href={ctaHref} className="inline-flex">Start Planning Free</Button>
-          <p className="mt-2 text-sm text-charcoal/50">Free to start · No credit card · Invite your group in minutes</p>
+          <AuthCta className="inline-flex">See where my group lands →</AuthCta>
+          <p className="mt-2 text-sm text-charcoal/55">Free for the organizer · Group members never pay</p>
+        </div>
+      </section>
+
+      {/* Built-on trust row */}
+      <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        <p className="text-center text-xs uppercase tracking-[0.25em] text-charcoal/45">
+          Built on infrastructure trusted by 100,000+ teams
+        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partners/supabase.svg" alt="Supabase" className="h-5" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partners/vercel.svg" alt="Vercel" className="h-5" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partners/google-maps-platform.svg" alt="Google Maps Platform" className="h-5" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partners/resend.svg" alt="Resend" className="h-5" />
         </div>
       </section>
 
@@ -281,19 +321,21 @@ export default async function LandingPage() {
             <Card key={item.title} className="p-6">
               <Icon className="h-5 w-5 text-forest-900" />
               <h3 className="mt-5 text-xl font-semibold tracking-[-0.03em] text-charcoal">{item.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-charcoal/66">{item.body}</p>
+              <p className="mt-3 text-[15.5px] leading-[1.6] text-charcoal/68">{item.body}</p>
             </Card>
             );
           })}
         </div>
       </section>
 
+      <FounderNote />
+
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-4 lg:grid-cols-2">
           {landingPage.faqs.map((item) => (
             <Card key={item.question} className="p-6">
               <h3 className="text-lg font-semibold tracking-[-0.03em] text-charcoal">{item.question}</h3>
-              <p className="mt-3 text-sm leading-6 text-charcoal/66">{item.answer}</p>
+              <p className="mt-3 text-[15.5px] leading-[1.6] text-charcoal/68">{item.answer}</p>
             </Card>
           ))}
         </div>
@@ -306,7 +348,7 @@ export default async function LandingPage() {
             More resources for golf trip organizers
           </h2>
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
               title: "How to plan a golf trip",
@@ -327,6 +369,16 @@ export default async function LandingPage() {
               title: "Golf trip cost per person",
               href: "/golf-trip-cost-per-person",
               body: "Realistic per-person cost ranges by destination tier — from drive-to to bucket-list."
+            },
+            {
+              title: "Golf trip budget planner",
+              href: "/golf-trip-budget-planner",
+              body: "Collect everyone's real budget range before anyone falls in love with the wrong trip."
+            },
+            {
+              title: "Best golf trip planner apps",
+              href: "/best-golf-trip-planner-apps",
+              body: "An honest comparison of the tools groups actually use to plan golf trips in 2026."
             }
           ].map((item) => (
             <a
@@ -352,13 +404,21 @@ export default async function LandingPage() {
       <section className="mx-auto max-w-5xl px-4 pb-10 pt-4 sm:px-6 lg:px-8">
         <p className="text-center text-sm text-charcoal/45">Built for trips to</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {["Myrtle Beach", "Scottsdale", "Pinehurst", "Bandon Dunes", "Streamsong", "Pebble Beach", "Kiawah Island"].map((dest) => (
-            <span
-              key={dest}
-              className="rounded-full border border-charcoal/12 bg-white/70 px-4 py-1.5 text-sm text-charcoal/65"
+          {[
+            { label: "Myrtle Beach", href: "/myrtle-beach-golf-trip-planner" },
+            { label: "Scottsdale", href: "/scottsdale-golf-trip-planner" },
+            { label: "Pinehurst", href: "/pinehurst-golf-trip-planner" },
+            { label: "Palm Springs", href: "/palm-springs-golf-trip-planner" },
+            { label: "Pebble Beach", href: "/pebble-beach-golf-trip-planner" },
+            { label: "Kiawah Island", href: "/kiawah-island-golf-trip-planner" }
+          ].map((dest) => (
+            <a
+              key={dest.label}
+              href={dest.href}
+              className="rounded-full border border-charcoal/12 bg-white/70 px-4 py-1.5 text-sm text-charcoal/65 transition hover:border-charcoal/20 hover:bg-white hover:text-charcoal/80"
             >
-              {dest}
-            </span>
+              {dest.label}
+            </a>
           ))}
         </div>
       </section>
