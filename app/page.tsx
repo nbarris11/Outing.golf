@@ -3,7 +3,6 @@ import { CalendarRange, CheckCircle2, CircleDollarSign, MapPinned, MessageSquare
 
 import { buildMetadata } from "@/lib/seo";
 
-import { DemoLoop } from "@/components/marketing/demo-loop";
 import { FounderNote } from "@/components/marketing/founder-note";
 import { Testimonial } from "@/components/marketing/testimonial";
 
@@ -232,8 +231,6 @@ export default async function LandingPage() {
           ))}
         </div>
       </section>
-
-      <DemoLoop />
 
       {/* Stats bar — TODO: pull live counts from Supabase via daily ISR (export const revalidate = 86400) */}
       <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">

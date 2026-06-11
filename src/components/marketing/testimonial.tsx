@@ -44,7 +44,6 @@ export function Testimonial({
           <p className="text-xs text-charcoal/50">
             {role}
             {meta ? ` · ${meta}` : ""}
-            {isPlaceholder ? " · [placeholder]" : ""}
           </p>
         </div>
       </div>
