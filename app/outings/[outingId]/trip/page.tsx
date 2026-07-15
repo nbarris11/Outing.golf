@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { SiteFooter } from "@/components/layout/site-footer";
+import { PinSeekerCard } from "@/components/PinSeekerCard";
 import { TripBoardingPass } from "@/components/trip/trip-boarding-pass";
 import { TripCountdown } from "@/components/trip/trip-countdown";
 import { TripLineup } from "@/components/trip/trip-lineup";
@@ -140,6 +141,11 @@ export default async function TripHqPage({
             playerCount={detail.outing.numberOfPlayers}
             memberNames={memberFirstNames}
           />
+
+          {/* Pin Seeker Competitions partner card */}
+          <div className="mt-8">
+            <PinSeekerCard />
+          </div>
 
           {/* Two-column grid */}
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
