@@ -3,7 +3,23 @@
 import Image from "next/image";
 import LogRocket from "logrocket";
 
-export function PinSeekerCard() {
+export function PinSeekerCard({ outingId }: { outingId?: string }) {
+  function handleClick() {
+    LogRocket.track("pin_seeker_referral_click");
+
+    // Durable server-side record — session analytics only retain ~30 days,
+    // and this is the number the partnership is measured on.
+    // keepalive so the request survives the tab losing focus.
+    void fetch("/api/partner-referral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ partner: "pin_seeker", outingId }),
+      keepalive: true
+    }).catch(() => {
+      // Never let tracking break the outbound link.
+    });
+  }
+
   return (
     <div className="rounded-[28px] bg-cream p-6 shadow-sm ring-1 ring-charcoal/6">
       <Image
@@ -31,7 +47,7 @@ export function PinSeekerCard() {
         href="https://www.pinseekercompetitions.com/outing?ref=outinggolf"
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => LogRocket.track("pin_seeker_referral_click")}
+        onClick={handleClick}
         className="mt-4 inline-flex items-center justify-center rounded-full bg-forest-900 px-5 py-3 text-sm font-medium text-cream shadow-[0_18px_35px_rgba(20,58,44,0.18)] transition hover:bg-forest-800"
       >
         Set up your competition

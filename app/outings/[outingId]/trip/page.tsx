@@ -144,7 +144,7 @@ export default async function TripHqPage({
 
           {/* Pin Seeker Competitions partner card */}
           <div className="mt-8">
-            <PinSeekerCard />
+            <PinSeekerCard outingId={outingId} />
           </div>
 
           {/* Two-column grid */}
