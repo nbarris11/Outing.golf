@@ -89,9 +89,16 @@ export async function sendBookingConfirmedEmail(input: {
   outingName: string;
   destination: string;
   tripHqUrl: string;
+  outingId?: string;
 }) {
   const resend = getResendClient();
   if (!resend || !env.RESEND_FROM_EMAIL) return; // silently skip if not configured
+
+  // Routed through our own endpoint so the click is logged before forwarding —
+  // email can't run the JS tracking the in-app card uses.
+  const pinSeekerUrl =
+    `${publicAppUrl}/api/partner-referral?partner=pin_seeker&placement=confirmation_email` +
+    (input.outingId ? `&outingId=${encodeURIComponent(input.outingId)}` : "");
 
   const subject = `${input.outingName} is officially booked! 🏌️`;
   const text = [
@@ -101,6 +108,11 @@ export async function sendBookingConfirmedEmail(input: {
     "",
     `Open your Trip HQ to see the countdown, packing list, and full trip details:`,
     input.tripHqUrl,
+    "",
+    "Want a real competition on this trip?",
+    "Once your golf trip is planned, Pin Seeker Competitions brings it to life with custom formats, live leaderboards, pairings, side games, and complete competition management.",
+    "Outing.golf groups get a free live leaderboard upgrade.",
+    pinSeekerUrl,
     "",
     "Outing.golf"
   ].join("\n");
@@ -120,6 +132,19 @@ export async function sendBookingConfirmedEmail(input: {
         If the button does not work, copy and paste this link:<br />
         <a href="${input.tripHqUrl}" style="color: #143a2c;">${input.tripHqUrl}</a>
       </p>
+
+      <div style="margin-top: 32px; padding: 24px; background: #f7f4ee; border-radius: 20px;">
+        <h2 style="font-family: Georgia, serif; font-size: 20px; color: #143a2c; margin: 0 0 8px;">Want a real competition on this trip?</h2>
+        <p style="font-size: 15px; color: #45504b; margin: 0 0 12px;">
+          Once your golf trip is planned, Pin Seeker Competitions brings it to life with custom formats, live leaderboards, pairings, side games, and complete competition management.
+        </p>
+        <p style="font-size: 15px; font-weight: 600; color: #143a2c; background: rgba(20,58,44,0.1); border-radius: 12px; padding: 12px 16px; margin: 0 0 16px;">
+          Outing.golf groups get a free live leaderboard upgrade.
+        </p>
+        <a href="${pinSeekerUrl}" style="display: inline-block; background: #143a2c; color: #f7f4ee; text-decoration: none; padding: 14px 22px; border-radius: 999px; font-weight: 600;">
+          Set up your competition
+        </a>
+      </div>
     </div>
   `;
 

@@ -1698,7 +1698,8 @@ export async function markAsBookedAction(formData: FormData) {
             memberName: profile.full_name ?? profile.email,
             outingName: outingData.name,
             destination: outingData.destination_label ?? "your destination",
-            tripHqUrl
+            tripHqUrl,
+            outingId
           });
         })
       );

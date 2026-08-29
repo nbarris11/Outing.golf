@@ -3,7 +3,13 @@
 import Image from "next/image";
 import LogRocket from "logrocket";
 
-export function PinSeekerCard({ outingId }: { outingId?: string }) {
+export function PinSeekerCard({
+  outingId,
+  placement = "trip_hq"
+}: {
+  outingId?: string;
+  placement?: "trip_hq" | "planning";
+}) {
   function handleClick() {
     LogRocket.track("pin_seeker_referral_click");
 
@@ -13,7 +19,7 @@ export function PinSeekerCard({ outingId }: { outingId?: string }) {
     void fetch("/api/partner-referral", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ partner: "pin_seeker", outingId }),
+      body: JSON.stringify({ partner: "pin_seeker", placement, outingId }),
       keepalive: true
     }).catch(() => {
       // Never let tracking break the outbound link.

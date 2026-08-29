@@ -122,6 +122,11 @@ export default async function TripHqPage({
       <div className="rounded-t-[40px] bg-cream min-h-screen">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
 
+          {/* Pin Seeker Competitions partner card — above the fold */}
+          <div className="mb-8">
+            <PinSeekerCard outingId={outingId} placement="trip_hq" />
+          </div>
+
           {/* Boarding pass */}
           <TripBoardingPass
             outingName={detail.outing.name}
@@ -141,11 +146,6 @@ export default async function TripHqPage({
             playerCount={detail.outing.numberOfPlayers}
             memberNames={memberFirstNames}
           />
-
-          {/* Pin Seeker Competitions partner card */}
-          <div className="mt-8">
-            <PinSeekerCard outingId={outingId} />
-          </div>
 
           {/* Two-column grid */}
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">

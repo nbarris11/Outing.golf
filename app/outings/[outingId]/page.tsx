@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { BackButton } from "@/components/common/back-button";
 import { PostCreateBanner } from "@/components/outings/post-create-banner";
+import { PinSeekerCard } from "@/components/PinSeekerCard";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { AddDestinationForm, AddGolfCourseForm, AddLodgingForm } from "@/components/outings/add-option-form";
 import { OrganizerChecklist } from "@/components/outings/organizer-checklist";
@@ -826,6 +827,13 @@ export default async function OutingDetailPage({
             toggleNoGolfDayAction={toggleNoGolfDayAction}
             currency={currency}
           />
+        )}
+
+        {/* ── Pin Seeker Competitions partner card — planning stage ── */}
+        {detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
+          <div className="mt-6">
+            <PinSeekerCard outingId={detail.outing.id} placement="planning" />
+          </div>
         )}
 
         {/* ── Notices ── */}
