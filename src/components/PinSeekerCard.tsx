@@ -11,7 +11,9 @@ export function PinSeekerCard({
   placement?: "trip_hq" | "planning";
 }) {
   function handleClick() {
-    LogRocket.track("pin_seeker_referral_click");
+    // Placement travels as an event property so the three surfaces can be
+    // compared in LogRocket, not just counted together.
+    LogRocket.track("pin_seeker_referral_click", { placement });
 
     // Durable server-side record — session analytics only retain ~30 days,
     // and this is the number the partnership is measured on.
