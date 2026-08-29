@@ -56,7 +56,14 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals, static files, and verification files
-    "/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$).*)"
+    // Skip Next.js internals, static files, and verification files.
+    //
+    // /api is excluded deliberately. Route handlers create their own Supabase
+    // client and can write cookies, so they refresh their own session. Running
+    // middleware on them meant every page load fired two concurrent refreshes
+    // (the document and the /api/me probe) against the same refresh token,
+    // racing each other — one rotates the token and revokes it out from under
+    // the other. That contention is what stalled session refresh.
+    "/((?!api|_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$).*)"
   ]
 };
