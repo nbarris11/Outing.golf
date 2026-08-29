@@ -1,6 +1,5 @@
 import { getDemoState } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
-import { getLodgingIntegrationStatus } from "@/lib/lodging/service";
 import {
   defaultLandingPageSettings,
   defaultSiteProfileSettings,
@@ -135,40 +134,97 @@ const fallbackGateBlock = {
   updatedAt: new Date().toISOString()
 };
 
+type AdminDashboardSnapshot = {
+  profiles: Array<{
+    id: string;
+    email: string;
+    full_name: string;
+    app_role: string;
+    created_at: string;
+  }>;
+  outings: Array<{
+    id: string;
+    name: string;
+    status: string;
+    created_at: string;
+  }>;
+  content_blocks: Array<{
+    key: string;
+    title: string;
+    body: string;
+    cta_label: string | null;
+    cta_href: string | null;
+    updated_at: string;
+  }>;
+  feature_flags: Array<{
+    key: string;
+    label: string;
+    enabled: boolean;
+    updated_at: string;
+  }>;
+  admin_settings: Array<{ key: string; value: unknown }>;
+  destination_options: Array<{
+    id: string;
+    name: string;
+    summary: string;
+    featured: boolean;
+    hidden: boolean;
+    created_at: string;
+  }>;
+  golf_course_options: Array<{
+    id: string;
+    name: string;
+    summary: string;
+    featured: boolean;
+    hidden: boolean;
+    created_at: string;
+  }>;
+  lodging_options: Array<{
+    id: string;
+    name: string;
+    summary: string;
+    featured: boolean;
+    hidden: boolean;
+    created_at: string;
+  }>;
+  lodging_api_errors: Array<{
+    id: string;
+    route: string;
+    error_message: string;
+    created_at: string;
+  }>;
+  lodging_mock_fallback_enabled: boolean;
+  analytics: {
+    total_users: number;
+    total_outings: number;
+    active_invites: number;
+    total_messages: number;
+  };
+};
+
 export async function getAdminDashboardData() {
   if (!isDemoMode) {
     const supabase = await createSupabaseServerClient();
 
     if (supabase) {
-      const [
-        profilesResult,
-        outingsResult,
-        contentBlocksResult,
-        featureFlagsResult,
-        adminSettingsResult,
-        destinationOptionsResult,
-        golfCourseOptionsResult,
-        lodgingOptionsResult,
-        totalProfilesResult,
-        totalOutingsResult,
-        invitesResult,
-        messagesResult
-      ] = await Promise.all([
-        supabase.from("profiles").select("id,email,full_name,app_role,created_at").order("created_at", { ascending: false }).limit(12),
-        supabase.from("outings").select("id,name,status,created_at").order("created_at", { ascending: false }).limit(12),
-        supabase.from("content_blocks").select("key,title,body,cta_label,cta_href,updated_at").order("key"),
-        supabase.from("feature_flags").select("key,label,enabled,updated_at").order("key"),
-        supabase.from("admin_settings").select("key,value").order("key"),
-        supabase.from("destination_options").select("id,name,summary,featured,hidden,created_at").order("created_at", { ascending: false }).limit(8),
-        supabase.from("golf_course_options").select("id,name,summary,featured,hidden,created_at").order("created_at", { ascending: false }).limit(8),
-        supabase.from("lodging_options").select("id,name,summary,featured,hidden,created_at").order("created_at", { ascending: false }).limit(8),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("outings").select("id", { count: "exact", head: true }),
-        supabase.from("invites").select("id,status", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("chat_messages").select("id", { count: "exact", head: true })
-      ]);
+      const { data, error } = await supabase
+        .rpc("get_admin_dashboard_snapshot")
+        .abortSignal(AbortSignal.timeout(6000));
 
-      const contentBlocks = (contentBlocksResult.data ?? []).map((block) => ({
+      if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error(`Admin dashboard data unavailable: ${error?.message ?? "empty response"}`);
+      }
+
+      const snapshot = data as unknown as AdminDashboardSnapshot;
+      const profiles = snapshot.profiles ?? [];
+      const outings = snapshot.outings ?? [];
+      const rawContentBlocks = snapshot.content_blocks ?? [];
+      const featureFlags = snapshot.feature_flags ?? [];
+      const adminSettings = snapshot.admin_settings ?? [];
+      const analytics = snapshot.analytics;
+      const recentErrors = snapshot.lodging_api_errors ?? [];
+
+      const contentBlocks = rawContentBlocks.map((block) => ({
         key: block.key,
         title: block.title,
         body: block.body,
@@ -181,31 +237,39 @@ export async function getAdminDashboardData() {
         contentBlocks.push(fallbackGateBlock);
       }
 
-      const adminSettingsMap = new Map((adminSettingsResult.data ?? []).map((setting) => [setting.key, setting.value]));
+      const adminSettingsMap = new Map(adminSettings.map((setting) => [setting.key, setting.value]));
 
       return {
-        users: (profilesResult.data ?? []).map((user) => ({
+        users: profiles.map((user) => ({
           id: user.id,
           email: user.email,
           fullName: user.full_name,
           appRole: user.app_role,
           createdAt: user.created_at
         })),
-        outings: outingsResult.data ?? [],
+        outings,
         contentBlocks,
         ownerSettings: normalizeSiteProfileSettings(adminSettingsMap.get("site_profile")),
         landingPageSettings: normalizeLandingPageSettings(adminSettingsMap.get("landing_page")),
-        featureFlags: featureFlagsResult.data ?? [],
-        destinationOptions: destinationOptionsResult.data ?? [],
-        golfCourseOptions: golfCourseOptionsResult.data ?? [],
-        lodgingOptions: lodgingOptionsResult.data ?? [],
+        featureFlags,
+        destinationOptions: snapshot.destination_options ?? [],
+        golfCourseOptions: snapshot.golf_course_options ?? [],
+        lodgingOptions: snapshot.lodging_options ?? [],
         analytics: {
-          totalUsers: totalProfilesResult.count ?? 0,
-          totalOutings: totalOutingsResult.count ?? 0,
-          activeInvites: invitesResult.count ?? 0,
-          totalMessages: messagesResult.count ?? 0
+          totalUsers: analytics.total_users ?? 0,
+          totalOutings: analytics.total_outings ?? 0,
+          activeInvites: analytics.active_invites ?? 0,
+          totalMessages: analytics.total_messages ?? 0
         },
-        lodgingIntegration: await getLodgingIntegrationStatus()
+        lodgingIntegration: {
+          configured: Boolean(process.env.LITEAPI_API_KEY),
+          mode: "live",
+          provider: process.env.OUTING_LODGING_PROVIDER ?? "mock",
+          baseUrl: process.env.LITEAPI_BASE_URL ?? "",
+          bookBaseUrl: process.env.LITEAPI_BOOK_BASE_URL ?? "",
+          devMockFallbackEnabled: Boolean(snapshot.lodging_mock_fallback_enabled),
+          recentErrors
+        }
       };
     }
   }

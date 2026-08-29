@@ -44,7 +44,9 @@ export async function middleware(request: NextRequest) {
   const REFRESH_TIMEOUT_MS = 3000;
   try {
     await Promise.race([
-      supabase.auth.getUser(),
+      // getClaims verifies the JWT and normally uses Supabase's cached JWKS,
+      // avoiding a full Auth API round trip on every page navigation.
+      supabase.auth.getClaims(),
       new Promise((resolve) => setTimeout(resolve, REFRESH_TIMEOUT_MS))
     ]);
   } catch {

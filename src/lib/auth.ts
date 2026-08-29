@@ -24,20 +24,21 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     return null;
   }
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
 
-  if (!user) {
+  if (claimsError || !claims?.sub) {
     return null;
   }
 
-  const email = (user.email ?? "").toLowerCase();
+  const userId = claims.sub;
+  const email = (claims.email ?? "").toLowerCase();
+  const userMetadata = claims.user_metadata ?? {};
   const configuredAdmin = adminEmails.includes(email);
   const { data: profileRow } = await supabase
     .from("profiles")
     .select("id,email,full_name,avatar_url,home_airport,home_city,handicap,app_role,created_at")
-    .eq("id", user.id)
+    .eq("id", userId)
     .maybeSingle();
 
   const adminClient = createSupabaseAdminClient();
@@ -53,31 +54,31 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   }
 
   const desiredRole =
-    configuredAdmin || profileRow?.app_role === "admin" || user.user_metadata.app_role === "admin" || bootstrapAdmin
+    configuredAdmin || profileRow?.app_role === "admin" || bootstrapAdmin
       ? "admin"
       : "member";
 
   const fullName =
-    user.user_metadata.full_name ??
-    user.user_metadata.name ??
-    user.email?.split("@")[0] ??
+    userMetadata.full_name ??
+    userMetadata.name ??
+    claims.email?.split("@")[0] ??
     "Outing User";
 
-  if (adminClient && user.email) {
+  if (adminClient && claims.email) {
     const needsProfileSync =
       !profileRow ||
-      profileRow.email !== user.email ||
+      profileRow.email !== claims.email ||
       profileRow.full_name !== fullName ||
-      (profileRow.avatar_url ?? null) !== (user.user_metadata.avatar_url ?? null) ||
+      (profileRow.avatar_url ?? null) !== (userMetadata.avatar_url ?? null) ||
       profileRow.app_role !== desiredRole;
 
     if (needsProfileSync) {
       await adminClient.from("profiles").upsert(
         {
-          id: user.id,
-          email: user.email,
+          id: userId,
+          email: claims.email,
           full_name: fullName,
-          avatar_url: user.user_metadata.avatar_url ?? null,
+          avatar_url: userMetadata.avatar_url ?? null,
           app_role: desiredRole
         },
         { onConflict: "id" }
@@ -100,12 +101,12 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   }
 
   return {
-    id: user.id,
-    email: user.email ?? "",
+    id: userId,
+    email: claims.email ?? "",
     fullName,
-    avatarUrl: user.user_metadata.avatar_url ?? null,
+    avatarUrl: userMetadata.avatar_url ?? null,
     appRole: desiredRole,
-    createdAt: user.created_at ?? new Date().toISOString()
+    createdAt: new Date(claims.iat * 1000).toISOString()
   };
 }
 
