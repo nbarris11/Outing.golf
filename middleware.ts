@@ -35,7 +35,21 @@ export async function middleware(request: NextRequest) {
 
   // Refresh the session — must be called before any other logic.
   // This keeps the auth token valid and writes updated cookies to the response.
-  await supabase.auth.getUser();
+  //
+  // Bounded on purpose: middleware runs on every request, so if this call ever
+  // stalls (refresh-token contention, an auth hiccup) it takes the entire site
+  // down with MIDDLEWARE_INVOCATION_TIMEOUT rather than one page. A missed
+  // refresh is recoverable — the existing cookie still authenticates the request
+  // and the next navigation retries — so we prefer serving the page.
+  const REFRESH_TIMEOUT_MS = 3000;
+  try {
+    await Promise.race([
+      supabase.auth.getUser(),
+      new Promise((resolve) => setTimeout(resolve, REFRESH_TIMEOUT_MS))
+    ]);
+  } catch {
+    // Never let session refresh fail the request.
+  }
 
   return supabaseResponse;
 }
