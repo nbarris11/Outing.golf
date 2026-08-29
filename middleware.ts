@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { CookieOptions } from "@supabase/ssr";
 
 import { withSupabaseCookieOverrides } from "@/lib/supabase/cookie-options";
+import { fetchSupabaseWithTimeout } from "@/lib/supabase/fetch";
 
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,6 +20,7 @@ export async function middleware(request: NextRequest) {
   const requestHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    global: { fetch: fetchSupabaseWithTimeout },
     cookies: {
       getAll() {
         return request.cookies.getAll();

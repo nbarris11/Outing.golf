@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 
 import { env, isSupabaseConfigured, supabasePublicKey } from "@/lib/env";
 import { withSupabaseCookieOverrides } from "@/lib/supabase/cookie-options";
+import { fetchSupabaseWithTimeout } from "@/lib/supabase/fetch";
 
 export async function createSupabaseServerClient() {
   if (!isSupabaseConfigured) {
@@ -17,6 +18,7 @@ export async function createSupabaseServerClient() {
     new URL(env.NEXT_PUBLIC_APP_URL).host;
 
   return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL!, supabasePublicKey!, {
+    global: { fetch: fetchSupabaseWithTimeout },
     cookies: {
       getAll() {
         return cookieStore.getAll();
