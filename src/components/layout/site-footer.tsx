@@ -21,6 +21,7 @@ export async function SiteFooter() {
         <div className="flex flex-wrap items-center gap-4">
           <Link href="/how-it-works">How it works</Link>
           <Link href="/about">About</Link>
+          <Link href="/updates">What’s new</Link>
           <Link href="/legal/privacy">Privacy</Link>
           <Link href="/legal/terms">Terms</Link>
           <Link href="/advertise">Advertise with us</Link>

@@ -1,5 +1,8 @@
 import { Calendar, MapPin, Plus, Users } from "lucide-react";
 
+import { ReleaseNotice } from "@/components/updates/release-notice";
+import { releases } from "@/lib/releases";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +66,8 @@ export default async function DashboardPage({
             Plan a new trip
           </Button>
         </div>
+
+        <ReleaseNotice memberId={profile.id} releaseId={releases[0].id} title={releases[0].title} />
 
         {/* Notices */}
         {notices.success ? (
