@@ -9,14 +9,16 @@ import { requireProfile } from "@/lib/auth";
 import { isAdmin } from "@/modules/outings/permissions";
 import { getAdminOutings } from "@/modules/admin/service";
 
-export default async function AdminOutingsPage() {
+export default async function AdminOutingsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const profile = await requireProfile();
 
   if (!isAdmin(profile)) {
     redirect("/dashboard");
   }
 
-  const outings = await getAdminOutings();
+  const requestedPage = Number((await searchParams).page);
+  const { outings, total, page, pageSize } = await getAdminOutings(Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <PageShell>
@@ -36,10 +38,10 @@ export default async function AdminOutingsPage() {
         <div className="mt-6 max-w-3xl">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Admin</p>
           <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
-            Outings
+            All trips
           </h1>
           <p className="mt-3 text-base text-charcoal/68">
-            {outings.length} total outing{outings.length !== 1 ? "s" : ""}
+            {total} trip{total !== 1 ? "s" : ""} created across all users
           </p>
         </div>
 
@@ -49,6 +51,7 @@ export default async function AdminOutingsPage() {
               <thead>
                 <tr className="border-b border-charcoal/8 text-left text-xs uppercase tracking-[0.15em] text-charcoal/45">
                   <th className="pb-3 pr-6 font-medium">Name</th>
+                  <th className="pb-3 pr-6 font-medium">Created by</th>
                   <th className="pb-3 pr-6 font-medium">Destination</th>
                   <th className="pb-3 pr-6 font-medium">Players</th>
                   <th className="pb-3 pr-6 font-medium">Budget</th>
@@ -61,11 +64,15 @@ export default async function AdminOutingsPage() {
                   <tr key={outing.id} className="hover:bg-cream/50">
                     <td className="py-3.5 pr-6">
                       <Link
-                        href={`/outings/${outing.id}`}
+                        href={`/admin/outings/${outing.id}`}
                         className="font-medium text-charcoal hover:text-forest-900 hover:underline"
                       >
                         {outing.name}
                       </Link>
+                    </td>
+                    <td className="py-3.5 pr-6 text-charcoal/68">
+                      <span className="block font-medium text-charcoal">{outing.organizerName ?? "Unknown user"}</span>
+                      <span className="block text-xs">{outing.organizerEmail}</span>
                     </td>
                     <td className="py-3.5 pr-6 text-charcoal/68">{outing.destinationLabel ?? "—"}</td>
                     <td className="py-3.5 pr-6 text-charcoal/68">{outing.numberOfPlayers}</td>
@@ -84,8 +91,16 @@ export default async function AdminOutingsPage() {
                 ))}
               </tbody>
             </table>
+            {outings.length === 0 ? <p className="py-8 text-center text-charcoal/60">No trips on this page.</p> : null}
           </div>
         </Card>
+        {totalPages > 1 ? (
+          <nav aria-label="Trip pages" className="mt-6 flex items-center justify-between text-sm">
+            {page > 1 ? <Link href={`/admin/outings?page=${page - 1}`} className="font-medium text-forest-900 hover:underline">← Previous</Link> : <span />}
+            <span className="text-charcoal/60">Page {page} of {totalPages}</span>
+            {page < totalPages ? <Link href={`/admin/outings?page=${page + 1}`} className="font-medium text-forest-900 hover:underline">Next →</Link> : <span />}
+          </nav>
+        ) : null}
       </section>
     </PageShell>
   );

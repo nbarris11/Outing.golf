@@ -35,15 +35,26 @@ export async function getAdminUsers() {
   }));
 }
 
-export async function getAdminOutings() {
+export async function getAdminOutings(page = 1) {
+  const pageSize = 50;
+  const safePage = Math.max(1, Math.floor(page));
   if (!isDemoMode) {
     const supabase = await createSupabaseServerClient();
     if (supabase) {
-      const { data } = await supabase
+      const { data, count, error } = await supabase
         .from("outings")
-        .select("id,name,status,number_of_players,budget_target,destination_label,organizer_id,created_at")
-        .order("created_at", { ascending: false });
-      return (data ?? []).map((o) => ({
+        .select("id,name,status,number_of_players,budget_target,destination_label,organizer_id,created_at", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range((safePage - 1) * pageSize, safePage * pageSize - 1);
+      if (error) throw new Error(`Could not load trips: ${error.message}`);
+      const organizerIds = [...new Set((data ?? []).map((o) => o.organizer_id))];
+      const { data: organizers, error: organizerError } = organizerIds.length
+        ? await supabase.from("profiles").select("id,full_name,email").in("id", organizerIds)
+        : { data: [], error: null };
+      if (organizerError) throw new Error(`Could not load trip organizers: ${organizerError.message}`);
+      const organizerById = new Map((organizers ?? []).map((organizer) => [organizer.id, organizer]));
+      return { total: count ?? 0, page: safePage, pageSize, outings: (data ?? []).map((o) => ({
         id: o.id,
         name: o.name as string,
         status: o.status as string,
@@ -51,12 +62,15 @@ export async function getAdminOutings() {
         budgetTarget: o.budget_target as number | null,
         destinationLabel: o.destination_label as string | null,
         organizerId: o.organizer_id as string,
+        organizerName: organizerById.get(o.organizer_id)?.full_name ?? null,
+        organizerEmail: organizerById.get(o.organizer_id)?.email ?? null,
         createdAt: o.created_at as string
-      }));
+      })) };
     }
   }
   const state = await getDemoState();
-  return state.outings.map((o) => ({
+  const sorted = [...state.outings].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return { total: sorted.length, page: safePage, pageSize, outings: sorted.slice((safePage - 1) * pageSize, safePage * pageSize).map((o) => ({
     id: o.id,
     name: o.name,
     status: o.status,
@@ -64,8 +78,10 @@ export async function getAdminOutings() {
     budgetTarget: o.budgetTarget ?? null,
     destinationLabel: o.destinationLabel,
     organizerId: o.organizerId,
+    organizerName: state.profiles.find((p) => p.id === o.organizerId)?.fullName ?? null,
+    organizerEmail: state.profiles.find((p) => p.id === o.organizerId)?.email ?? null,
     createdAt: o.createdAt
-  }));
+  })) };
 }
 
 export async function getAdminInvites() {

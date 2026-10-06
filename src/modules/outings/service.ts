@@ -2,7 +2,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getDemoState } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canAccessOuting } from "@/modules/outings/permissions";
+import { canAccessOuting, isAdmin } from "@/modules/outings/permissions";
+import { getCurrentProfile } from "@/lib/auth";
 import { buildRecommendations } from "@/modules/outings/scoring";
 import type {
   ChatMessage,
@@ -468,7 +469,17 @@ export async function getTripPackingItems(outingId: string): Promise<TripPacking
   }));
 }
 
+export async function getAdminOutingDetail(outingId: string) {
+  const profile = await getCurrentProfile();
+  if (!isAdmin(profile)) return null;
+  return getOutingDetailInternal(outingId, profile!.id, true);
+}
+
 export async function getOutingDetail(outingId: string, profileId: string) {
+  return getOutingDetailInternal(outingId, profileId, false);
+}
+
+async function getOutingDetailInternal(outingId: string, profileId: string, adminView: boolean) {
   if (!isDemoMode) {
     // Use admin client to bypass RLS for the initial lookup, then enforce
     // access control in application code. This avoids RLS auth.uid() issues
@@ -501,7 +512,7 @@ export async function getOutingDetail(outingId: string, profileId: string) {
     const members = (memberRows ?? []).map(mapOutingMemberRow);
 
     // Enforce access in application code instead of relying on RLS
-    if (outing.organizerId !== profileId && !canAccessOuting(profileId, members, outingId)) {
+    if (!adminView && outing.organizerId !== profileId && !canAccessOuting(profileId, members, outingId)) {
       return null;
     }
 
@@ -564,11 +575,12 @@ export async function getOutingDetail(outingId: string, profileId: string) {
           ? "Confirm the front-running date and use compare to settle the final shortlist."
           : "Open another date window or add more availability from the group.";
 
-    const profileIds = Array.from(new Set([...members.map((item) => item.profileId), ...messages.map((item) => item.profileId)]));
+    const profileIds = Array.from(new Set([outing.organizerId, ...members.map((item) => item.profileId), ...messages.map((item) => item.profileId)]));
+    const profileClient = adminClient ?? (adminView ? supabase : null);
     const profiles =
-      adminClient && profileIds.length
+      profileClient && profileIds.length
         ? (
-            await adminClient
+            await profileClient
               .from("profiles")
               .select("id,email,full_name,avatar_url,home_airport,handicap,app_role,created_at")
               .in("id", profileIds)
@@ -627,7 +639,7 @@ export async function getOutingDetail(outingId: string, profileId: string) {
     return null;
   }
 
-  if (!canAccessOuting(profileId, state.outingMembers, outingId)) {
+  if (!adminView && !canAccessOuting(profileId, state.outingMembers, outingId)) {
     return null;
   }
 
