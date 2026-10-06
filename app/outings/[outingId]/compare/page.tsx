@@ -1,3 +1,6 @@
+import { CourseAccessLabel } from "@/components/outings/course-access-label";
+import { discoverableCourse, courseAccessPriority } from "@/lib/course-access";
+import { TripPricesPanel } from "@/components/outings/trip-prices-panel";
 import { PlanningStatus } from "@/components/outings/planning-status";
 import { TripOverviewMap } from "@/components/outings/trip-overview-map";
 import { TripItineraryPanel } from "@/components/outings/trip-itinerary-panel";
@@ -12,12 +15,11 @@ import { BackButton } from "@/components/common/back-button";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
 import { LodgingSearchPanel } from "@/components/outings/lodging-search-panel";
-import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
+import { TripHqLink } from "@/components/outings/trip-hq-link";
 import { RentalListingPanel } from "@/components/outings/rental-listing-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requireProfile } from "@/lib/auth";
-import { markAsBookedAction } from "@/lib/actions/outings";
 import { currency } from "@/lib/utils";
 import { isAdmin } from "@/modules/outings/permissions";
 import { getOutingDetail } from "@/modules/outings/service";
@@ -76,9 +78,6 @@ export default async function ComparePage({
 
   const isOrganizer = detail.outing.organizerId === profile.id || isAdmin(profile);
   const isBooked = detail.outing.status === "booked" || detail.outing.status === "completed";
-  const votingOpen = detail.outing.votingOpen;
-  const allVotes = detail.votes;
-  const bookingState = !votingOpen && allVotes.length > 0 ? "ready" : votingOpen ? "voting_open" : "no_vote";
 
   return (
     <PageShell>
@@ -104,11 +103,7 @@ export default async function ComparePage({
               {picksCount > 0 ? "Edit itinerary →" : "Pick courses on Organize →"}
             </Link>
             {isOrganizer && !isBooked && (
-              <MarkAsBookedButton organizerLed={detail.outing.planningMode === "organizer"}
-                outingId={outingId}
-                markAsBooked={markAsBookedAction}
-                bookingState={bookingState}
-              />
+              <TripHqLink outingId={detail.outing.id} />
             )}
             {isOrganizer && isBooked && (
               <Link
@@ -121,6 +116,7 @@ export default async function ComparePage({
           </div>
         </div>
 
+        <TripPricesPanel outingId={outingId} courses={pickedCourses} lodging={detail.outing.golfOnly ? null : pickedLodging} editable={isOrganizer} start={defaultWindow?.start} end={defaultWindow?.end} />
         <PlanningStatus outing={detail.outing} courses={pickedCourses} lodging={pickedLodging} />
         <TripOverviewMap courses={pickedCourses} lodging={detail.outing.golfOnly ? null : pickedLodging} />
         <PersonsPerRoomProvider initialValue={detail.outing.personsPerRoom ?? 2}>
@@ -281,7 +277,7 @@ export default async function ComparePage({
 
             {/* ── Golf course shortlist ── */}
             {(() => {
-              const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
+              const visibleCourses = detail.golfCourses.filter(c => !c.hidden && (c.featured || discoverableCourse(c))).sort((a,b) => courseAccessPriority(a)-courseAccessPriority(b));
               if (visibleCourses.length === 0) return null;
               const sortedCourses = [
                 ...visibleCourses.filter((c) => c.featured),
@@ -307,7 +303,7 @@ export default async function ComparePage({
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-lg font-semibold tracking-[-0.03em]">{course.name}</h3>
+                                <h3 className="text-lg font-semibold tracking-[-0.03em]">{course.name}</h3><CourseAccessLabel course={course} />
                                 {course.featured && (
                                   <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>
                                 )}

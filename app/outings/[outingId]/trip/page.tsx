@@ -1,3 +1,6 @@
+import { Fragment } from "react";
+import { TripPricesPanel } from "@/components/outings/trip-prices-panel";
+import { tripReadiness } from "@/lib/trip-plan";
 import { PlanningStatus } from "@/components/outings/planning-status";
 import { TripOverviewMap } from "@/components/outings/trip-overview-map";
 import { TripItineraryPanel } from "@/components/outings/trip-itinerary-panel";
@@ -31,9 +34,6 @@ export default async function TripHqPage({
 
   if (!detail) redirect("/dashboard");
 
-  if (detail.outing.status !== "booked" && detail.outing.status !== "completed") {
-    redirect(`/outings/${outingId}`);
-  }
 
   const isOrganizer = detail.outing.organizerId === profile.id;
 
@@ -50,6 +50,8 @@ export default async function TripHqPage({
   const topLodging = detail.lodging.find(l => l.featured && !l.hidden) ?? null;
   const selectedCourses = detail.golfCourses.filter(c => c.featured && !c.hidden);
 
+
+  const readiness = tripReadiness(detail.outing, selectedCourses, topLodging?.id);
 
   // Trip dates
   const tripStart =
@@ -112,7 +114,7 @@ export default async function TripHqPage({
 
         <div className="relative mx-auto max-w-4xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cream/45">
-            trip confirmed
+            {readiness.label}
           </p>
           <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.04em] text-cream sm:text-7xl">
             {detail.outing.name}
@@ -130,6 +132,7 @@ export default async function TripHqPage({
 
           {/* Boarding pass */}
           <TripBoardingPass
+            statusLabel={readiness.label}
             outingName={detail.outing.name}
             destination={detail.outing.destinationLabel ?? "TBD"}
             startDate={tripStart ?? ""}
@@ -141,6 +144,7 @@ export default async function TripHqPage({
             memberNames={memberFirstNames}
           />
 
+          <TripPricesPanel outingId={outingId} courses={selectedCourses} lodging={detail.outing.golfOnly ? null : topLodging} editable={false} start={tripStart ?? undefined} end={tripEnd ?? undefined} />
           <TripShareTools />
           <PlanningStatus outing={detail.outing} courses={selectedCourses} lodging={topLodging} />
           <TripOverviewMap courses={selectedCourses} lodging={detail.outing.golfOnly ? null : topLodging} />
@@ -260,8 +264,8 @@ export default async function TripHqPage({
                         ? `${course.scheduleDay ? `Day ${course.scheduleDay} · ` : ""}${course.name}`
                         : course.name;
                       return (
-                        <>
-                          <li key={`uber-${course.id}`}>
+                        <Fragment key={course.id}>
+                          <li>
                             <a
                               href={uberUrl}
                               target="_blank"
@@ -283,7 +287,7 @@ export default async function TripHqPage({
                               <span>Lyft to {courseLabel}</span>
                             </a>
                           </li>
-                        </>
+                        </Fragment>
                       );
                     });
                   })()}

@@ -98,7 +98,7 @@ async function createFallbackResults(input: LodgingSearchInput, outingDetail: Aw
     starRating: item.starRating ?? null,
     reviewScore: item.reviewScore ?? null,
     thumbnailUrl: item.thumbnailUrl ?? null,
-    amenities: item.amenities ?? item.tags,
+    amenities: item.amenities ?? item.tags.filter(tag => !tag.startsWith("rate-")),
     checkIn: input.checkIn,
     checkOut: input.checkOut,
     guestCount: input.adults + input.children,
@@ -333,6 +333,7 @@ export async function saveLodgingOption(input: {
     raw_provider_data: input.option.rawProviderData ?? {},
     summary: summaryBits.join(" · ") || "Saved from live hotel search",
     tags: [
+      ...(input.option.rateCheckedAt && Date.parse(input.option.rateCheckedAt) <= Date.now() ? [`rate-checked:${input.option.rateCheckedAt}`] : []),
       input.option.refundable ? "refundable" : "non-refundable",
       input.option.boardType ?? "room only",
       input.option.starRating ? `${input.option.starRating} star` : "hotel"

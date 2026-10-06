@@ -1,3 +1,5 @@
+import { courseAccessPriority } from "@/lib/course-access";
+import { tripReadiness } from "@/lib/trip-plan";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getDemoState } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
@@ -341,6 +343,7 @@ async function getLiveOutings(profileId: string) {
 
       return {
         outing,
+        readiness: tripReadiness(outing, golfCourses, lodging.find(l => l.featured && !l.hidden)?.id),
         members,
         invites,
         preferences,
@@ -413,6 +416,7 @@ export async function getDashboardData(profileId: string) {
 
     return {
       outing,
+      readiness: tripReadiness(outing, golfCourses, lodging.find(l => l.featured && !l.hidden)?.id),
       members: outingMembers,
       invites: state.invites.filter((item) => item.outingId === outing.id),
       preferences,
@@ -596,7 +600,7 @@ async function getOutingDetailInternal(outingId: string, profileId: string, admi
     const sortedGolfCourses = [...golfCourses].sort((a, b) => {
       const aScore = recommendation.golfScores.find((s) => s.id === a.id)?.score ?? 0;
       const bScore = recommendation.golfScores.find((s) => s.id === b.id)?.score ?? 0;
-      return bScore - aScore;
+      return courseAccessPriority(a) - courseAccessPriority(b) || bScore - aScore;
     });
     const sortedLodging = [...lodging].sort((a, b) => {
       const aScore = recommendation.lodgingScores.find((s) => s.id === a.id)?.score ?? 0;

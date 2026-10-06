@@ -1,4 +1,5 @@
 "use server";
+import { tripReadiness } from "@/lib/trip-plan";
 
 import { randomUUID } from "node:crypto";
 
@@ -300,15 +301,24 @@ async function seedLiveInventory(outing: Outing) {
   const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
 
   if (!supabase) {
-    return;
+    return false;
   }
 
   try {
+    const [destinations, courses, stays] = await Promise.all([
+      supabase.from("destination_options").select("id,name,region").eq("outing_id", outing.id),
+      supabase.from("golf_course_options").select("name,location_label").eq("outing_id", outing.id),
+      supabase.from("lodging_options").select("name").eq("outing_id", outing.id),
+    ]);
+    if (destinations.error || courses.error || stays.error) throw new Error("Unable to read existing trip options");
+    const key = (name: string) => name.trim().toLowerCase();
     const inventory = await fetchOutingInventory(outing);
     const destinationIdMap = new Map<string, string>();
     const destinationRows = inventory.destinations.map((destination) => {
-      const id = randomUUID();
+      const existing = destinations.data?.find(d => key(d.name) === key(destination.name) && key(d.region) === key(destination.region));
+      const id = existing?.id ?? randomUUID();
       destinationIdMap.set(destination.id, id);
+      if (existing) return null;
 
       return {
         id,
@@ -325,9 +335,10 @@ async function seedLiveInventory(outing: Outing) {
         featured: destination.featured,
         hidden: destination.hidden
       };
-    });
+    }).filter((row): row is NonNullable<typeof row> => row !== null);
 
     const golfRows = inventory.golfCourses
+      .filter(c => !courses.data?.some(old => key(old.name) === key(c.name) && key(old.location_label ?? "") === key(c.locationLabel)))
       .map((course) => {
         const destinationOptionId = destinationIdMap.get(course.destinationOptionId);
 
@@ -355,6 +366,7 @@ async function seedLiveInventory(outing: Outing) {
       .filter(Boolean);
 
     const lodgingRows = inventory.lodging
+      .filter(stay => !stays.data?.some(old => key(old.name) === key(stay.name)))
       .map((stay) => {
         const destinationOptionId = destinationIdMap.get(stay.destinationOptionId);
 
@@ -380,18 +392,23 @@ async function seedLiveInventory(outing: Outing) {
       .filter(Boolean);
 
     if (destinationRows.length) {
-      await supabase.from("destination_options").insert(destinationRows);
+      const { error } = await supabase.from("destination_options").insert(destinationRows);
+      if (error) throw error;
     }
 
     if (golfRows.length) {
-      await supabase.from("golf_course_options").insert(golfRows);
+      const { error } = await supabase.from("golf_course_options").insert(golfRows);
+      if (error) throw error;
     }
 
     if (lodgingRows.length) {
-      await supabase.from("lodging_options").insert(lodgingRows);
+      const { error } = await supabase.from("lodging_options").insert(lodgingRows);
+      if (error) throw error;
     }
+    return true;
   } catch (error) {
     logError("Failed to seed live outing inventory", error, { outingId: outing.id });
+    return false;
   }
 }
 
@@ -1662,6 +1679,13 @@ export async function markAsBookedAction(formData: FormData) {
   const outingId = String(formData.get("outingId") ?? "").trim();
   if (!outingId) redirect(`/dashboard?error=Missing+outing`);
 
+  const { getOutingDetail } = await import("@/modules/outings/service");
+  const detail = await getOutingDetail(outingId, profile.id);
+  if (!detail || (detail.outing.organizerId !== profile.id && !isAdmin(profile)))
+    redirect(`/outings/${outingId}?error=Organizer+access+required`);
+  if (!tripReadiness(detail.outing, detail.golfCourses, detail.lodging.find(l => l.featured && !l.hidden)?.id).bookingsComplete)
+    redirect(`/outings/${outingId}?error=Confirm+dates+and+record+all+tee+times+and+your+stay+first`);
+
   if (isDemoMode) {
     revalidatePath(`/outings/${outingId}`);
     redirect(`/outings/${outingId}/trip`);
@@ -1796,13 +1820,7 @@ export async function regenerateOutingInventoryAction(outingId: string) {
 
   if (!outingRow || outingRow.organizer_id !== profile.id) return;
 
-  // Delete existing inventory
-  await Promise.all([
-    supabase.from("destination_options").delete().eq("outing_id", outingId),
-    supabase.from("golf_course_options").delete().eq("outing_id", outingId),
-    supabase.from("lodging_options").delete().eq("outing_id", outingId)
-  ]);
-
+  // Add new suggestions without deleting selected rounds, prices, votes, or stays.
   // Re-seed with current providers
   const outing = {
     id: outingRow.id,
@@ -1826,7 +1844,8 @@ export async function regenerateOutingInventoryAction(outingId: string) {
     createdAt: outingRow.created_at
   };
 
-  await seedLiveInventory(outing);
+  const refreshed = await seedLiveInventory(outing);
+  if (!refreshed) redirect(`/outings/${outingId}?error=Could+not+find+new+options.+Your+existing+plan+is+safe.`);
 
   revalidatePath(`/outings/${outingId}`);
   revalidatePath(`/outings/${outingId}/compare`);

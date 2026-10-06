@@ -13,6 +13,7 @@ const saveLodgingOptionSchema = z.object({
     priceTotal: z.number(),
     currency: z.string().length(3),
     nightlyRate: z.number(),
+    rateCheckedAt: z.string().datetime().optional(),
     cancellationSummary: z.string().nullable(),
     refundable: z.boolean(),
     hotelAddress: z.string().nullable(),

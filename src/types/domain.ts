@@ -179,6 +179,7 @@ export interface LodgingSearchResult {
   priceTotal: number;
   currency: string;
   nightlyRate: number;
+  rateCheckedAt?: string;
   cancellationSummary: string | null;
   refundable: boolean;
   hotelAddress: string | null;

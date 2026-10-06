@@ -167,3 +167,30 @@ describe("planning confirmations", () => {
     expect(bookingProgress(trip, [], "stay").stayBooked).toBe(false);
   });
 });
+
+import { tripReadiness } from "@/lib/trip-plan";
+describe("trip readiness", () => {
+  const dates = {start:"2027-03-12",end:"2027-03-15"};
+  const rounds = [course({name:"TPC",roundDays:[2]})];
+  it("does not trust a legacy booked flag", () => {
+    expect(tripReadiness(planningTrip({status:"booked"}),rounds,"stay").label).toBe("Planning");
+  });
+  it("separates itinerary ready from complete reservations", () => {
+    const trip = planningTrip({confirmedDateWindow:dates});
+    expect(tripReadiness(trip,rounds,"stay").label).toBe("Itinerary ready");
+    trip.teeTimeBookings = [{id:"one",courseName:"TPC",date:"2027-03-13",teeTime:"09:00",players:8}];
+    expect(tripReadiness(trip,rounds,"stay").bookingsComplete).toBe(false);
+    trip.lodgingBooking = {lodgingId:"stay",...dates};
+    expect(tripReadiness(trip,rounds,"stay").label).toBe("Bookings complete");
+    trip.numberOfPlayers=12;
+    expect(tripReadiness(trip,rounds,"stay").bookingsComplete).toBe(false);
+  });
+  it("requires dates and scheduled rounds even for golf-only trips", () => {
+    const trip = planningTrip({golfOnly:true,confirmedDateWindow:dates,teeTimeBookings:[{id:"one",courseName:"TPC",date:"2027-03-13",teeTime:"09:00",players:8}]});
+    expect(tripReadiness(trip,rounds).bookingsComplete).toBe(true);
+    expect(tripReadiness(trip,[]).bookingsComplete).toBe(false);
+    expect(tripReadiness(trip,[course({name:"TPC",roundDays:[null]})]).itineraryReady).toBe(false);
+    trip.confirmedDateWindow=null;
+    expect(tripReadiness(trip,rounds).bookingsComplete).toBe(false);
+  });
+});

@@ -200,6 +200,7 @@ export function normalizeLiteApiSearchResponse(
 
         return {
           provider: "liteapi" as const,
+          rateCheckedAt: new Date().toISOString(),
           hotelId: hotelId ?? `name:${(firstString(hotel.name, hotelRate.hotelName) ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
           hotelName: firstString(hotel.name, hotelRate.hotelName, "Unnamed hotel")!,
           roomName,

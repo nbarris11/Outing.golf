@@ -16,6 +16,7 @@ import { DEFAULT_GROUP_PACKING_ITEMS, DEFAULT_PACKING_ITEMS } from "@/lib/trip/p
  * Only seeds if the user has no personal items yet for this outing.
  */
 async function seedPersonalPackingItems(outingId: string, profileId: string) {
+  if (isDemoMode) return;
   const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 
@@ -45,6 +46,7 @@ async function seedPersonalPackingItems(outingId: string, profileId: string) {
  * Only runs if no group items exist yet for this outing.
  */
 async function seedGroupPackingItems(outingId: string) {
+  if (isDemoMode) return;
   const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 

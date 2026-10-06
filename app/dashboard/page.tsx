@@ -21,17 +21,9 @@ function formatTripDates(windows: { start: string; end: string }[]) {
 }
 
 function statusStyle(status: string) {
-  if (status === "booked" || status === "booking") return "bg-emerald-100 text-emerald-800";
-  if (status === "completed") return "bg-charcoal/8 text-charcoal/50";
+  if (status === "Bookings complete") return "bg-emerald-100 text-emerald-800";
+  if (status === "Completed") return "bg-charcoal/8 text-charcoal/50";
   return "bg-sand text-charcoal/70";
-}
-
-function statusLabel(status: string) {
-  if (status === "booked") return "Booked";
-  if (status === "booking") return "Ready to book";
-  if (status === "completed") return "Completed";
-  if (status === "planning") return "Planning";
-  return status.replaceAll("_", " ");
 }
 
 export default async function DashboardPage({
@@ -95,13 +87,13 @@ export default async function DashboardPage({
         {shown.length === 0 && outings.length > 0 && <p className="mt-6 text-sm text-charcoal/60">{pastView ? "No past trips yet." : "No upcoming trips. Ready to plan the next one?"}</p>}
         {/* Trip cards */}
         <div className="mt-6 grid gap-4">
-          {shown.map(({ outing, members, insights, recommendation }) => {
+          {shown.map(({ outing, members, insights, recommendation, readiness }) => {
             const isOrganizer = outing.organizerId === profile.id;
             const progressTarget = Math.max(outing.numberOfPlayers, insights.respondedCount + insights.pendingCount);
             const responsePercent = progressTarget
               ? Math.round((insights.respondedCount / progressTarget) * 100)
               : 0;
-            const needsInvites = isOrganizer && members.every((member) => member.profileId === outing.organizerId) && outing.status !== "booked" && outing.status !== "completed";
+            const needsInvites = outing.planningMode !== "organizer" && isOrganizer && members.every((member) => member.profileId === outing.organizerId) && outing.status !== "booked" && outing.status !== "completed";
             const topDate = recommendation.bestDates[0];
 
             return (
@@ -117,8 +109,8 @@ export default async function DashboardPage({
                       <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">
                         {outing.name}
                       </h2>
-                      <Badge className={statusStyle(outing.status)}>
-                        {statusLabel(outing.status)}
+                      <Badge className={statusStyle(readiness.label)}>
+                        {readiness.label}
                       </Badge>
                       {!isOrganizer && (
                         <Badge className="bg-charcoal/6 text-charcoal/55">Invited</Badge>
@@ -177,8 +169,8 @@ export default async function DashboardPage({
 
                   {/* Right — actions */}
                   <div className="flex shrink-0 flex-col gap-2 sm:items-stretch sm:min-w-[140px]">
-                    <Button href={`/outings/${outing.id}${outing.status === "booked" || outing.status === "completed" ? "/trip" : ""}`} className="w-full justify-center">
-                      {outing.status === "booked" || outing.status === "completed" ? "Open Trip HQ" : "Continue planning"}
+                    <Button href={`/outings/${outing.id}${readiness.itineraryReady || outing.status === "completed" ? "/trip" : ""}`} className="w-full justify-center">
+                      {readiness.itineraryReady || outing.status === "completed" ? "Open Trip HQ" : "Continue planning"}
                     </Button>
                     {isOrganizer && !needsInvites && insights.respondedCount > 0 && (
                       <Button

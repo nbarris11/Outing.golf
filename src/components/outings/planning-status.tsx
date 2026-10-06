@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import type { Outing, GolfCourseOption, LodgingOption } from "@/types/domain";
 import {
   bookingProgress,
+  tripReadiness,
   datesAreConfirmed,
   tripDayLabel,
 } from "@/lib/trip-plan";
@@ -24,6 +25,7 @@ export function PlanningStatus({
   const [reference, setReference] = useState(
     bookingProgress(outing, courses, lodging?.id).stayBooked ? outing.lodgingBooking?.reference ?? "" : "",
   );
+  const readiness = tripReadiness(outing, courses, lodging?.id);
   const confirmed = datesAreConfirmed(outing);
   const progress = bookingProgress(outing, courses, lodging?.id);
   const mode = outing.planningMode ?? "group";
@@ -66,6 +68,7 @@ export function PlanningStatus({
           </label>
         )}
       </div>
+      <p className="mt-2 text-sm font-medium text-forest-900">{readiness.label}{readiness.itineraryReady && !readiness.bookingsComplete ? " · Reservations still to finish" : ""}</p>
       {editable && (
         <p className="mt-2 text-sm text-charcoal/65">
           {mode === "organizer"

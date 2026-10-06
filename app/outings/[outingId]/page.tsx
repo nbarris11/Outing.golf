@@ -1,3 +1,8 @@
+import { LodgingRateNote } from "@/components/outings/lodging-rate-note";
+import { TripPricesPanel } from "@/components/outings/trip-prices-panel";
+import { tripReadiness } from "@/lib/trip-plan";
+import { CourseAccessLabel } from "@/components/outings/course-access-label";
+import { courseAccessPriority, discoverableCourse } from "@/lib/course-access";
 import { datesAreConfirmed } from "@/lib/trip-plan";
 import { PlanningStatus } from "@/components/outings/planning-status";
 import { TripOverviewMap } from "@/components/outings/trip-overview-map";
@@ -15,7 +20,7 @@ import { AddDestinationForm, AddGolfCourseForm, AddLodgingForm } from "@/compone
 import { OrganizerChecklist } from "@/components/outings/organizer-checklist";
 import { TeeTimeManager } from "@/components/outings/tee-time-manager";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
-import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
+import { TripHqLink } from "@/components/outings/trip-hq-link";
 import { CourseDetails } from "@/components/outings/course-details";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
 import { FavoriteButton } from "@/components/outings/favorite-button";
@@ -46,7 +51,6 @@ import {
   deleteTeeTimeAction,
   hideOptionAction,
   inviteMemberAction,
-  markAsBookedAction,
   nudgeMemberAction,
   openVotingAction,
   regenerateOutingInventoryAction,
@@ -520,13 +524,9 @@ export default async function OutingDetailPage({
       return true;
     });
 
-  // Filter out private/invite-only courses regardless of hidden flag
-  const PRIVATE_DISPLAY_RE = /[-–—]\s*private\b|\bprivate\s*[-–—]|\bmembers?\s+only\b|\binvite[\s-]only\b|\bprivate\s+club\b/i;
-  const isPrivateCourse = (name: string) => PRIVATE_DISPLAY_RE.test(name);
-
-  // Split visible / hidden options (organizer sees both; members only see visible)
-  const visibleCourses = detail.golfCourses.filter((c) => !c.hidden && !isPrivateCourse(c.name));
-  const hiddenCourses = isOrganizer ? detail.golfCourses.filter((c) => c.hidden && !isPrivateCourse(c.name)) : [];
+  // Keep existing selections, including restricted clubs. Exclude non-course businesses from suggestions.
+  const visibleCourses = detail.golfCourses.filter(c => !c.hidden && (c.featured || discoverableCourse(c))).sort((a,b) => courseAccessPriority(a) - courseAccessPriority(b));
+  const hiddenCourses = isOrganizer ? detail.golfCourses.filter(c => c.hidden && discoverableCourse(c)) : [];
   const visibleLodging = dedupedLodging.filter((s) => !s.hidden);
   const hiddenLodging = isOrganizer ? dedupedLodging.filter((s) => s.hidden) : [];
   // First destination for linking custom courses/lodging
@@ -535,6 +535,7 @@ export default async function OutingDetailPage({
   // "In the trip" selections — float selected items to the top, preserve score order within each group
   const selectedCourses = visibleCourses.filter((c) => c.featured);
   const selectedLodgingOption = visibleLodging.find((l) => l.featured) ?? null;
+  const readiness = tripReadiness(detail.outing, selectedCourses, selectedLodgingOption?.id);
   const sortedVisibleCourses = [...selectedCourses, ...visibleCourses.filter((c) => !c.featured)];
   const sortedVisibleLodging = selectedLodgingOption
     ? [selectedLodgingOption, ...visibleLodging.filter((l) => !l.featured)]
@@ -645,11 +646,11 @@ export default async function OutingDetailPage({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={
-                (detail.outing.status as string) === "booked" ? "bg-emerald-100 text-emerald-800"
+                readiness.bookingsComplete ? "bg-emerald-100 text-emerald-800"
                 : (detail.outing.status as string) === "completed" ? "bg-charcoal/8 text-charcoal/50"
                 : "bg-sand text-charcoal/70"
               }>
-                {detail.outing.status === "narrowed_down" ? "Narrowed down" : labelize(detail.outing.status)}
+                {readiness.label}
               </Badge>
               {votingOpen && (
                 <Badge className="bg-amber-100 text-amber-800">🗳 Group vote open</Badge>
@@ -677,17 +678,7 @@ export default async function OutingDetailPage({
                 <Button href={`/outings/${detail.outing.id}/edit`} variant="secondary" className="w-full sm:w-auto">
                   ✏️ Edit trip
                 </Button>
-                <MarkAsBookedButton organizerLed={detail.outing.planningMode === "organizer"}
-                  outingId={detail.outing.id}
-                  markAsBooked={markAsBookedAction}
-                  bookingState={
-                    !votingOpen && allVotes.length > 0
-                      ? "ready"
-                      : votingOpen
-                        ? "voting_open"
-                        : "no_vote"
-                  }
-                />
+                <TripHqLink outingId={detail.outing.id} />
               </>
             )}
           </div>
@@ -786,7 +777,7 @@ export default async function OutingDetailPage({
             tone = "info";
           } else if (isOrganizer && picksMade > 0) {
             message = `Trip in progress · ${picksMade} pick${picksMade !== 1 ? "s" : ""} added`;
-            actionLabel = "Mark as booked →";
+            actionLabel = "Review itinerary →";
             tone = "success";
           } else if (!isOrganizer && picksMade > 0) {
             message = "The trip is coming together — check the picks below";
@@ -837,6 +828,8 @@ export default async function OutingDetailPage({
             toggleNoGolfDayAction={toggleNoGolfDayAction}
           />
         )}
+
+        <TripPricesPanel outingId={outingId} courses={selectedCourses} lodging={golfOnly ? null : selectedLodgingOption} editable={isOrganizer} start={tripWindow?.start} end={tripWindow?.end} />
 
         {/* ── Notices ── */}
         {!showShareBanner && notices.created === "1" && !shareLink ? (
@@ -1100,6 +1093,8 @@ export default async function OutingDetailPage({
           </div>
         )}
 
+
+
         {/* ── Main two-column grid ── */}
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
 
@@ -1108,6 +1103,8 @@ export default async function OutingDetailPage({
 
             {/* Golf courses */}
             <Card id="courses" className="scroll-mt-20">
+              <details open={votingOpen}><summary className="cursor-pointer text-base font-semibold">Browse all courses &amp; manage options <span className="ml-2 text-sm font-normal text-charcoal/55">{visibleCourses.length} options</span></summary>
+              <p className="my-3 text-sm text-charcoal/60">Use “Add a round” in the day planner to compare courses and choose a date. Open this list to vote, add a custom course, or refresh suggestions.</p>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">⛳ Golf courses</h2>
@@ -1123,7 +1120,7 @@ export default async function OutingDetailPage({
                   {isOrganizer && (
                     <form action={regenerateOutingInventoryAction.bind(null, detail.outing.id)}>
                       <SubmitButton
-                        label="↺ Refresh results"
+                        label="Find more options"
                         pendingLabel="Refreshing…"
                         className="rounded-full bg-charcoal/8 px-3 py-1 text-xs font-medium text-charcoal/60 hover:bg-charcoal/12 hover:text-charcoal shadow-none"
                       />
@@ -1137,7 +1134,7 @@ export default async function OutingDetailPage({
                   <p className="text-sm font-medium text-amber-800">⏳ No golf courses found yet</p>
                   <p className="mt-1 text-xs text-amber-700/70">
                     {isOrganizer
-                      ? "Try clicking \"↺ Refresh results\" above to pull in options for your destination."
+                      ? "Try clicking \"Find more options\" above to pull in options for your destination."
                       : "Options are being pulled in — check back shortly."}
                   </p>
                 </div>
@@ -1158,6 +1155,7 @@ export default async function OutingDetailPage({
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="font-semibold text-charcoal">{course.name}</p>
+                                <CourseAccessLabel course={course} />
                                 {inTrip && <Badge className="bg-emerald-600 text-white">✓ In the trip</Badge>}
                                 {isTop && !inTrip && <Badge className="bg-forest-900/10 text-forest-900">Top pick</Badge>}
                                 {course.providerKey === "custom" && <Badge className="bg-charcoal/8 text-charcoal/55">Custom</Badge>}
@@ -1292,6 +1290,7 @@ export default async function OutingDetailPage({
                   )}
                 </div>
               )}
+              </details>
             </Card>
 
             {/* Lodging options — hidden when golf-only mode is on */}
@@ -1361,7 +1360,7 @@ export default async function OutingDetailPage({
                                 />
                               )}
                             </div>
-                            <LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} players={players} />
+                            <div><LodgingRoomRate nightlyRate={stay.nightlyRate} nights={nights} players={players} /><LodgingRateNote stay={stay} start={tripWindow?.start} end={tripWindow?.end} /></div>
                           </div>
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/55">
@@ -1497,6 +1496,7 @@ export default async function OutingDetailPage({
             )}
 
             {/* Chat — compact */}
+            <details className="rounded-2xl border border-charcoal/10 bg-white p-5"><summary className="cursor-pointer font-semibold">Group chat · {detail.messages.length} messages</summary>
             <ChatPanel
               messages={detail.messages.slice(-3)}
               profiles={profiles}
@@ -1506,64 +1506,14 @@ export default async function OutingDetailPage({
               compact
               totalMessages={detail.messages.length}
             />
+            </details>
           </div>
 
           {/* ── Right column ── */}
           <div className="min-w-0 space-y-6">
 
-            {/* ── Trip plan (visible to everyone) ── */}
-            {(selectedCourses.length > 0 || selectedLodgingOption || isOrganizer) && (
-              <div className="rounded-[22px] border border-charcoal/8 bg-white px-5 py-4">
-                <p className="text-sm font-semibold text-charcoal">📋 Trip plan</p>
-
-                {/* Courses */}
-                <div className="mt-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-charcoal/40">
-                    Course{selectedCourses.length !== 1 ? "s" : ""}
-                  </p>
-                  {selectedCourses.length > 0 ? (
-                    <div className="mt-1.5 space-y-1">
-                      {selectedCourses.map((c) => (
-                        <div key={c.id} className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2">
-                          <span className="text-xs font-bold text-emerald-600">✓</span>
-                          <span className="text-xs font-medium text-charcoal">{c.name}</span>
-                          {c.scheduleDay != null && (
-                            <span className="ml-auto shrink-0 text-[11px] text-charcoal/40">{courseRoundDays(c).filter((day): day is number => day !== null).map(day => tripDayLabel(tripWindow?.start,day)).join(" · ")}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-1.5 text-xs italic text-charcoal/35">Not selected yet</p>
-                  )}
-                </div>
-
-                {/* Lodging */}
-                <div className="mt-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-charcoal/40">Lodging</p>
-                  {selectedLodgingOption ? (
-                    <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2">
-                      <span className="text-xs font-bold text-emerald-600">✓</span>
-                      <span className="text-xs font-medium text-charcoal">{selectedLodgingOption.name}</span>
-                    </div>
-                  ) : (
-                    <p className="mt-1.5 text-xs italic text-charcoal/35">Not selected yet</p>
-                  )}
-                </div>
-
-                {isOrganizer && (selectedCourses.length === 0 || !selectedLodgingOption) && (
-                  <p className="mt-3 text-[11px] text-charcoal/40">
-                    Add and move rounds in your itinerary. Choose a stay below.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* ── Organizer checklist ── */}
-
-
             {/* ── Group: single combined section ── */}
-            <Card id="group">
+            <Card id="group"><details open={detail.outing.planningMode !== "organizer"}><summary className="cursor-pointer font-semibold">Golfers &amp; invitations · {detail.members.length} joined</summary><div className="mt-4">
               {/* Header + progress */}
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -1684,10 +1634,10 @@ export default async function OutingDetailPage({
                   ) : null}
                 </form>
               )}
-            </Card>
+            </div></details></Card>
 
             {/* ── Your preferences ── */}
-            <Card id="preferences">
+            <Card id="preferences"><details open={!preferenceSaved && detail.outing.planningMode !== "organizer"}><summary className="cursor-pointer font-semibold">Your preferences <span className="text-sm font-normal text-charcoal/50">{preferenceSaved ? "· saved" : "· optional for organizers"}</span></summary><div className="mt-4">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Your preferences</h2>
                 {preferenceSaved ? (
@@ -1731,8 +1681,9 @@ export default async function OutingDetailPage({
                   <SubmitButton label="Save preferences" pendingLabel="Saving..." />
                 </form>
               )}
-            </Card>
+            </div></details></Card>
 
+            <details className="rounded-2xl border border-charcoal/10 bg-white p-5"><summary className="cursor-pointer font-semibold">Travel &amp; rental searches</summary><div className="mt-4 space-y-4">
             {/* ── Airbnb / VRBO quick-search ── */}
             {(() => {
               const dest = detail.outing.destinationLabel !== "Flexible location"
@@ -1814,6 +1765,8 @@ export default async function OutingDetailPage({
               </div>
             ) : null}
 
+            </div></details>
+            {isOrganizer && <details className="rounded-2xl border border-charcoal/10 bg-white p-5"><summary className="cursor-pointer font-semibold">Trip settings &amp; reservations</summary><div className="mt-4 space-y-4">
             {/* ── Destination management (organizer only) ── */}
             {isOrganizer && (
               <div className="rounded-[22px] border border-charcoal/8 bg-white px-5 py-4">
@@ -1910,6 +1863,7 @@ export default async function OutingDetailPage({
                 )}
               </div>
             )}
+            </div></details>}
           </div>
         </div>
         <div className="mt-8"><PinSeekerCard outingId={detail.outing.id} placement="planning" /></div>

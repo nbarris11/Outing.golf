@@ -1,4 +1,5 @@
 "use client";
+import { CourseAccessLabel } from "./course-access-label";
 import { useEffect, useRef, useState } from "react";
 import type { GolfCourseOption } from "@/types/domain";
 type Preview = {
@@ -60,7 +61,7 @@ export function CoursePreview({
         </figure>
       )}
       <div className="p-4">
-        <h4 className="font-serif text-xl">{course.name}</h4>
+        <h4 className="font-serif text-xl">{course.name}</h4><CourseAccessLabel course={course} />
         <p className="mt-1 text-sm text-charcoal/60">{course.locationLabel}</p>
         <p className="mt-3 text-sm">
           {data.description ||

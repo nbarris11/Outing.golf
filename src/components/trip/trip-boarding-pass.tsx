@@ -1,4 +1,5 @@
 interface Props {
+  statusLabel?: string;
   outingName: string;
   destination: string;
   startDate: string;
@@ -48,6 +49,7 @@ function MemberRoster({ names }: { names: string[] }) {
 }
 
 export function TripBoardingPass({
+  statusLabel = "Planning",
   outingName,
   destination,
   startDate,
@@ -76,7 +78,7 @@ export function TripBoardingPass({
             {outingName}
           </h2>
           <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-forest-800 bg-forest-900/8 px-2 py-0.5 rounded-full w-fit">
-            ✓ Booked
+            {statusLabel}
           </span>
         </div>
 

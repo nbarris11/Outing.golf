@@ -1,4 +1,6 @@
 "use client";
+import { CourseAccessLabel } from "./course-access-label";
+import { courseAccess, courseAccessPriority, discoverableCourse } from "@/lib/course-access";
 import { useEffect, useRef, useState, useTransition } from "react";
 import type {
   GolfCourseOption,
@@ -49,6 +51,7 @@ export function TripItineraryPanel({
   useEffect(() => {
     if (pickerDay !== null) dialog.current?.showModal();
   }, [pickerDay]);
+  const [showRestricted, setShowRestricted] = useState(false);
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -58,7 +61,7 @@ export function TripItineraryPanel({
     courseRoundDays(course).map((day, index) => ({ course, day, index })),
   );
   const unscheduled = rounds.filter((r) => !r.day || r.day > dayCount);
-  const matched = courses.filter((c) =>
+  const matched = courses.filter(c => discoverableCourse(c) && (showRestricted || courseAccess(c).kind !== "restricted")).sort((a,b) => courseAccessPriority(a) - courseAccessPriority(b)).filter((c) =>
     `${c.name} ${c.locationLabel} ${c.summary}`
       .toLowerCase()
       .includes(query.toLowerCase()),
@@ -185,6 +188,7 @@ export function TripItineraryPanel({
                       className="rounded-xl bg-cream/70 p-3"
                     >
                       <h4 className="font-semibold">{course.name}</h4>
+                      <CourseAccessLabel course={course} />
                       <p className="mt-1 text-xs text-charcoal/65">
                         {course.averageGreensFee > 0
                           ? `$${course.averageGreensFee}/person · estimate`
@@ -413,6 +417,8 @@ export function TripItineraryPanel({
                 {error}
               </p>
             )}
+            <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={showRestricted} onChange={e => setShowRestricted(e.target.checked)} />Include clubs with restricted access</label>
+            <p className="mt-2 text-xs text-charcoal/60">Public courses appear first. Check visitor eligibility and tee-time availability before booking.</p>
             <div className="mt-4 grid gap-5 lg:grid-cols-2">
               <div className="space-y-3">
                 {matched.map((course) => (
@@ -429,6 +435,7 @@ export function TripItineraryPanel({
                         {course.locationLabel}
                       </p>
                     </button>
+                    <CourseAccessLabel course={course} />
                     <p className="mt-2 text-sm">
                       {course.averageGreensFee > 0
                         ? `$${course.averageGreensFee}/person · estimated`

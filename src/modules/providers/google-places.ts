@@ -1,3 +1,4 @@
+import { discoverableCourse, courseAccessPriority } from "@/lib/course-access";
 import { env } from "@/lib/env";
 import { logError, logInfo } from "@/lib/logger";
 import type {
@@ -203,22 +204,8 @@ function golfSummary(_place: GooglePlace, _destination: DestinationOption) {
   return "";
 }
 
-const NON_COURSE_NAME_PATTERNS = /pro\s?shop|golf shop|golf store|golf academy|instruction|driving range/i;
-
-// Private/invite-only clubs that should never appear in search results.
-// These courses don't accept public tee times so showing them is pointless.
-const PRIVATE_CLUB_PATTERNS = /\b(country\s+club|athletic\s+club|hunt\s+club|polo\s+club|yacht\s+&?\s*country|golf\s+&?\s*country|tennis\s+&?\s*country|swim\s+&?\s*country)\b/i;
-const EXPLICIT_PRIVATE_PATTERNS = /[-–—]\s*private\b|\bprivate\s*[-–—]|\bmembers?\s+only\b|\binvite[\s-]only\b|\bprivate\s+club\b/i;
-
 function isActualCourse(place: GooglePlace): boolean {
-  const name = getPlaceName(place);
-  const nameLower = name.toLowerCase();
-  if (NON_COURSE_NAME_PATTERNS.test(nameLower)) return false;
-  // Explicitly labelled private — "Lost Dunes - PRIVATE", "Members Only", etc.
-  if (EXPLICIT_PRIVATE_PATTERNS.test(name)) return false;
-  // Name suggests private club AND very few public reviews (private clubs stay under ~75)
-  if (PRIVATE_CLUB_PATTERNS.test(nameLower) && (place.userRatingCount ?? 0) < 75) return false;
-  return true;
+  return discoverableCourse({ name: getPlaceName(place), locationLabel: place.formattedAddress ?? "" });
 }
 
 function golfTags(place: GooglePlace) {
@@ -434,7 +421,7 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
 
         if (!places.length) {
           places = await textSearch({
-            textQuery: `best golf courses in ${searchName}`,
+            textQuery: `public daily fee golf courses in ${searchName}`,
             includedType: "golf_course",
             strictTypeFiltering: true,
             languageCode: "en",
@@ -458,7 +445,7 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
         }
 
         // Filter out pro shops, academies, and driving ranges
-        places = places.filter(isActualCourse);
+        places = places.filter(isActualCourse).sort((a, b) => courseAccessPriority({ name: getPlaceName(a), locationLabel: a.formattedAddress ?? "" }) - courseAccessPriority({ name: getPlaceName(b), locationLabel: b.formattedAddress ?? "" }));
 
         if (!places.length) {
           logInfo("Google Places golf search returned no results — skipping destination", {
@@ -479,8 +466,8 @@ export const googlePlacesGolfProvider: GolfCourseProvider = {
             locationLabel: place.formattedAddress?.trim() || `${destination.name}, ${destination.region}`,
             averageGreensFee: 0,
             qualityScore: estimateQualityScore(place, index),
-            rideFriendly: true,
-            walkingFriendly: (place.rating ?? 0) >= 4.2 || index % 2 === 0,
+            rideFriendly: false,
+            walkingFriendly: false,
             summary: golfSummary(place, destination),
             tags: golfTags(place),
             featured: index === 0,

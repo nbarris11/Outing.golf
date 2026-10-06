@@ -140,3 +140,13 @@ export function bookingProgress(
     stayBooked,
   };
 }
+
+/** Status comes from the itinerary and recorded bookings, never the legacy flag. */
+export function tripReadiness(outing: import("@/types/domain").Outing, courses: GolfCourseOption[], lodgingId?: string) {
+  const progress = bookingProgress(outing, courses, lodgingId);
+  const itineraryReady = datesAreConfirmed(outing) && progress.rounds > 0 && progress.undated === 0 && (outing.golfOnly || Boolean(lodgingId));
+  const bookingsComplete = itineraryReady && progress.remaining === 0 && progress.unmatched === 0 && (outing.golfOnly || progress.stayBooked);
+  return { itineraryReady, bookingsComplete,
+    label: outing.status === "completed" ? "Completed" : bookingsComplete ? "Bookings complete" : itineraryReady ? "Itinerary ready" : "Planning",
+  };
+}

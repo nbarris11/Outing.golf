@@ -89,7 +89,7 @@ export const liteApiLodgingProvider: LodgingProvider = {
         summary:
           item.cancellationSummary ??
           `${item.roomName}${item.boardType ? ` · ${item.boardType}` : ""}`.trim(),
-        tags: [item.refundable ? "refundable" : "non-refundable", item.boardType ?? "room only"],
+        tags: [`rate-checked:${new Date().toISOString()}`, `rate-start:${request.checkIn}`, `rate-end:${request.checkOut}`, item.refundable ? "refundable" : "non-refundable", item.boardType ?? "room only"],
         featured: false,
         hidden: false
       }));

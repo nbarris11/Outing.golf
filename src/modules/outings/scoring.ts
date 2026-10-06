@@ -1,3 +1,4 @@
+import { courseAccessPriority, discoverableCourse } from "@/lib/course-access";
 import type {
   DestinationOption,
   GolfCourseOption,
@@ -189,13 +190,14 @@ export function buildRecommendations(input: {
   // Budget fit uses the group's golf portion of their budget.
   // Affordability checks if the golf cost fits within each member's golf budget share.
   const golfScores = golfCourses
+    .filter(discoverableCourse)
     .map((course) => {
       const totalGolfCost = course.averageGreensFee * estimatedRounds;
       // Each member's golf budget = 45% of their stated budget max
       const golfAffordabilityPerMember = preferences.map((p) => ({
         budgetMax: p.budgetMax * 0.45
       }));
-      const affordabilityScore = golfAffordabilityPerMember.length
+      const affordabilityScore = course.averageGreensFee > 0 && golfAffordabilityPerMember.length
         ? Math.round(
             (golfAffordabilityPerMember.filter((p) => totalGolfCost <= p.budgetMax).length /
               golfAffordabilityPerMember.length) *
@@ -203,7 +205,7 @@ export function buildRecommendations(input: {
           )
         : 50;
 
-      const budgetFitScore = normalizeBudgetFit(groupGolfBudget, totalGolfCost);
+      const budgetFitScore = course.averageGreensFee > 0 ? normalizeBudgetFit(groupGolfBudget, totalGolfCost) : 50;
       const prefBoost = coursePreferenceBoost(course, preferences);
       const votes_ = voteBoost(course.id, votes);
 
@@ -216,15 +218,16 @@ export function buildRecommendations(input: {
 
       return {
         id: course.id,
+        accessPriority: courseAccessPriority(course),
         score: Math.round(score),
         reasons: [
           `Budget fit: ${Math.round(budgetFitScore)}/100 vs group golf budget of $${Math.round(groupGolfBudget).toLocaleString()}`,
-          `${affordabilityScore}% of members can cover the greens fees`,
+          course.averageGreensFee > 0 ? `${affordabilityScore}% of members can cover the greens fees` : "Greens fee unknown — confirm the price before comparing budgets",
           `${Math.round(prefBoost)} points from quality and walking/riding preferences`
         ]
       };
     })
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => a.accessPriority - b.accessPriority || b.score - a.score);
 
   // ── Lodging scores ──────────────────────────────────────────────────────
   // Budget fit now uses group lodging budget (35% of group average).
