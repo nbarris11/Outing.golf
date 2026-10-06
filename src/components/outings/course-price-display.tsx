@@ -1,153 +1,35 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-
-interface CoursePricing {
-  avgRate: number | null;
-  weekdayRate: number | null;
-  weekendRate: number | null;
-  sourceUrl: string | null;
-  sourceName: string | null;
-  notes: string | null;
-  confidence: "high" | "medium" | "low" | "none" | null;
-  courseAccessType: "public" | "semi_private" | "private" | "resort" | "unknown" | null;
-}
-
 interface Props {
   courseName: string;
   locationLabel: string;
   rounds: number;
-  /** If the DB already has a stored averageGreensFee (>0), we skip the fetch and use it. */
   storedGreensFee?: number;
 }
-
-function currency(n: number) {
-  return `$${n.toLocaleString("en-US")}`;
-}
-
 export function CoursePriceDisplay({
   courseName,
   locationLabel,
   rounds,
-  storedGreensFee
+  storedGreensFee = 0,
 }: Props) {
-  const [pricing, setPricing] = useState<CoursePricing | null>(() =>
-    storedGreensFee && storedGreensFee > 0
-      ? {
-          avgRate: storedGreensFee,
-          weekdayRate: null,
-          weekendRate: null,
-          sourceUrl: null,
-          sourceName: null,
-          notes: null,
-          confidence: null,
-          courseAccessType: null
-        }
-      : null
-  );
-  const [state, setState] = useState<"idle" | "loading" | "done" | "unavailable" | "private">(
-    storedGreensFee && storedGreensFee > 0 ? "done" : "idle"
-  );
-  const fetchedRef = useRef(false);
-
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    if (storedGreensFee && storedGreensFee > 0) return;
-    fetchedRef.current = true;
-    setState("loading");
-
-    fetch("/api/course-pricing", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: courseName, location: locationLabel })
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { pricing: CoursePricing | null } | null) => {
-        if (!data?.pricing) {
-          setState("unavailable");
-          return;
-        }
-        const p = data.pricing;
-        // Private club with no public pricing
-        if (p.confidence === "none" && p.courseAccessType === "private") {
-          setPricing(p);
-          setState("private");
-          return;
-        }
-        if (p.avgRate) {
-          setPricing(p);
-          setState("done");
-        } else {
-          setState("unavailable");
-        }
-      })
-      .catch(() => setState("unavailable"));
-  }, [courseName, locationLabel, storedGreensFee]);
-
-  if (state === "loading") {
-    return (
-      <div className="text-right">
-        <p className="text-sm text-charcoal/45 animate-pulse">Finding rate…</p>
-      </div>
-    );
-  }
-
-  if (state === "private") {
-    return (
-      <div className="text-right">
-        <p className="text-sm font-medium text-charcoal/50">Private club</p>
-        <p className="mt-0.5 text-[10px] text-charcoal/40">Not open to the public</p>
-      </div>
-    );
-  }
-
-  if (state === "unavailable" || !pricing?.avgRate) {
-    return (
-      <div className="text-right">
-        <p className="text-sm font-medium text-charcoal/60">Rate varies</p>
-        <a
-          href={`https://www.google.com/search?q=${encodeURIComponent(
-            `${courseName} ${locationLabel} greens fee`
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-0.5 text-xs text-forest-900 hover:underline"
-        >
-          Look up →
-        </a>
-      </div>
-    );
-  }
-
-  const isLowConfidence = pricing.confidence === "low";
-  const isSemiPrivate = pricing.courseAccessType === "semi_private";
-  const total = pricing.avgRate * rounds;
-  const rateDisplay = isLowConfidence ? `~${currency(pricing.avgRate)}` : currency(pricing.avgRate);
-  const totalDisplay = isLowConfidence ? `~${currency(total)}` : currency(total);
-
   return (
     <div className="text-right">
       <p className="font-semibold text-charcoal">
-        {totalDisplay}
-        <span className="ml-1 text-xs font-normal text-charcoal/50">/person</span>
+        {storedGreensFee > 0
+          ? `$${Math.round(storedGreensFee * rounds).toLocaleString()}/person`
+          : "Price needed"}
       </p>
-      <p className="mt-0.5 text-xs text-charcoal/45">
-        {rateDisplay} × {rounds}rnd
+      <p className="text-xs text-charcoal/55">
+        {storedGreensFee > 0
+          ? `$${storedGreensFee} × ${rounds} round${rounds === 1 ? "" : "s"} · estimate`
+          : "Not included in the estimate yet"}
       </p>
-      {isSemiPrivate && (
-        <p className="mt-1 text-[10px] text-amber-600 font-medium">
-          Limited public access — confirm with course
-        </p>
-      )}
-      {pricing.sourceName && pricing.sourceUrl && (
+      {storedGreensFee <= 0 && (
         <a
-          href={pricing.sourceUrl}
+          className="text-xs underline"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-0.5 inline-block text-[10px] text-charcoal/40 hover:text-forest-900 hover:underline"
-          title={pricing.notes ?? undefined}
+          href={`https://www.google.com/search?q=${encodeURIComponent(`${courseName} ${locationLabel} greens fee`)}`}
         >
-          source: {pricing.sourceName}
+          Check course rates ↗
         </a>
       )}
     </div>

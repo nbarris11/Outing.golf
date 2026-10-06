@@ -16,7 +16,9 @@ export function ScrollToTop() {
     }
     // rAF ensures we run after the browser has had its chance to restore scroll
     const id = requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      const target = window.location.hash ? document.getElementById(window.location.hash.slice(1)) : null;
+      if (target) target.scrollIntoView();
+      else window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     });
     return () => cancelAnimationFrame(id);
   }, []);

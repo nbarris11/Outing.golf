@@ -101,32 +101,8 @@ export function TripBoardingPass({
           </div>
 
           <div>
-            {(() => {
-              const scheduledCourses = courses.filter((c) => c.scheduleDay != null);
-              const showMultiple = scheduledCourses.length > 1;
-              return (
-                <>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-charcoal/35">
-                    {showMultiple ? "Rounds" : "Course"}
-                  </p>
-                  <div className="mt-1 space-y-0.5">
-                    {showMultiple ? (
-                      scheduledCourses
-                        .sort((a, b) => (a.scheduleDay ?? 0) - (b.scheduleDay ?? 0))
-                        .map((c) => (
-                          <p key={c.name} className="text-sm font-medium text-forest-900 leading-snug">
-                            Day {c.scheduleDay} · {c.name}
-                          </p>
-                        ))
-                    ) : (
-                      <p className="text-sm font-medium text-forest-900 leading-snug">
-                        {courses[0]?.name ?? "TBD"}
-                      </p>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-charcoal/50">Rounds</p>
+            <div className="mt-1 space-y-1">{courses.length ? courses.map((c, index) => <p key={`${c.name}-${index}`} className="text-sm text-forest-900">{c.dayLabel || (c.scheduleDay ? `Day ${c.scheduleDay}` : "Date needed")} · {c.name}</p>) : <p className="text-sm">No rounds selected</p>}</div>
           </div>
 
           <div>

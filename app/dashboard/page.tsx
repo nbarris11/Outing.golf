@@ -21,12 +21,13 @@ function formatTripDates(windows: { start: string; end: string }[]) {
 }
 
 function statusStyle(status: string) {
-  if (status === "booking") return "bg-emerald-100 text-emerald-800";
+  if (status === "booked" || status === "booking") return "bg-emerald-100 text-emerald-800";
   if (status === "completed") return "bg-charcoal/8 text-charcoal/50";
   return "bg-sand text-charcoal/70";
 }
 
 function statusLabel(status: string) {
+  if (status === "booked") return "Booked";
   if (status === "booking") return "Ready to book";
   if (status === "completed") return "Completed";
   if (status === "planning") return "Planning";
@@ -36,12 +37,17 @@ function statusLabel(status: string) {
 export default async function DashboardPage({
   searchParams
 }: {
-  searchParams: Promise<{ success?: string; error?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; view?: string }>;
 }) {
   const profile = await requireProfile();
   const notices = await searchParams;
   const outings = await getDashboardData(profile.id);
 
+  const today = new Date().toISOString().slice(0,10);
+  const isPast = (outing: typeof outings[number]["outing"]) => outing.status === "completed" || (outing.preferredDateWindows.length > 0 && outing.preferredDateWindows.every(w => w.end < today));
+  const pastView = notices.view === "past";
+  const shown = outings.filter(({ outing }) => isPast(outing) === pastView);
+  const upcoming = outings.filter(({ outing }) => !isPast(outing)).length;
   return (
     <PageShell>
       <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -55,9 +61,9 @@ export default async function DashboardPage({
             <p className="mt-1 text-sm text-charcoal/55">
               {outings.length === 0
                 ? "You don't have any trips yet."
-                : outings.length === 1
-                  ? "You have 1 trip in progress."
-                  : `You have ${outings.length} trips in progress.`}
+                : upcoming === 1
+                  ? "You have 1 upcoming trip."
+                  : `You have ${upcoming} upcoming trips.`}
             </p>
           </div>
           <Button href="/outings/new" className="w-full sm:w-auto shrink-0">
@@ -85,11 +91,13 @@ export default async function DashboardPage({
           </div>
         ) : null}
 
+        <nav aria-label="Trip list" className="mt-6 flex gap-2"><a href="/dashboard" aria-current={!pastView ? "page" : undefined} className={`rounded-full px-4 py-2 text-sm ${!pastView ? "bg-forest-900 text-white" : "border"}`}>Upcoming ({upcoming})</a><a href="/dashboard?view=past" aria-current={pastView ? "page" : undefined} className={`rounded-full px-4 py-2 text-sm ${pastView ? "bg-forest-900 text-white" : "border"}`}>Past ({outings.length-upcoming})</a></nav>
+        {shown.length === 0 && outings.length > 0 && <p className="mt-6 text-sm text-charcoal/60">{pastView ? "No past trips yet." : "No upcoming trips. Ready to plan the next one?"}</p>}
         {/* Trip cards */}
         <div className="mt-6 grid gap-4">
-          {outings.map(({ outing, members, insights, recommendation }) => {
+          {shown.map(({ outing, members, insights, recommendation }) => {
             const isOrganizer = outing.organizerId === profile.id;
-            const progressTarget = insights.respondedCount + insights.pendingCount;
+            const progressTarget = Math.max(outing.numberOfPlayers, insights.respondedCount + insights.pendingCount);
             const responsePercent = progressTarget
               ? Math.round((insights.respondedCount / progressTarget) * 100)
               : 0;
@@ -169,25 +177,16 @@ export default async function DashboardPage({
 
                   {/* Right — actions */}
                   <div className="flex shrink-0 flex-col gap-2 sm:items-stretch sm:min-w-[140px]">
-                    <Button href={`/outings/${outing.id}${needsInvites ? "#invite-group" : ""}`} className="w-full justify-center">
-                      {needsInvites ? "Invite your group" : "Open trip"}
+                    <Button href={`/outings/${outing.id}${outing.status === "booked" || outing.status === "completed" ? "/trip" : ""}`} className="w-full justify-center">
+                      {outing.status === "booked" || outing.status === "completed" ? "Open Trip HQ" : "Continue planning"}
                     </Button>
-                    {needsInvites && (
-                      <Button
-                        href={`/outings/${outing.id}`}
-                        variant="secondary"
-                        className="w-full justify-center text-sm"
-                      >
-                        Keep planning
-                      </Button>
-                    )}
                     {isOrganizer && !needsInvites && insights.respondedCount > 0 && (
                       <Button
                         href={`/outings/${outing.id}/compare`}
                         variant="secondary"
                         className="w-full justify-center text-sm"
                       >
-                        Compare options
+                        Review trip
                       </Button>
                     )}
                     {isOrganizer && (

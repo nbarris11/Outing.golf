@@ -1,16 +1,13 @@
 "use client";
-
 import { usePersonsPerRoom } from "./persons-per-room-context";
-
-function currency(n: number) {
-  return new Intl.NumberFormat("en-US", {
+import { lodgingCost } from "@/lib/trip-plan";
+const money = (n: number) =>
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(n);
-}
-
-interface TripCostEstimateProps {
+interface Props {
   golfPerPerson: number;
   lodgingNightlyRate: number;
   nights: number;
@@ -18,8 +15,10 @@ interface TripCostEstimateProps {
   golfRoundsLabel: string;
   golfOnly?: boolean;
   players?: number;
+  missingPrices?: number;
+  hasCourses?: boolean;
+  compact?: boolean;
 }
-
 export function TripCostEstimate({
   golfPerPerson,
   lodgingNightlyRate,
@@ -27,59 +26,61 @@ export function TripCostEstimate({
   golfLabel,
   golfRoundsLabel,
   golfOnly = false,
-  players = 4
-}: TripCostEstimateProps) {
-  const { personsPerRoom, setPersonsPerRoom } = usePersonsPerRoom();
-
-  const lodgingPerPerson = golfOnly ? 0 : Math.round((lodgingNightlyRate / personsPerRoom) * nights);
-  const total = golfPerPerson + lodgingPerPerson;
-
+  players = 4,
+  missingPrices = 0,
+  hasCourses = true,
+  compact = false,
+}: Props) {
+  const { personsPerRoom } = usePersonsPerRoom();
+  const { rooms, perPerson } = lodgingCost(
+    lodgingNightlyRate,
+    nights,
+    players,
+    personsPerRoom,
+  );
+  const lodging = golfOnly ? 0 : perPerson;
+  const incomplete =
+    missingPrices > 0 || !hasCourses || (!golfOnly && !lodgingNightlyRate);
   return (
-    <div className="rounded-[28px] bg-forest-950 px-6 py-5 text-cream">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-cream/50">Estimated per person</p>
-          <p className="mt-2 font-serif text-4xl font-semibold tracking-[-0.05em]">
-            {currency(total)}
+    <div
+      className={
+        compact
+          ? "rounded-[20px] border border-charcoal/8 bg-white px-4 py-3"
+          : "rounded-[28px] bg-forest-950 px-6 py-5 text-cream"
+      }
+    >
+      <p className="text-xs uppercase tracking-widest opacity-60">
+        {incomplete ? "Known costs / person" : "Estimated / person"}
+      </p>
+      <p
+        className={
+          compact ? "mt-2 text-xl font-semibold" : "mt-2 font-serif text-4xl"
+        }
+      >
+        {money(golfPerPerson + lodging)}
+        {incomplete && <span className="text-sm"> + costs needed</span>}
+      </p>
+      {!compact && (
+        <>
+          <p className="mt-2 text-sm opacity-70">{golfLabel}</p>
+          <p className="mt-3 text-sm">
+            {money(golfPerPerson)} golf · {golfRoundsLabel}
           </p>
-          <p className="mt-1 text-sm text-cream/55">{golfLabel}</p>
-          {golfOnly && (
-            <p className="mt-1 text-xs text-cream/40">Golf only — no lodging included</p>
+          {!golfOnly && (
+            <p className="text-sm">
+              {lodgingNightlyRate
+                ? `${money(lodging)} lodging · ${rooms} rooms · ${nights} nights · ${personsPerRoom} people/room`
+                : "Choose lodging to include it"}
+            </p>
           )}
-        </div>
-        <div className="space-y-2 text-sm text-cream/65">
-          <p>{currency(golfPerPerson)} golf ({golfRoundsLabel})</p>
-          {golfOnly ? (
-            <p className="text-xs text-cream/40 italic">Lodging not included for this trip</p>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span>{currency(lodgingPerPerson)} lodging</span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-cream/40">({nights}n ÷</span>
-                <div className="flex gap-0.5">
-                  {Array.from({ length: players }, (_, i) => i + 1).map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setPersonsPerRoom(n)}
-                      title={`${n} person${n !== 1 ? "s" : ""} per room`}
-                      className={[
-                        "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold transition-colors",
-                        personsPerRoom === n
-                          ? "bg-cream text-forest-950"
-                          : "bg-cream/15 text-cream/60 hover:bg-cream/25"
-                      ].join(" ")}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <span className="text-xs text-cream/40">pp)</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+          <p className="mt-3 text-xs opacity-70">
+            {missingPrices > 0 &&
+              `${missingPrices} round${missingPrices === 1 ? "" : "s"} still need a price. `}
+            Golf and lodging estimates only. Confirm taxes and fees with the
+            provider; travel and meals are extra.
+          </p>
+        </>
+      )}
     </div>
   );
 }

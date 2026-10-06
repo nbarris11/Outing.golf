@@ -20,10 +20,11 @@ function calcNights(start: string, end: string): number {
 }
 
 interface DateWindowsPickerProps {
+  allowConfirmation?: boolean;
   initialWindows?: { start: string; end: string }[];
 }
 
-export function DateWindowsPicker({ initialWindows }: DateWindowsPickerProps = {}) {
+export function DateWindowsPicker({ initialWindows, allowConfirmation = false }: DateWindowsPickerProps = {}) {
   const [windows, setWindows] = useState<DateWindow[]>(
     initialWindows && initialWindows.length > 0 ? initialWindows : [{ start: "", end: "" }]
   );
@@ -72,6 +73,8 @@ export function DateWindowsPicker({ initialWindows }: DateWindowsPickerProps = {
         <p className="text-xs text-charcoal/48">Add up to 4 possible weekends</p>
       </div>
 
+      <p className="mb-4 text-sm text-charcoal/65">The first option is used for your draft itinerary. Confirm a date option when the group is ready.</p>
+      {allowConfirmation && windows.length === 1 && <label className="mb-4 flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" name="datesConfirmed" value="true"/>These dates are already decided</label>}
       <input type="hidden" name="dateWindowCount" value={windows.length} />
 
       <div className="space-y-4">

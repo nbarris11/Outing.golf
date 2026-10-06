@@ -11,21 +11,36 @@ interface Props {
 
 export function CoursePriceEditor({ courseId, outingId, currentPrice }: Props) {
   const router = useRouter();
+  const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(currentPrice > 0 ? String(currentPrice) : "");
+  const [value, setValue] = useState(
+    currentPrice > 0 ? String(currentPrice) : "",
+  );
   const [isPending, startTransition] = useTransition();
 
   function handleSave() {
     const price = parseFloat(value);
     if (!price || price <= 0) return;
     startTransition(async () => {
-      await fetch(`/api/outings/${outingId}/courses/${courseId}/price`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ price: Math.round(price) })
-      });
-      setEditing(false);
-      router.refresh();
+      setError("");
+      try {
+        const response = await fetch(
+          `/api/outings/${outingId}/courses/${courseId}/price`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ price: Math.round(price) }),
+          },
+        );
+        if (!response.ok) {
+          setError("Could not save price. Try again.");
+          return;
+        }
+        setEditing(false);
+        router.refresh();
+      } catch {
+        setError("Could not save price. Check your connection and try again.");
+      }
     });
   }
 
@@ -42,9 +57,15 @@ export function CoursePriceEditor({ courseId, outingId, currentPrice }: Props) {
   }
 
   return (
-    <div className="mt-1 flex items-center justify-end gap-1.5">
+    <div className="mt-1 flex flex-wrap items-center justify-end gap-1.5">
+      {error && (
+        <p role="alert" className="w-full text-xs text-red-700">
+          {error}
+        </p>
+      )}
       <span className="text-xs text-charcoal/55">$</span>
       <input
+        aria-label="Estimated price per round"
         type="number"
         min={1}
         value={value}

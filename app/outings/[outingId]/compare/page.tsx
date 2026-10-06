@@ -1,3 +1,10 @@
+import { PlanningStatus } from "@/components/outings/planning-status";
+import { TripOverviewMap } from "@/components/outings/trip-overview-map";
+import { TripItineraryPanel } from "@/components/outings/trip-itinerary-panel";
+import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-context";
+import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
+import { tripDayCount, tripCosts, courseRoundDays, tripDayLabel } from "@/lib/trip-plan";
+import { toggleNoGolfDayAction } from "@/lib/actions/outings";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -36,7 +43,7 @@ export default async function ComparePage({
 
   const nights = defaultWindow
     ? Math.max(
-        1,
+        0,
         Math.round(
           (new Date(defaultWindow.end).getTime() - new Date(defaultWindow.start).getTime()) /
             (1000 * 60 * 60 * 24)
@@ -83,10 +90,10 @@ export default async function ComparePage({
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Trip overview</p>
             <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
-              The whole trip at a glance
+              Review your trip
             </h1>
             <p className="mt-4 text-base leading-7 text-charcoal/68">
-              Read-only summary: recommendations, destination costs, and rental options. To add or change picks, head back to the Organize page.
+              Review your selected rounds and stay before confirming your bookings. Course and hotel reservations are made directly with the provider.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
@@ -94,10 +101,10 @@ export default async function ComparePage({
               href={`/outings/${outingId}`}
               className="inline-flex h-11 items-center justify-center rounded-full bg-forest-900 px-5 text-sm font-semibold text-cream shadow-[0_4px_14px_rgba(20,58,44,0.25)] hover:bg-forest-900/90 transition-colors"
             >
-              {picksCount > 0 ? "Edit picks on Organize →" : "Pick courses on Organize →"}
+              {picksCount > 0 ? "Edit itinerary →" : "Pick courses on Organize →"}
             </Link>
             {isOrganizer && !isBooked && (
-              <MarkAsBookedButton
+              <MarkAsBookedButton organizerLed={detail.outing.planningMode === "organizer"}
                 outingId={outingId}
                 markAsBooked={markAsBookedAction}
                 bookingState={bookingState}
@@ -114,6 +121,13 @@ export default async function ComparePage({
           </div>
         </div>
 
+        <PlanningStatus outing={detail.outing} courses={pickedCourses} lodging={pickedLodging} />
+        <TripOverviewMap courses={pickedCourses} lodging={detail.outing.golfOnly ? null : pickedLodging} />
+        <PersonsPerRoomProvider initialValue={detail.outing.personsPerRoom ?? 2}>
+          <div className="mt-6"><TripCostEstimate golfPerPerson={tripCosts(pickedCourses, pickedLodging?.nightlyRate ?? 0, nights, players, detail.outing.personsPerRoom ?? 2, detail.outing.golfOnly).golf} lodgingNightlyRate={pickedLodging?.nightlyRate ?? 0} nights={nights} players={players} golfOnly={detail.outing.golfOnly} golfLabel="Your selected rounds and stay" golfRoundsLabel={`${pickedCourses.reduce((n,c) => n + courseRoundDays(c).length, 0)} rounds`} missingPrices={tripCosts(pickedCourses, 0, nights, players, 2, true).missingPrices} hasCourses={pickedCourses.length > 0} /></div>
+          <TripItineraryPanel readOnly outingId={outingId} isOrganizer={false} nights={nights} dayCount={tripDayCount(defaultWindow?.start, defaultWindow?.end)} tripStart={defaultWindow?.start ?? null} selectedCourses={pickedCourses} courses={pickedCourses} selectedLodging={pickedLodging} golfOnly={detail.outing.golfOnly} noGolfDays={detail.outing.noGolfDays} bookings={detail.outing.teeTimeBookings ?? []} players={players} toggleNoGolfDayAction={toggleNoGolfDayAction} />
+        </PersonsPerRoomProvider>
+        <details className="mt-8 rounded-2xl border border-charcoal/10 p-4"><summary className="cursor-pointer font-semibold">Explore other options and recommendations</summary>
         {/* ── Current picks summary (what's already "in the trip") ── */}
         {picksCount > 0 && (
           <Card className="mt-8 border-emerald-200 bg-emerald-50/30">
@@ -230,13 +244,13 @@ export default async function ComparePage({
                           <div className="rounded-[20px] bg-white p-3">
                             <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Golf</p>
                             <p className="mt-2 text-sm font-semibold">
-                              {currency(destination.averageRoundCost)}/round
+                              {destination.averageRoundCost > 0 ? `${currency(destination.averageRoundCost)}/round` : "Price needed"}
                             </p>
                           </div>
                           <div className="rounded-[20px] bg-white p-3">
                             <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Stay</p>
                             <p className="mt-2 text-sm font-semibold">
-                              {currency(destination.averageNightlyRate)}/night
+                              {destination.averageNightlyRate > 0 ? `${currency(destination.averageNightlyRate)}/night` : "Price needed"}
                             </p>
                           </div>
                           <div className="rounded-[20px] bg-white p-3">
@@ -250,7 +264,7 @@ export default async function ComparePage({
                           <div className="rounded-[20px] bg-forest-900/8 p-3">
                             <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Est./person</p>
                             <p className="mt-2 text-sm font-semibold text-forest-900">
-                              {currency(estimatedPerPerson)}
+                              {destination.averageRoundCost > 0 && destination.averageNightlyRate > 0 ? currency(estimatedPerPerson) : "Incomplete"}
                             </p>
                           </div>
                         </div>
@@ -321,16 +335,16 @@ export default async function ComparePage({
                               )}
                               {course.qualityScore > 0 && (
                                 <div className="rounded-[20px] bg-white px-4 py-3 text-right">
-                                  <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Quality</p>
-                                  <p className="mt-1 text-sm font-semibold">{course.qualityScore}/10</p>
+                                  <p className="text-xs uppercase tracking-[0.2em] text-charcoal/45">Suggested fit</p>
+                                  <p className="mt-1 text-sm font-semibold">{course.qualityScore}/100</p>
                                 </div>
                               )}
                             </div>
                           </div>
                           {(course.walkingFriendly || course.rideFriendly) && (
                             <div className="mt-4 flex flex-wrap gap-3 text-xs text-charcoal/55">
-                              {course.walkingFriendly && <span>🚶 Walking friendly</span>}
-                              {course.rideFriendly && <span>🛺 Ride-friendly</span>}
+                              {course.walkingFriendly && <span>Walking rules unverified</span>}
+                              {course.rideFriendly && <span>Confirm cart availability</span>}
                             </div>
                           )}
                         </div>
@@ -376,6 +390,7 @@ export default async function ComparePage({
             )}
           </div>
         )}
+        </details>
       </section>
     </PageShell>
   );

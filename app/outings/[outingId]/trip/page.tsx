@@ -1,3 +1,11 @@
+import { PlanningStatus } from "@/components/outings/planning-status";
+import { TripOverviewMap } from "@/components/outings/trip-overview-map";
+import { TripItineraryPanel } from "@/components/outings/trip-itinerary-panel";
+import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-context";
+import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
+import { tripDayCount, tripCosts, courseRoundDays, tripDayLabel } from "@/lib/trip-plan";
+import { toggleNoGolfDayAction } from "@/lib/actions/outings";
+import { TripShareTools } from "@/components/trip/trip-share-tools";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -38,12 +46,10 @@ export default async function TripHqPage({
 
   // Find top course and lodging
   const topCourse =
-    detail.golfCourses.find((c) => c.featured) ?? detail.golfCourses[0] ?? null;
-  const topLodging =
-    detail.lodging.find((l) => l.topPick) ??
-    detail.lodging.find((l) => l.featured) ??
-    detail.lodging[0] ??
-    null;
+    detail.golfCourses.find((c) => c.featured && !c.hidden) ?? null;
+  const topLodging = detail.lodging.find(l => l.featured && !l.hidden) ?? null;
+  const selectedCourses = detail.golfCourses.filter(c => c.featured && !c.hidden);
+
 
   // Trip dates
   const tripStart =
@@ -122,31 +128,37 @@ export default async function TripHqPage({
       <div className="rounded-t-[40px] bg-cream min-h-screen">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
 
-          {/* Pin Seeker Competitions partner card — above the fold */}
-          <div className="mb-8">
-            <PinSeekerCard outingId={outingId} placement="trip_hq" />
-          </div>
-
           {/* Boarding pass */}
           <TripBoardingPass
             outingName={detail.outing.name}
             destination={detail.outing.destinationLabel ?? "TBD"}
             startDate={tripStart ?? ""}
             endDate={tripEnd ?? ""}
-            courses={detail.golfCourses
-              .filter((c) => !c.hidden)
-              .sort((a, b) => {
-                if (a.scheduleDay == null && b.scheduleDay == null) return 0;
-                if (a.scheduleDay == null) return 1;
-                if (b.scheduleDay == null) return -1;
-                return a.scheduleDay - b.scheduleDay;
-              })}
+            courses={selectedCourses.flatMap(c => courseRoundDays(c).map(day => ({ name: c.name, scheduleDay: day, dayLabel: day ? tripDayLabel(tripStart, day) : "Date needed" }))).sort((a, b) => (a.scheduleDay ?? 999) - (b.scheduleDay ?? 999))}
             lodgingName={topLodging?.name ?? null}
             lodgingAddress={topLodging?.hotelAddress ?? null}
             playerCount={detail.outing.numberOfPlayers}
             memberNames={memberFirstNames}
           />
 
+          <TripShareTools />
+          <PlanningStatus outing={detail.outing} courses={selectedCourses} lodging={topLodging} />
+          <TripOverviewMap courses={selectedCourses} lodging={detail.outing.golfOnly ? null : topLodging} />
+          <PersonsPerRoomProvider initialValue={detail.outing.personsPerRoom ?? 2}>
+            <TripCostEstimate
+              golfPerPerson={tripCosts(selectedCourses, null, 0, detail.outing.numberOfPlayers, 2, true).golf}
+              lodgingNightlyRate={topLodging?.nightlyRate ?? 0}
+              nights={Math.max(0, tripDayCount(tripStart, tripEnd) - 1)}
+              players={detail.outing.numberOfPlayers}
+              golfOnly={detail.outing.golfOnly}
+              golfLabel="Your selected rounds and stay"
+              golfRoundsLabel={`${selectedCourses.reduce((n, c) => n + courseRoundDays(c).length, 0)} rounds`}
+              missingPrices={tripCosts(selectedCourses, null, 0, detail.outing.numberOfPlayers, 2, true).missingPrices}
+              hasCourses={selectedCourses.length > 0}
+            />
+          </PersonsPerRoomProvider>
+          <TripItineraryPanel readOnly outingId={outingId} isOrganizer={false} nights={Math.max(0, tripDayCount(tripStart, tripEnd) - 1)} dayCount={tripDayCount(tripStart, tripEnd)} tripStart={tripStart} selectedCourses={selectedCourses} courses={selectedCourses} selectedLodging={topLodging} golfOnly={detail.outing.golfOnly} noGolfDays={detail.outing.noGolfDays} bookings={detail.outing.teeTimeBookings ?? []} players={detail.outing.numberOfPlayers} toggleNoGolfDayAction={toggleNoGolfDayAction}/>
+          <div className="my-6"><PinSeekerCard outingId={outingId} placement="trip_hq" /></div>
           {/* Two-column grid */}
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
             {/* Packing list */}
@@ -186,7 +198,7 @@ export default async function TripHqPage({
                   )}
                   {/* each course directions link */}
                   {(() => {
-                    const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
+                    const visibleCourses = selectedCourses;
                     const scheduledCourses = visibleCourses.filter((c) => c.scheduleDay != null);
                     const coursesToShow = scheduledCourses.length > 0
                       ? [...scheduledCourses].sort((a, b) => (a.scheduleDay ?? 0) - (b.scheduleDay ?? 0))
@@ -230,7 +242,7 @@ export default async function TripHqPage({
                   </li>
                   {/* Ride links: one Uber + one Lyft per course, pickup = lodging */}
                   {(() => {
-                    const visibleCourses = detail.golfCourses.filter((c) => !c.hidden);
+                    const visibleCourses = selectedCourses;
                     const scheduledCourses = visibleCourses.filter((c) => c.scheduleDay != null);
                     const coursesToShow = scheduledCourses.length > 0
                       ? [...scheduledCourses].sort((a, b) => (a.scheduleDay ?? 0) - (b.scheduleDay ?? 0))

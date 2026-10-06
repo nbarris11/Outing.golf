@@ -20,6 +20,8 @@ interface TeeTimeManagerProps {
   deleteAction: (outingId: string, bookingId: string) => Promise<void>;
   // Suggested course names from existing options
   courseNames?: string[];
+  defaultDate?: string;
+  defaultPlayers?: number;
 }
 
 export function TeeTimeManager({
@@ -27,8 +29,11 @@ export function TeeTimeManager({
   bookings,
   addAction,
   deleteAction,
+  defaultDate,
+  defaultPlayers = 4,
   courseNames = []
 }: TeeTimeManagerProps) {
+  const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -38,9 +43,9 @@ export function TeeTimeManager({
     const formData = new FormData(e.currentTarget);
     const form = e.currentTarget;
     startTransition(async () => {
-      await addAction(formData);
-      form.reset();
-      setOpen(false);
+      setError("");
+      try { await addAction(formData); form.reset(); setOpen(false); }
+      catch { setError("Could not save the tee time. Please try again."); }
     });
   }
 
@@ -98,6 +103,7 @@ export function TeeTimeManager({
         </div>
       )}
 
+      {error && <p role="alert" className="mt-2 text-xs text-red-700">{error}</p>}
       {/* Add form */}
       {open ? (
         <form onSubmit={handleAdd} className="mt-3 space-y-3 rounded-[18px] border border-charcoal/10 bg-cream/60 p-4">
@@ -129,18 +135,18 @@ export function TeeTimeManager({
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-charcoal/65">Date *</label>
-              <Input name="date" type="date" required />
+              <Input aria-label="Tee time date" name="date" type="date" defaultValue={defaultDate} required />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-charcoal/65">Tee time *</label>
-              <Input name="teeTime" type="time" required />
+              <Input aria-label="Tee time" name="teeTime" type="time" required />
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-charcoal/65">Players</label>
-              <Input name="players" type="number" min="1" max="40" defaultValue={4} />
+              <Input name="players" type="number" min="1" max="40" defaultValue={defaultPlayers} />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-charcoal/65">Confirmation #</label>

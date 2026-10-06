@@ -1,3 +1,7 @@
+import { datesAreConfirmed } from "@/lib/trip-plan";
+import { PlanningStatus } from "@/components/outings/planning-status";
+import { TripOverviewMap } from "@/components/outings/trip-overview-map";
+import { courseRoundDays, tripCosts, tripDate, tripDayCount, tripDayLabel } from "@/lib/trip-plan";
 import { redirect } from "next/navigation";
 
 import { BackButton } from "@/components/common/back-button";
@@ -12,7 +16,6 @@ import { OrganizerChecklist } from "@/components/outings/organizer-checklist";
 import { TeeTimeManager } from "@/components/outings/tee-time-manager";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
-import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
 import { CourseDetails } from "@/components/outings/course-details";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
 import { FavoriteButton } from "@/components/outings/favorite-button";
@@ -24,7 +27,6 @@ import { GolfOnlyToggle } from "@/components/outings/golf-only-toggle";
 import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-context";
 import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
 import { OrganizerPickButton } from "@/components/outings/organizer-pick-button";
-import { RoundsSelector } from "@/components/outings/rounds-selector";
 import { VoteButton } from "@/components/outings/vote-button";
 import { CollapsibleOptions } from "@/components/outings/collapsible-options";
 import { TripItineraryPanel } from "@/components/outings/trip-itinerary-panel";
@@ -70,7 +72,7 @@ function labelize(value: string) {
 }
 
 function planningWindowLabel(start: string, end: string) {
-  return `${formatLongDateLabel(start)} – ${formatLongDateLabel(end)}`;
+  return `${tripDayLabel(start, 1)} – ${tripDayLabel(end, 1)}, ${end.slice(0,4)}`;
 }
 
 function budgetRangeDefaults(target: number) {
@@ -186,13 +188,13 @@ export default async function OutingDetailPage({
   const profiles = detail.profiles;
   const bestDate = detail.recommendation.bestDates[0];
   const defaults = preferenceDefaults(detail.currentPreference, detail.outing.budgetTarget);
-  const progressTarget = detail.insights.respondedCount + detail.insights.pendingCount;
+  const progressTarget = Math.max(detail.outing.numberOfPlayers, detail.insights.respondedCount + detail.insights.pendingCount);
   const preferenceSaved = Boolean(detail.currentPreference);
 
   // ── New member welcome screen (Step 2) ──────────────────────────────────────
   // Show for any member who hasn't submitted preferences yet — not just ?newMember=1
   // This catches people who signed in via Google, direct nav, email invite, etc.
-  if (!detail.currentPreference && !isOrganizer) {
+  if (!detail.currentPreference && !isOrganizer && detail.outing.planningMode !== "organizer") {
     return (
       <PageShell>
         {funnelEvents}
@@ -500,7 +502,7 @@ export default async function OutingDetailPage({
   const shareLink = isOrganizer
     ? notices.shareLink ?? (await getOutingShareLink(detail.outing.id, detail.outing.organizerId)) ?? null
     : null;
-  const showShareBanner = Boolean(isOrganizer && shareLink &&
+  const showShareBanner = Boolean(notices.created === "1" && isOrganizer && detail.outing.planningMode !== "organizer" && shareLink &&
     detail.members.every((member) => member.profileId === detail.outing.organizerId) &&
     detail.outing.status !== "booked" && detail.outing.status !== "completed");
 
@@ -541,7 +543,7 @@ export default async function OutingDetailPage({
   // Cost estimates
   const tripWindow = detail.outing.preferredDateWindows[0];
   const nights = tripWindow
-    ? Math.max(1, Math.round((new Date(tripWindow.end).getTime() - new Date(tripWindow.start).getTime()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.round((new Date(tripWindow.end).getTime() - new Date(tripWindow.start).getTime()) / (1000 * 60 * 60 * 24)))
     : 3;
   const roundsPerPlayer = detail.recommendation.consensusRounds
     ?? (detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3);
@@ -602,41 +604,16 @@ export default async function OutingDetailPage({
   const top3Lodging = visibleLodging.slice(0, 3);
   const totalVoters = progressTarget;
 
-  // Per-person cost estimate
-  // Priority: explicitly selected (featured) items > day-scheduled items > algorithm top pick
-  const scheduledCoursesWithRounds = detail.golfCourses.filter((c) => !c.hidden && c.scheduleDay != null);
-
-  // Use selected courses if any, then fall back to day-scheduled, then algorithm top
-  const golfCostCourses = selectedCourses.length > 0
-    ? selectedCourses
-    : scheduledCoursesWithRounds.length > 0
-      ? scheduledCoursesWithRounds
-      : null;
-  const totalScheduledRounds = golfCostCourses
-    ? golfCostCourses.reduce((sum, c) => sum + (c.scheduleRounds ?? 1), 0)
-    : 0;
-  const golfPerPerson = golfCostCourses
-    ? golfCostCourses.reduce((sum, c) => sum + c.averageGreensFee * (c.scheduleRounds ?? 1), 0)
-    : detail.insights.topCourse
-      ? detail.insights.topCourse.averageGreensFee * roundsPerPlayer
-      : null;
-
-  // Use selected lodging if any, then algorithm top pick
-  // nightlyRate is per room — personsPerRoom is managed client-side via context
   const golfOnly = detail.outing.golfOnly ?? false;
-  const lodgingSource = selectedLodgingOption ?? detail.insights.topLodging ?? null;
-  const lodgingNightlyRate = lodgingSource?.nightlyRate ?? null;
-  // Server-side estimate uses 2 persons/room default (for the quick stats tile)
-  const estimatedPerPerson = golfPerPerson !== null
-    ? golfOnly
-      ? golfPerPerson
-      : lodgingNightlyRate !== null
-        ? golfPerPerson + Math.round((lodgingNightlyRate / 2) * nights)
-        : null
-    : null;
+  const lodgingNightlyRate = selectedLodgingOption?.nightlyRate ?? 0;
+  const costs = tripCosts(selectedCourses, lodgingNightlyRate, nights, players, detail.outing.personsPerRoom ?? 2, golfOnly);
+  const golfCostCourses = selectedCourses;
+  const totalScheduledRounds = costs.rounds;
+  const golfPerPerson = costs.golf;
+  const dayCount = tripDayCount(tripWindow?.start, tripWindow?.end);
 
   return (
-    <PersonsPerRoomProvider>
+    <PersonsPerRoomProvider outingId={detail.outing.id} initialValue={detail.outing.personsPerRoom ?? 2} canEdit={isOrganizer}>
     <PageShell>
       {funnelEvents}
       <ScrollToTop />
@@ -683,7 +660,7 @@ export default async function OutingDetailPage({
             </h1>
             <p className="mt-1 text-sm text-charcoal/55">
               {detail.outing.destinationLabel} · {detail.outing.numberOfPlayers} golfers
-              {tripWindow ? ` · ${planningWindowLabel(tripWindow.start, tripWindow.end)}` : ""}
+              {tripWindow ? ` · ${planningWindowLabel(tripWindow.start, tripWindow.end)} · ${datesAreConfirmed(detail.outing) ? "Dates confirmed" : "Proposed dates"}` : ""}
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2 sm:items-end sm:min-w-[160px]">
@@ -693,14 +670,14 @@ export default async function OutingDetailPage({
               </Button>
             )}
             <Button href={`/outings/${detail.outing.id}/compare`} variant="secondary" className="w-full sm:w-auto">
-              Overview
+              Review trip
             </Button>
             {isOrganizer && detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
               <>
                 <Button href={`/outings/${detail.outing.id}/edit`} variant="secondary" className="w-full sm:w-auto">
                   ✏️ Edit trip
                 </Button>
-                <MarkAsBookedButton
+                <MarkAsBookedButton organizerLed={detail.outing.planningMode === "organizer"}
                   outingId={detail.outing.id}
                   markAsBooked={markAsBookedAction}
                   bookingState={
@@ -756,18 +733,7 @@ export default async function OutingDetailPage({
             )}
           </div>
 
-          {/* Est. per person */}
-          <div className={["rounded-[20px] border px-4 py-3", estimatedPerPerson ? "border-charcoal/8 bg-white" : "border-charcoal/8 bg-white"].join(" ")}>
-            <p className="text-xs uppercase tracking-[0.18em] text-charcoal/42">Est./person</p>
-            <p className={["mt-2 text-xl font-semibold", estimatedPerPerson ? "text-charcoal" : "text-charcoal/30"].join(" ")}>
-              {estimatedPerPerson ? currency(estimatedPerPerson) : "—"}
-            </p>
-            {estimatedPerPerson && (
-              <p className="mt-1 text-xs text-charcoal/45">
-                {nights}n · {totalScheduledRounds > 0 ? totalScheduledRounds : roundsPerPlayer}rnd
-              </p>
-            )}
-          </div>
+          <TripCostEstimate compact golfPerPerson={golfPerPerson} lodgingNightlyRate={lodgingNightlyRate} nights={nights} golfOnly={golfOnly} golfLabel="" golfRoundsLabel={`${totalScheduledRounds} rounds`} players={players} missingPrices={costs.missingPrices} hasCourses={selectedCourses.length > 0} />
 
           {/* Nights */}
           <div className="rounded-[20px] border border-charcoal/8 bg-white px-4 py-3">
@@ -776,7 +742,7 @@ export default async function OutingDetailPage({
               {nights}<span className="text-sm font-normal text-charcoal/40"> nights</span>
             </p>
             <p className="mt-1 text-xs text-charcoal/45">
-              {totalScheduledRounds > 0 ? totalScheduledRounds : roundsPerPlayer} rounds planned
+              {totalScheduledRounds} rounds selected
             </p>
           </div>
         </div>
@@ -789,7 +755,7 @@ export default async function OutingDetailPage({
           }
           // Skip in the two states that already have dedicated banners below
           // (post-create banner and the "Everyone's in!" All-in CTA).
-          if (notices.created === "1") return null;
+          if (notices.created === "1" || detail.outing.planningMode === "organizer") return null;
           const allInAllVoted = isOrganizer && !votingOpen && responsePercent === 100 && detail.insights.respondedCount > 1 && progressTarget > 0 && allVotes.length === 0;
           if (allInAllVoted) return null;
 
@@ -848,27 +814,28 @@ export default async function OutingDetailPage({
           );
         })()}
 
+        <PlanningStatus key={`${selectedLodgingOption?.id}-${tripWindow?.start}-${tripWindow?.end}`} outing={detail.outing} courses={selectedCourses} lodging={selectedLodgingOption} editable={isOrganizer} />
+        <TripOverviewMap courses={selectedCourses} lodging={golfOnly ? null : selectedLodgingOption} />
+        <nav aria-label="Trip planning" className="sticky top-0 z-20 mt-5 flex gap-2 overflow-x-auto rounded-2xl bg-cream/95 p-2 shadow-sm print:hidden">
+          {[['#itinerary', '1. Build your days'], ['#lodging', '2. Choose your stay'], [`/outings/${detail.outing.id}/compare`, '3. Review trip']].map(([href, label]) => <a key={href} href={href} className="shrink-0 rounded-full px-4 py-2 text-sm font-medium hover:bg-forest-900/10">{label}</a>)}
+        </nav>
         {/* ── Your trip / itinerary panel ── */}
-        {detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
+        {(
           <TripItineraryPanel
             outingId={detail.outing.id}
             isOrganizer={isOrganizer}
             nights={nights}
+            dayCount={dayCount}
+            courses={visibleCourses}
+            bookings={detail.outing.teeTimeBookings ?? []}
+            players={players}
             tripStart={tripWindow?.start ?? null}
             selectedCourses={selectedCourses}
             selectedLodging={selectedLodgingOption}
             golfOnly={golfOnly}
             noGolfDays={detail.outing.noGolfDays}
             toggleNoGolfDayAction={toggleNoGolfDayAction}
-            currency={currency}
           />
-        )}
-
-        {/* ── Pin Seeker Competitions partner card — planning stage ── */}
-        {detail.outing.status !== "booked" && detail.outing.status !== "completed" && (
-          <div className="mt-6">
-            <PinSeekerCard outingId={detail.outing.id} placement="planning" />
-          </div>
         )}
 
         {/* ── Notices ── */}
@@ -887,7 +854,7 @@ export default async function OutingDetailPage({
         ) : null}
 
         {/* ── All-in CTA: organizer prompt to start vote ── */}
-        {isOrganizer && !votingOpen && responsePercent === 100 && detail.insights.respondedCount > 1 && progressTarget > 0 && allVotes.length === 0 && (
+        {isOrganizer && detail.outing.planningMode !== "organizer" && !votingOpen && responsePercent === 100 && detail.insights.respondedCount > 1 && progressTarget > 0 && allVotes.length === 0 && (
           <div className="mt-6 rounded-[28px] border-2 border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5,#f7f4ee)] p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -912,7 +879,7 @@ export default async function OutingDetailPage({
         )}
 
         {/* ── Invite nudge: shown when only the organizer has responded ── */}
-        {isOrganizer && !votingOpen && responsePercent === 100 && detail.insights.respondedCount <= 1 && progressTarget <= 1 && allVotes.length === 0 && (
+        {isOrganizer && detail.outing.planningMode !== "organizer" && !votingOpen && responsePercent === 100 && detail.insights.respondedCount <= 1 && progressTarget <= 1 && allVotes.length === 0 && (
           <div className="mt-6 rounded-[28px] border border-charcoal/10 bg-white p-6">
             <h2 className="text-lg font-semibold tracking-[-0.02em] text-charcoal">Now invite the group</h2>
             <p className="mt-1 text-sm text-charcoal/65">
@@ -1179,7 +1146,7 @@ export default async function OutingDetailPage({
                   {(() => {
                     const renderCourseCard = (course: typeof sortedVisibleCourses[number]) => {
                       const isTop = course.id === detail.insights.topCourse?.id;
-                      const courseRounds = course.scheduleRounds ?? 1;
+                      const courseRounds = courseRoundDays(course).length || 1;
                       const courseGolfCost = course.averageGreensFee * courseRounds;
                       const tally = voteTally("golf_course", course.id);
                       const favCount = favoriteCount("golf_course", course.id);
@@ -1220,8 +1187,8 @@ export default async function OutingDetailPage({
                           {/* Bottom row — info left, actions right; scheduling controls only appear once the course is in the trip */}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2 text-xs text-charcoal/55 min-w-0">
-                              <span className="shrink-0">Quality {course.qualityScore}/100</span>
-                              <span className="shrink-0">{course.walkingFriendly ? "Walking" : "Riding"}</span>
+                              <span className="shrink-0">Suggested fit {course.qualityScore}/100</span>
+                              <span className="shrink-0">Confirm walking rules</span>
                               {course.scheduleDay && (
                                 <span className="shrink-0 rounded-full bg-forest-900/8 px-2 py-0.5 text-forest-900 font-medium">
                                   Day {course.scheduleDay}
@@ -1236,37 +1203,15 @@ export default async function OutingDetailPage({
                                 isFavorited={favByMe}
                                 totalCount={favCount}
                               />
-                              {isOrganizer && (
-                                <OrganizerPickButton
-                                  outingId={detail.outing.id}
-                                  entityType="golf_course"
-                                  entityId={course.id}
-                                  isFeatured={inTrip}
-                                />
-                              )}
-                              {/* Scheduling controls — only when course is in the trip */}
-                              {isOrganizer && inTrip && (
-                                <RoundsSelector
-                                  outingId={detail.outing.id}
-                                  courseId={course.id}
-                                  scheduleRounds={course.scheduleRounds ?? 1}
-                                />
-                              )}
-                              {isOrganizer && inTrip && visibleCourses.length > 1 && (
-                                <CourseScheduleSelector
-                                  outingId={detail.outing.id}
-                                  courseId={course.id}
-                                  scheduleDay={course.scheduleDay ?? null}
-                                  maxDays={nights}
-                                />
-                              )}
+                              {isOrganizer && !inTrip && <a href="#itinerary" className="rounded-full bg-forest-900 px-4 py-2 text-xs text-cream">Choose a date to add ↑</a>}
+                              {isOrganizer && inTrip && <a href="#itinerary" className="rounded-full border px-3 py-2 text-xs">Schedule rounds ↑</a>}
                               <a
                                 href={`https://www.google.com/search?q=${encodeURIComponent(
                                   [
                                     course.name,
                                     course.locationLabel,
                                     "tee times",
-                                    tripWindow ? new Date(tripWindow.start + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
+                                    tripWindow ? new Date(tripDate(tripWindow.start, courseRoundDays(course)[0] ?? 1) + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
                                     `${players} players`
                                   ].filter(Boolean).join(" ")
                                 )}`}
@@ -1283,7 +1228,7 @@ export default async function OutingDetailPage({
                                 title="Look up phone number"
                                 className="inline-flex items-center gap-1 rounded-full border border-charcoal/15 bg-white px-3 py-1.5 text-xs font-medium text-charcoal/60 hover:border-charcoal/30 hover:text-charcoal transition-colors"
                               >
-                                📞 Call
+                                Find phone
                               </a>
                               {/* Hide button — organizer only, and only for candidates (not in-trip items) to prevent accidentally hiding a committed pick */}
                               {isOrganizer && !inTrip && (
@@ -1526,8 +1471,10 @@ export default async function OutingDetailPage({
             </Card>}
 
             {/* Combined cost estimate — client component so personsPerRoom updates instantly */}
-            {golfPerPerson !== null && (golfOnly || lodgingNightlyRate !== null) && (
+            {(
               <TripCostEstimate
+                missingPrices={costs.missingPrices}
+                hasCourses={selectedCourses.length > 0}
                 golfPerPerson={golfPerPerson}
                 lodgingNightlyRate={lodgingNightlyRate ?? 0}
                 nights={nights}
@@ -1581,7 +1528,7 @@ export default async function OutingDetailPage({
                           <span className="text-xs font-bold text-emerald-600">✓</span>
                           <span className="text-xs font-medium text-charcoal">{c.name}</span>
                           {c.scheduleDay != null && (
-                            <span className="ml-auto shrink-0 text-[11px] text-charcoal/40">Day {c.scheduleDay}</span>
+                            <span className="ml-auto shrink-0 text-[11px] text-charcoal/40">{courseRoundDays(c).filter((day): day is number => day !== null).map(day => tripDayLabel(tripWindow?.start,day)).join(" · ")}</span>
                           )}
                         </div>
                       ))}
@@ -1606,28 +1553,14 @@ export default async function OutingDetailPage({
 
                 {isOrganizer && (selectedCourses.length === 0 || !selectedLodgingOption) && (
                   <p className="mt-3 text-[11px] text-charcoal/40">
-                    Use "+ Add to trip" on the options below to lock in your picks.
+                    Add and move rounds in your itinerary. Choose a stay below.
                   </p>
                 )}
               </div>
             )}
 
             {/* ── Organizer checklist ── */}
-            {isOrganizer && (
-              <OrganizerChecklist
-                memberCount={detail.members.length}
-                inviteCount={detail.invites.length}
-                respondedCount={detail.preferences.filter((preference) => preference.profileId !== detail.outing.organizerId).length}
-                votingEverOpened={votingOpen || allVotes.length > 0}
-                votingOpen={votingOpen}
-                hasVotes={allVotes.length > 0}
-                selectedCoursesCount={selectedCourses.length}
-                hasSelectedLodging={selectedLodgingOption !== null}
-                teeTimesCount={(detail.outing.teeTimeBookings ?? []).length}
-                isBooked={detail.outing.status === "booked"}
-                golfOnly={golfOnly}
-              />
-            )}
+
 
             {/* ── Group: single combined section ── */}
             <Card id="group">
@@ -1729,7 +1662,7 @@ export default async function OutingDetailPage({
 
               {/* Organizer invite form */}
               {isOrganizer && (
-                <form action={inviteMemberAction} className="mt-5 rounded-[22px] bg-forest-950 p-4 text-cream">
+                <form id="invite-group" action={inviteMemberAction} className="mt-5 rounded-[22px] bg-forest-950 p-4 text-cream">
                   <input type="hidden" name="outingId" value={detail.outing.id} />
                   <h3 className="font-semibold tracking-[-0.02em]">Invite more golfers</h3>
                   <p className="mt-1 text-sm text-cream/60">One email per line, or comma-separated.</p>
@@ -1970,7 +1903,7 @@ export default async function OutingDetailPage({
                     </p>
                     <div className="mt-3">
                       <Button href={`/outings/${detail.outing.id}/compare`} className="w-full justify-center text-sm">
-                        Compare &amp; finalize →
+                        Review trip →
                       </Button>
                     </div>
                   </div>
@@ -1979,6 +1912,7 @@ export default async function OutingDetailPage({
             )}
           </div>
         </div>
+        <div className="mt-8"><PinSeekerCard outingId={detail.outing.id} placement="planning" /></div>
       </section>
     </PageShell>
     </PersonsPerRoomProvider>

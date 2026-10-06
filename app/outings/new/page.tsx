@@ -1,3 +1,4 @@
+import { PlanningApproach } from "@/components/outings/planning-approach";
 import { PageShell } from "@/components/layout/page-shell";
 import { DestinationPicker } from "@/components/outings/destination-picker";
 import { DateWindowsPicker } from "@/components/outings/date-windows-picker";
@@ -27,14 +28,15 @@ export default async function NewOutingPage({
             Set the trip up in under 5 minutes
           </h1>
           <p className="mt-4 text-base leading-7 text-charcoal/68">
-            Start with the basics, set the vibe, and invite the group. Anything more detailed can come later.
+            Choose how you want to plan, add the basics, and start building your trip.
           </p>
         </div>
 
         <div className="mt-8 grid gap-6 xl:grid-cols-[1fr_320px]">
-          <Card className="order-2 xl:order-1">
+          <Card className="order-1">
             <form action={createOutingAction} className="space-y-8">
               <input type="hidden" name="organizerWeighting" value="7" />
+              <PlanningApproach />
 
               <section className="space-y-5">
                 <div className="flex items-center gap-3">
@@ -73,7 +75,7 @@ export default async function NewOutingPage({
                   <BudgetSlider id="budgetTarget" name="budgetTarget" defaultValue={1200} />
                 </div>
 
-                <DateWindowsPicker />
+                <DateWindowsPicker allowConfirmation />
 
                 <RadioCardGroup
                   name="tripVibe"
@@ -97,38 +99,6 @@ export default async function NewOutingPage({
                     }
                   ]}
                 />
-              </section>
-
-              <section className="space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-forest-900 text-sm font-semibold text-cream">
-                    3
-                  </div>
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-charcoal/42">Invite</p>
-                    <h2 className="text-2xl font-semibold tracking-[-0.03em]">Bring someone in now, or do it next</h2>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                  <div>
-                    <FieldLabel htmlFor="initialInviteEmail">Invite by email</FieldLabel>
-                    <Input
-                      id="initialInviteEmail"
-                      name="initialInviteEmail"
-                      type="email"
-                      placeholder="friend@example.com"
-                      autoComplete="off"
-                    />
-                    <p className="mt-2 text-xs text-charcoal/48">Optional. You can invite more golfers from the trip page.</p>
-                  </div>
-                  <div className="rounded-[24px] bg-cream p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-charcoal/40">Share link</p>
-                    <p className="mt-3 text-sm leading-6 text-charcoal/64">
-                      Create the outing first, then copy a shareable link from the next screen.
-                    </p>
-                  </div>
-                </div>
               </section>
 
               <details className="rounded-[28px] bg-cream p-5">
@@ -172,14 +142,14 @@ export default async function NewOutingPage({
             </form>
           </Card>
 
-          <div className="order-1 space-y-4 xl:order-2">
+          <div className="order-2 space-y-4">
             <Card className="bg-forest-950 text-cream">
               <p className="text-sm uppercase tracking-[0.2em] text-cream/50">Why this is short</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">Momentum beats detail</h2>
               <ul className="mt-4 space-y-3 text-sm leading-6 text-cream/76">
                 <li>Set the frame now</li>
-                <li>Let participants fill in the nuance</li>
-                <li>Narrow the trip after real input comes in</li>
+                <li>Choose courses now or collect group input</li>
+                <li>Confirm dates and track each booking</li>
               </ul>
             </Card>
 

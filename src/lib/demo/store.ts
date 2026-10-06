@@ -338,8 +338,8 @@ export async function createDemoOuting(input: Omit<Outing, "id" | "createdAt" | 
   const inventory = await fetchOutingInventory(outing);
 
   state.destinationOptions.unshift(...inventory.destinations);
-  state.golfCourseOptions.unshift(...inventory.golfCourses);
-  state.lodgingOptions.unshift(...inventory.lodging);
+  state.golfCourseOptions.unshift(...inventory.golfCourses.map(c=>({...c,featured:false})));
+  state.lodgingOptions.unshift(...inventory.lodging.map(l=>({...l,featured:false})));
   await writeState(state);
 
   return outing;
@@ -590,4 +590,12 @@ export async function deleteDemoTeeTime(
   outing.teeTimeBookings = outing.teeTimeBookings.filter((b) => b.id !== bookingId);
   await writeState(state);
   return true;
+}
+
+export async function editDemoTripPlan(outingId: string, actor: string, edit: (outing: Outing, courses: GolfCourseOption[]) => void) {
+  const state = await readState();
+  const outing = state.outings.find(o => o.id === outingId);
+  if (!outing || outing.organizerId !== actor) throw new Error("Organizer access required");
+  edit(outing, state.golfCourseOptions.filter(c => c.outingId === outingId));
+  await writeState(state);
 }

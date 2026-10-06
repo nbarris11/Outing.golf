@@ -12,21 +12,22 @@ const TOOLTIP: Record<BookingState | "skipped", string> = {
   ready:
     "Votes are in! Book the hotel and tee times directly with the venue, then click here to lock it in and notify everyone.",
   skipped:
-    "Skipping the group vote — book the trip and click here to notify everyone."
+    "Book directly with the courses and hotel, record the reservations, then mark the trip as booked."
 };
 
 interface MarkAsBookedButtonProps {
   outingId: string;
   markAsBooked: (formData: FormData) => Promise<void>;
   bookingState: BookingState;
+  organizerLed?: boolean;
 }
 
-export function MarkAsBookedButton({ outingId, markAsBooked, bookingState }: MarkAsBookedButtonProps) {
+export function MarkAsBookedButton({ outingId, markAsBooked, bookingState, organizerLed = false }: MarkAsBookedButtonProps) {
   const [visible, setVisible] = useState(false);
   const [skipped, setSkipped] = useState(false);
 
-  const isReady = bookingState === "ready" || skipped;
-  const tooltipKey: BookingState | "skipped" = skipped ? "skipped" : bookingState;
+  const isReady = bookingState === "ready" || skipped || organizerLed;
+  const tooltipKey: BookingState | "skipped" = skipped || organizerLed ? "skipped" : bookingState;
 
   return (
     <div className="flex flex-col items-end gap-1">
@@ -45,7 +46,7 @@ export function MarkAsBookedButton({ outingId, markAsBooked, bookingState }: Mar
             {isReady ? (
               <>
                 <p className="font-semibold text-emerald-300">
-                  {skipped ? "Booking without a vote" : "✓ Ready to book!"}
+                  {skipped || organizerLed ? "Organizer-led planning" : "✓ Ready to book!"}
                 </p>
                 <p className="mt-1 text-cream/75">{TOOLTIP[tooltipKey]}</p>
               </>
@@ -84,7 +85,7 @@ export function MarkAsBookedButton({ outingId, markAsBooked, bookingState }: Mar
       </div>
 
       {/* Skip voting — only shown in no_vote state, not once voting has started */}
-      {bookingState === "no_vote" && !skipped && (
+      {bookingState === "no_vote" && !skipped && !organizerLed && (
         <button
           type="button"
           onClick={() => setSkipped(true)}

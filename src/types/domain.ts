@@ -54,6 +54,10 @@ export interface Outing {
   golfOnly: boolean;
   teeTimeBookings: TeeTimeBooking[];
   noGolfDays: number[];
+  personsPerRoom?: number;
+  planningMode?: "organizer" | "group";
+  confirmedDateWindow?: DateWindow | null;
+  lodgingBooking?: { lodgingId: string; start: string; end: string; reference?: string } | null;
   createdAt: string;
 }
 
@@ -123,6 +127,7 @@ export interface GolfCourseOption {
   tags: string[];
   featured: boolean;
   hidden: boolean;
+  roundDays?: (number | null)[] | null;
   scheduleDay?: number | null;
   scheduleRounds?: number | null;
   dayLabel?: string | null;

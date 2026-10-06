@@ -35,6 +35,8 @@ import type { ChatMessage, DestinationOption, GolfCourseOption, LodgingOption, L
 
 const createOutingSchema = z
   .object({
+  planningMode: z.enum(["organizer", "group"]).default("group"),
+  datesConfirmed: z.boolean().default(false),
   name: z.string().min(3),
   destinationType: z.enum(["open", "city", "state", "region", "international"]).default("open"),
   destinationLabel: z
@@ -270,6 +272,8 @@ function buildOutingRecord(input: z.infer<typeof createOutingSchema>, organizerI
     id: randomUUID(),
     name: input.name,
     organizerId,
+    planningMode: input.planningMode,
+    confirmedDateWindow: input.datesConfirmed && dateWindows?.length === 1 ? dateWindows[0] : null,
     destinationType: input.destinationType,
     destinationLabel: input.destinationLabel,
     preferredDateWindows: dateWindows ?? (input.dateStart && input.dateEnd
@@ -344,7 +348,7 @@ async function seedLiveInventory(outing: Outing) {
           walking_friendly: course.walkingFriendly,
           summary: course.summary,
           tags: course.tags,
-          featured: course.featured,
+          featured: false,
           hidden: course.hidden
         };
       })
@@ -369,7 +373,7 @@ async function seedLiveInventory(outing: Outing) {
           sleeps: stay.sleeps,
           summary: stay.summary,
           tags: stay.tags,
-          featured: stay.featured,
+          featured: false,
           hidden: stay.hidden
         };
       })
@@ -534,6 +538,8 @@ export async function createOutingAction(formData: FormData) {
   const profile = await requireProfile();
   let destination = "/outings/new";
   const parsed = createOutingSchema.safeParse({
+    planningMode: formData.get("planningMode") ?? undefined,
+    datesConfirmed: formData.get("datesConfirmed") === "true",
     name: formData.get("name"),
     destinationType: formData.get("destinationType") ?? undefined,
     destinationLabel: formData.get("destinationLabel"),
@@ -561,6 +567,8 @@ export async function createOutingAction(formData: FormData) {
     if (isDemoMode) {
       const outingDraft = buildOutingRecord(parsed.data, profile.id, dateWindows);
       const outing = await createDemoOuting({
+        planningMode: outingDraft.planningMode,
+        confirmedDateWindow: outingDraft.confirmedDateWindow,
         name: outingDraft.name,
         organizerId: outingDraft.organizerId,
         destinationType: outingDraft.destinationType,
@@ -613,6 +621,8 @@ export async function createOutingAction(formData: FormData) {
         destination_type: outing.destinationType,
         destination_label: outing.destinationLabel,
         preferred_date_windows: outing.preferredDateWindows,
+        planning_mode: outing.planningMode,
+        confirmed_date_window: outing.confirmedDateWindow,
         budget_target: outing.budgetTarget,
         trip_style: outing.tripStyle,
         number_of_players: outing.numberOfPlayers,
@@ -2219,32 +2229,25 @@ export async function toggleNoGolfDayAction(formData: FormData) {
     const state = await getDemoState();
     const outing = state.outings.find((o) => o.id === outingId);
     if (!outing || outing.organizerId !== profile.id) return;
-    const set = new Set(outing.noGolfDays ?? []);
-    if (set.has(day)) set.delete(day);
-    else set.add(day);
-    outing.noGolfDays = Array.from(set).sort((a, b) => a - b);
+    const { editDemoTripPlan } = await import("@/lib/demo/store");
+    const { courseRoundDays } = await import("@/lib/trip-plan");
+    await editDemoTripPlan(outingId, profile.id, (trip, courses) => {
+      if (courses.some(c => c.featured && !c.hidden && courseRoundDays(c).includes(day))) return;
+      trip.noGolfDays = trip.noGolfDays.includes(day) ? trip.noGolfDays.filter(d => d !== day) : [...trip.noGolfDays, day];
+    });
     revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/compare`);
     return;
   }
 
   const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
   if (!supabase) return;
 
-  const { data: outing } = await supabase
-    .from("outings")
-    .select("organizer_id,no_golf_days")
-    .eq("id", outingId)
-    .maybeSingle();
-  if (!outing || outing.organizer_id !== profile.id) return;
+  const { error } = await supabase.rpc("toggle_trip_rest_day", { p_outing: outingId, p_actor: profile.id, p_day: day });
+  if (error) throw new Error(error.message);
 
-  const current: number[] = Array.isArray(outing.no_golf_days) ? outing.no_golf_days : [];
-  const set = new Set(current);
-  if (set.has(day)) set.delete(day);
-  else set.add(day);
-  const next = Array.from(set).sort((a, b) => a - b);
-
-  await supabase.from("outings").update({ no_golf_days: next }).eq("id", outingId);
   revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/compare`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2276,30 +2279,33 @@ export async function addTeeTimeAction(formData: FormData) {
   if (isDemoMode) {
     await addDemoTeeTime(outingId, profile.id, booking);
     revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/compare`);
     revalidatePath(`/outings/${outingId}/trip`);
     return;
   }
 
   const supabase = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
-  if (!supabase) return;
+  if (!supabase) throw new Error("Unable to save tee time");
 
   const { data: outing } = await supabase
     .from("outings")
     .select("organizer_id,tee_time_bookings")
     .eq("id", outingId)
     .maybeSingle();
-  if (!outing || outing.organizer_id !== profile.id) return;
+  if (!outing || outing.organizer_id !== profile.id) throw new Error("Organizer access required");
 
   const existing: TeeTimeBooking[] = Array.isArray(outing.tee_time_bookings)
     ? outing.tee_time_bookings
     : [];
 
-  await supabase
+  const { error } = await supabase
     .from("outings")
     .update({ tee_time_bookings: [...existing, booking] })
     .eq("id", outingId);
 
+  if (error) throw new Error("Could not save tee time");
   revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/compare`);
   revalidatePath(`/outings/${outingId}/trip`);
 }
 
