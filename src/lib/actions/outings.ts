@@ -365,7 +365,9 @@ async function seedLiveInventory(outing: Outing) {
       })
       .filter(Boolean);
 
-    const lodgingRows = inventory.lodging
+    const uniqueStays = inventory.lodging.filter((stay, index, all) =>
+      all.findIndex(candidate => key(candidate.name) === key(stay.name)) === index);
+    const lodgingRows = uniqueStays
       .filter(stay => !stays.data?.some(old => key(old.name) === key(stay.name)))
       .map((stay) => {
         const destinationOptionId = destinationIdMap.get(stay.destinationOptionId);
@@ -396,15 +398,20 @@ async function seedLiveInventory(outing: Outing) {
 
     // Refresh quote fields on matching stays while preserving their IDs,
     // selections, booking records, votes, and organizer-supplied addresses.
-    for (const stay of inventory.lodging) {
-      const existing = stays.data?.find(old => key(old.name) === key(stay.name));
-      if (!existing) continue;
+    for (const stay of uniqueStays) {
+      const matching = stays.data?.filter(old => key(old.name) === key(stay.name)) ?? [];
+      if (!matching.length) continue;
+      // Older inventories contain several room offers for the same hotel.
+      // Refresh all copies so whichever saved card is selected has the new rate.
       const { error } = await supabase.from("lodging_options").update({
         nightly_rate: Math.round(stay.nightlyRate), price_total: stay.priceTotal == null ? null : Math.round(stay.priceTotal), currency: stay.currency,
         tags: stay.tags, check_in: stay.checkIn, check_out: stay.checkOut,
-        guest_count: stay.guestCount, hotel_id: stay.hotelId, offer_id: stay.offerId,
-      }).eq("id", existing.id).eq("outing_id", outing.id);
+        guest_count: stay.guestCount, hotel_id: stay.hotelId, offer_id: null,
+      }).in("id", matching.map(row => row.id)).eq("outing_id", outing.id);
       if (error) throw error;
+      const { error: offerError } = await supabase.from("lodging_options")
+        .update({ offer_id: stay.offerId }).eq("id", matching[0].id).eq("outing_id", outing.id);
+      if (offerError) throw offerError;
     }
     if (destinationRows.length) {
       const { error } = await supabase.from("destination_options").insert(destinationRows);
