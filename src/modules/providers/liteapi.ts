@@ -23,7 +23,7 @@ export const liteApiLodgingProvider: LodgingProvider = {
   },
   async searchLodging(input) {
     const primaryDestination = input.destinations[0];
-    const defaultWindow = input.outing.preferredDateWindows[0];
+    const defaultWindow = input.outing.confirmedDateWindow ?? input.outing.preferredDateWindows[0];
 
     if (!primaryDestination || !defaultWindow) {
       return mockLodgingProvider.searchLodging(input);
@@ -33,9 +33,9 @@ export const liteApiLodgingProvider: LodgingProvider = {
       destination: `${primaryDestination.name}, ${primaryDestination.region}`,
       checkIn: defaultWindow.start,
       checkOut: defaultWindow.end,
-      adults: Math.max(1, Math.min(input.guests, 8)),
+      adults: Math.max(1, input.guests),
       children: 0,
-      rooms: Math.max(1, Math.ceil(input.guests / 2)),
+      rooms: Math.max(1, Math.ceil(input.guests / (input.outing.personsPerRoom ?? 2))),
       currency: "USD"
     };
 
@@ -89,7 +89,7 @@ export const liteApiLodgingProvider: LodgingProvider = {
         summary:
           item.cancellationSummary ??
           `${item.roomName}${item.boardType ? ` · ${item.boardType}` : ""}`.trim(),
-        tags: [`rate-checked:${new Date().toISOString()}`, `rate-start:${request.checkIn}`, `rate-end:${request.checkOut}`, item.refundable ? "refundable" : "non-refundable", item.boardType ?? "room only"],
+        tags: ["rate-basis:room-night", `rate-checked:${new Date().toISOString()}`, `rate-start:${request.checkIn}`, `rate-end:${request.checkOut}`, item.refundable ? "refundable" : "non-refundable", item.boardType ?? "room only"],
         featured: false,
         hidden: false
       }));

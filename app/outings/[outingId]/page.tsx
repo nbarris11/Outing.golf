@@ -1311,6 +1311,7 @@ export default async function OutingDetailPage({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">🏨 Lodging options</h2>
+                  {isOrganizer && <form action={regenerateOutingInventoryAction.bind(null, detail.outing.id)} className="mt-2"><SubmitButton label="Refresh hotel rates" pendingLabel="Checking rates…" className="rounded-full border border-charcoal/15 bg-white px-3 py-2 text-sm text-forest-900" /></form>}
                   {detail.insights.respondedCount > 0 && (
                     <p className="mt-0.5 text-xs text-forest-900/70">↑ Ranked by group preferences</p>
                   )}

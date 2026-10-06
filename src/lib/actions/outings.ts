@@ -308,7 +308,7 @@ async function seedLiveInventory(outing: Outing) {
     const [destinations, courses, stays] = await Promise.all([
       supabase.from("destination_options").select("id,name,region").eq("outing_id", outing.id),
       supabase.from("golf_course_options").select("name,location_label").eq("outing_id", outing.id),
-      supabase.from("lodging_options").select("name").eq("outing_id", outing.id),
+      supabase.from("lodging_options").select("id,name").eq("outing_id", outing.id),
     ]);
     if (destinations.error || courses.error || stays.error) throw new Error("Unable to read existing trip options");
     const key = (name: string) => name.trim().toLowerCase();
@@ -380,7 +380,10 @@ async function seedLiveInventory(outing: Outing) {
           destination_option_id: destinationOptionId,
           provider_key: stay.providerKey,
           name: stay.name,
-          nightly_rate: stay.nightlyRate,
+          nightly_rate: Math.round(stay.nightlyRate),
+          price_total: stay.priceTotal, currency: stay.currency,
+          check_in: stay.checkIn, check_out: stay.checkOut, guest_count: stay.guestCount,
+          hotel_id: stay.hotelId, offer_id: stay.offerId, hotel_address: stay.hotelAddress,
           lodging_type: stay.lodgingType,
           sleeps: stay.sleeps,
           summary: stay.summary,
@@ -391,6 +394,18 @@ async function seedLiveInventory(outing: Outing) {
       })
       .filter(Boolean);
 
+    // Refresh quote fields on matching stays while preserving their IDs,
+    // selections, booking records, votes, and organizer-supplied addresses.
+    for (const stay of inventory.lodging) {
+      const existing = stays.data?.find(old => key(old.name) === key(stay.name));
+      if (!existing) continue;
+      const { error } = await supabase.from("lodging_options").update({
+        nightly_rate: Math.round(stay.nightlyRate), price_total: stay.priceTotal, currency: stay.currency,
+        tags: stay.tags, check_in: stay.checkIn, check_out: stay.checkOut,
+        guest_count: stay.guestCount, hotel_id: stay.hotelId, offer_id: stay.offerId,
+      }).eq("id", existing.id).eq("outing_id", outing.id);
+      if (error) throw error;
+    }
     if (destinationRows.length) {
       const { error } = await supabase.from("destination_options").insert(destinationRows);
       if (error) throw error;
@@ -1829,6 +1844,7 @@ export async function regenerateOutingInventoryAction(outingId: string) {
     destinationType: outingRow.destination_type,
     destinationLabel: outingRow.destination_label,
     preferredDateWindows: outingRow.preferred_date_windows ?? [],
+    confirmedDateWindow: outingRow.confirmed_date_window ?? null,
     budgetTarget: outingRow.budget_target,
     tripStyle: outingRow.trip_style,
     numberOfPlayers: outingRow.number_of_players,
@@ -1841,6 +1857,7 @@ export async function regenerateOutingInventoryAction(outingId: string) {
     noGolfDays: Array.isArray(outingRow.no_golf_days) ? outingRow.no_golf_days : [],
     votingOpen: outingRow.voting_open ?? false,
     golfOnly: outingRow.golf_only ?? false,
+    personsPerRoom: outingRow.persons_per_room ?? 2,
     createdAt: outingRow.created_at
   };
 

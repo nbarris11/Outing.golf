@@ -40,7 +40,7 @@ export async function GET(
     const descriptionPromise = place.editorialSummary?.text
       ? Promise.resolve(place.editorialSummary.text as string)
       : place.websiteUri
-        ? courseWebsiteDescription(place.websiteUri)
+        ? courseWebsiteDescription(place.websiteUri.replace(/^http:/, "https:"))
         : Promise.resolve(null);
     let photoUrl: string | undefined;
     const photo = place.photos?.[0];
@@ -52,8 +52,8 @@ export async function GET(
           signal: AbortSignal.timeout(8000),
           headers: { "X-Goog-Api-Key": env.GOOGLE_MAPS_API_KEY },
         },
-      );
-      if (photoResponse.ok) photoUrl = (await photoResponse.json()).photoUri;
+      ).catch(() => null);
+      if (photoResponse?.ok) photoUrl = (await photoResponse.json()).photoUri;
     }
     return NextResponse.json(
       {

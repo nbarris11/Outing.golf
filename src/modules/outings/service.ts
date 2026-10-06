@@ -172,7 +172,7 @@ function mapLodgingRow(row: Record<string, any>): LodgingOption {
     destinationOptionId: row.destination_option_id,
     providerKey: row.provider_key,
     name: row.name,
-    nightlyRate: row.nightly_rate,
+    nightlyRate: row.provider_key === "liteapi" && !(row.tags ?? []).includes("rate-basis:room-night") ? 0 : row.nightly_rate,
     priceTotal: row.price_total ?? null,
     currency: row.currency ?? null,
     lodgingType: row.lodging_type,

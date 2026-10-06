@@ -333,6 +333,7 @@ export async function saveLodgingOption(input: {
     raw_provider_data: input.option.rawProviderData ?? {},
     summary: summaryBits.join(" · ") || "Saved from live hotel search",
     tags: [
+      "rate-basis:room-night",
       ...(input.option.rateCheckedAt && Date.parse(input.option.rateCheckedAt) <= Date.now() ? [`rate-checked:${input.option.rateCheckedAt}`] : []),
       input.option.refundable ? "refundable" : "non-refundable",
       input.option.boardType ?? "room only",

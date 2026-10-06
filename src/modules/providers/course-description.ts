@@ -37,6 +37,15 @@ export function extractCourseDescription(html: string): string | null {
       .trim();
     if (text.length >= 35) return text.slice(0, 450);
   }
+  // Some course sites omit metadata; use an actual golf-related paragraph.
+  const content = html.replace(/<(script|style|nav|footer|header)\b[\s\S]*?<\/\1>/gi, " ");
+  for (const paragraph of content.match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) ?? []) {
+    const text = paragraph.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&")
+      .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Math.min(Number(n), 0x10ffff)))
+      .replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+    if (text.length >= 100 && /\b(golf|course|fairway|greens)\b/i.test(text)
+      && !/cookie|privacy|newsletter|copyright|subscribe/i.test(text)) return text.slice(0, 450);
+  }
   return null;
 }
 /** Read only the public HTTPS website returned by Places; pin DNS and cap response size. */
@@ -66,13 +75,14 @@ export async function courseWebsiteDescription(
           headers: {
             "User-Agent": "OutingGolf/1.0 (course preview)",
             Accept: "text/html",
+            "Accept-Encoding": "identity",
           },
           lookup: (_hostname, _options, cb) => cb(null, address, 4),
         },
         (res) => {
           if (
             res.statusCode &&
-            [301, 302, 307, 308].includes(res.statusCode) &&
+            [301, 302, 303, 307, 308].includes(res.statusCode) &&
             res.headers.location &&
             redirects < 2
           ) {
@@ -97,7 +107,7 @@ export async function courseWebsiteDescription(
           res.setEncoding("utf8");
           res.on("data", (chunk) => {
             body += chunk;
-            if (body.length > 200_000 || body.includes("</head>")) {
+            if (body.length > 200_000 || (body.includes("</head>") && extractCourseDescription(body))) {
               resolve(extractCourseDescription(body));
               req.destroy();
             }

@@ -126,11 +126,25 @@ describe("liteAPI normalizers", () => {
       hotelName: "Sunset Resort",
       roomName: "King Suite",
       priceTotal: 900,
-      nightlyRate: 300,
+      nightlyRate: 150,
       refundable: true,
       city: "Scottsdale",
       amenities: ["Pool", "Spa"]
     });
+  });
+
+  it.each([false, true])("divides the full multi-room offer by rooms and nights (array: %s)", (arrayOffer) => {
+    const total = { amount: 2253.76, currency: "USD" };
+    const results = normalizeLiteApiSearchResponse({
+      data: [{ hotelId: "hotel_1", roomTypes: [{
+        offerId: "offer_1", offerRetailRate: arrayOffer ? [total] : total,
+        suggestedSellingPrice: { amount: 2400, currency: "USD" },
+        rates: Array.from({ length: 4 }, () => ({ name: "Two queen beds",
+          retailRate: { total: [{ amount: 563.44, currency: "USD" }] } }))
+      }] }]
+    }, { destination: "Scottsdale", checkIn: "2027-03-12", checkOut: "2027-03-15",
+      adults: 8, children: 0, rooms: 4, currency: "USD" });
+    expect(results[0]).toMatchObject({ priceTotal: 2253.76, nightlyRate: 187.81, roomName: "Two queen beds" });
   });
 
   it("normalizes prebook responses", () => {

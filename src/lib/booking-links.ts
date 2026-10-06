@@ -29,7 +29,7 @@ export function buildBookingComUrl(
 
   const affiliate = new URL("https://www.awin1.com/cread.php");
   affiliate.searchParams.set("awinmid", AWIN_MID);
-  affiliate.searchParams.set("awinaffid", bookingAffiliateId);
+  affiliate.searchParams.set("awinaffid", bookingAffiliateId.trim());
   affiliate.searchParams.set("ued", dest.toString());
   return affiliate.toString();
 }

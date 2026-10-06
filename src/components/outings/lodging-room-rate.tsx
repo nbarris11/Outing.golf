@@ -25,6 +25,8 @@ export function LodgingRoomRate({
   const { personsPerRoom, setPersonsPerRoom, pending, canEdit } =
     usePersonsPerRoom();
 
+  if (!(nightlyRate > 0)) return <p className="text-sm text-amber-800">Rate needs rechecking</p>;
+
   const { rooms, perPerson: totalPerPerson } = lodgingCost(
     nightlyRate,
     nights,

@@ -10,6 +10,10 @@ describe("course website descriptions", () => {
         '<meta content="Play our two championship golf courses &amp; enjoy mountain views." name="description">',
       ),
     ).toBe("Play our two championship golf courses & enjoy mountain views."));
+  it("uses a golf paragraph when metadata is missing and ignores navigation", () => {
+    const description = "Play two championship golf courses with sweeping mountain views, generous fairways and memorable greens in the Arizona desert.";
+    expect(extractCourseDescription(`<nav><p>${"Golf navigation ".repeat(10)}</p></nav><p>${description}</p>`)).toBe(description);
+  });
   it("handles an absent description", () =>
     expect(extractCourseDescription("<title>Golf</title>")).toBeNull());
   it("rejects local network sources", async () =>

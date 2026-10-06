@@ -103,6 +103,7 @@ function normalizePrice(rate: Record<string, unknown>) {
     asRecord(retailTotal).amount,
     asRecord(retailRate.total).amount,
     asRecord(rate.offerRetailRate).amount,
+    asRecord(asArray(rate.offerRetailRate)[0]).amount,
     rate.price,
     rate.total
   );
@@ -121,6 +122,7 @@ function normalizePrice(rate: Record<string, unknown>) {
       asRecord(retailTotal).currency,
       asRecord(retailSuggested).currency,
       asRecord(rate.offerRetailRate).currency,
+      asRecord(asArray(rate.offerRetailRate)[0]).currency,
       asRecord(rate.suggestedSellingPrice).currency,
       rate.currency
     ) ?? "USD";
@@ -178,19 +180,23 @@ export function normalizeLiteApiSearchResponse(
 
       return rates.map((rawRate) => {
         const rate = asRecord(rawRate);
+        const roomRates = asArray(rate.rates).map(asRecord);
+        const room = roomRates[0] ?? rate;
         const roomName = firstString(
+          room.name,
           rate.roomName,
           rate.name,
           asRecord(rate.room).name,
           asRecord(rate.roomType).name,
           "Standard room"
         )!;
-        const price = normalizePrice(rate);
-        const nightlyRate =
-          price.total > 0 && (price.nightly <= 0 || price.nightly > price.total)
-            ? price.total / nights
-            : price.nightly;
-        const boardType = normalizeBoardType(rate);
+        const offerPrice = normalizePrice(rate);
+        const roomsTotal = roomRates.reduce((sum, room) => sum + normalizePrice(room).total, 0);
+        const price = { ...offerPrice, total: offerPrice.total > 0 ? offerPrice.total : roomsTotal };
+        // Offer totals cover the full stay for all requested rooms. Store an
+        // average room/night rate; the planner multiplies by rooms only once.
+        const nightlyRate = price.total / nights / Math.max(1, input.rooms);
+        const boardType = firstString(room.boardName, normalizeBoardType(room));
         const latLng = {
           latitude: firstNumber(hotel.latitude, asRecord(hotel.location).latitude),
           longitude: firstNumber(hotel.longitude, asRecord(hotel.location).longitude)
@@ -205,11 +211,11 @@ export function normalizeLiteApiSearchResponse(
           hotelName: firstString(hotel.name, hotelRate.hotelName, "Unnamed hotel")!,
           roomName,
           boardType,
-          priceTotal: Math.round(price.total),
+          priceTotal: Math.round(price.total * 100) / 100,
           currency: price.currency,
-          nightlyRate: Math.round(nightlyRate),
-          cancellationSummary: normalizeCancellationSummary(rate),
-          refundable: normalizeRefundable(rate),
+          nightlyRate: Math.round(nightlyRate * 100) / 100,
+          cancellationSummary: normalizeCancellationSummary(room),
+          refundable: normalizeRefundable(room),
           ...normalizeAddress(hotel),
           ...latLng,
           starRating,
