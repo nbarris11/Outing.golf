@@ -381,7 +381,7 @@ async function seedLiveInventory(outing: Outing) {
           provider_key: stay.providerKey,
           name: stay.name,
           nightly_rate: Math.round(stay.nightlyRate),
-          price_total: stay.priceTotal, currency: stay.currency,
+          price_total: stay.priceTotal == null ? null : Math.round(stay.priceTotal), currency: stay.currency,
           check_in: stay.checkIn, check_out: stay.checkOut, guest_count: stay.guestCount,
           hotel_id: stay.hotelId, offer_id: stay.offerId, hotel_address: stay.hotelAddress,
           lodging_type: stay.lodgingType,
@@ -400,7 +400,7 @@ async function seedLiveInventory(outing: Outing) {
       const existing = stays.data?.find(old => key(old.name) === key(stay.name));
       if (!existing) continue;
       const { error } = await supabase.from("lodging_options").update({
-        nightly_rate: Math.round(stay.nightlyRate), price_total: stay.priceTotal, currency: stay.currency,
+        nightly_rate: Math.round(stay.nightlyRate), price_total: stay.priceTotal == null ? null : Math.round(stay.priceTotal), currency: stay.currency,
         tags: stay.tags, check_in: stay.checkIn, check_out: stay.checkOut,
         guest_count: stay.guestCount, hotel_id: stay.hotelId, offer_id: stay.offerId,
       }).eq("id", existing.id).eq("outing_id", outing.id);
