@@ -38,7 +38,7 @@ export function FeedbackForm() {
           likelihoodToReturn: fields.get("likelihoodToReturn"),
           additionalComments: fields.get("additionalComments"),
           willingToTalk: fields.get("willingToTalk") === "yes",
-          contactEmail: willingToTalk === true ? fields.get("contactEmail") : "",
+          contactEmail: fields.get("contactEmail"),
           website: fields.get("website")
         })
       });
@@ -122,12 +122,11 @@ export function FeedbackForm() {
         </div>
       </fieldset>
 
-      {willingToTalk === true && (
-        <div>
-          <FieldLabel htmlFor="contactEmail">Email address (optional)</FieldLabel>
-          <Input id="contactEmail" name="contactEmail" type="email" autoComplete="email" maxLength={254} placeholder="you@example.com" />
-        </div>
-      )}
+      <div>
+        <FieldLabel htmlFor="contactEmail">Your email address (optional)</FieldLabel>
+        <Input id="contactEmail" name="contactEmail" type="email" autoComplete="email" maxLength={254} placeholder="you@example.com" />
+        <p className="mt-2 text-sm text-charcoal/55">Helps us identify your feedback. We&apos;ll only reach out if you selected Yes above.</p>
+      </div>
 
       <div className="absolute -left-[9999px]" aria-hidden="true">
         <label htmlFor="website">Website</label>

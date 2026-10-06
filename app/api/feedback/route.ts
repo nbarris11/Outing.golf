@@ -21,8 +21,6 @@ const feedbackSchema = z.object({
   willingToTalk: z.boolean(),
   contactEmail: z.union([z.literal(""), z.string().trim().email().max(254)]).default(""),
   website: z.string().max(200).default("")
-}).refine((value) => value.willingToTalk || !value.contactEmail, {
-  message: "Choose Yes if you'd like us to contact you."
 });
 
 export async function POST(request: Request) {
@@ -59,7 +57,7 @@ export async function POST(request: Request) {
     likelihood_to_return: answer.likelihoodToReturn,
     additional_comments: answer.additionalComments || null,
     willing_to_talk: answer.willingToTalk,
-    contact_email: answer.willingToTalk ? answer.contactEmail.trim().toLowerCase() || null : null,
+    contact_email: answer.contactEmail.trim().toLowerCase() || null,
     user_id: userData.user?.id ?? null,
     submission_fingerprint: fingerprint,
     submission_window: Math.floor(Date.now() / 60_000)
@@ -93,7 +91,7 @@ export async function POST(request: Request) {
     `Likelihood to return: ${row.likelihood_to_return}`,
     `Additional comments: ${row.additional_comments || "No answer"}`,
     `Open to a 15-minute conversation: ${row.willing_to_talk ? "Yes" : "No"}`,
-    `Contact email: ${row.contact_email || "Not provided"}`
+    `Respondent email: ${row.contact_email || "Not provided"}`
   ].join("\n");
 
   try {
@@ -102,7 +100,7 @@ export async function POST(request: Request) {
       to: "hello@outing.golf",
       subject: `New Outing.golf feedback (${row.rating}/10)`,
       text,
-      ...(row.contact_email ? { replyTo: row.contact_email } : {})
+      ...(row.willing_to_talk && row.contact_email ? { replyTo: row.contact_email } : {})
     }, { idempotencyKey: `feedback/${row.id}` });
 
     if (emailError || !email?.id) {
