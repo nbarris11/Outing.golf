@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { releases } from "@/lib/releases";
 import { CalendarRange, CheckCircle2, CircleDollarSign, MapPinned, MessageSquareText } from "lucide-react";
 
 import { buildMetadata } from "@/lib/seo";
@@ -188,6 +190,20 @@ export default async function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="latest-update-title" className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-5 rounded-[26px] border border-forest-900/15 bg-white/85 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              <p className="font-semibold uppercase tracking-[0.18em] text-forest-900">What’s new</p>
+              <time dateTime={releases[0].date} className="text-charcoal/55">{releases[0].dateLabel}</time>
+            </div>
+            <h2 id="latest-update-title" className="mt-3 font-serif text-2xl leading-tight tracking-[-0.03em] text-charcoal sm:text-3xl">{releases[0].title}</h2>
+            <p className="mt-2 text-sm leading-6 text-charcoal/65">{releases[0].summary}</p>
+          </div>
+          <Link href={`/updates#${releases[0].id}`} className="inline-flex min-h-11 shrink-0 items-center self-start rounded-full bg-forest-900 px-5 py-3 text-sm font-medium text-cream transition hover:bg-forest-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-forest-900 lg:self-center">See what’s new →</Link>
         </div>
       </section>
 

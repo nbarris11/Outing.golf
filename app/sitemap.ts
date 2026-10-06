@@ -17,7 +17,7 @@ type RouteEntry = {
 
 const ROUTES: RouteEntry[] = [
   { path: "/updates", lastModified: new Date("2026-10-06"), changeFrequency: "monthly", priority: 0.5 },
-  { path: "/", lastModified: JUNE_REFRESH, changeFrequency: "weekly", priority: 1.0 },
+  { path: "/", lastModified: new Date("2026-10-06"), changeFrequency: "weekly", priority: 1.0 },
   { path: "/how-it-works", lastModified: JUNE_REFRESH, changeFrequency: "monthly", priority: 0.8 },
   { path: "/pricing", lastModified: APRIL_REFRESH, changeFrequency: "monthly", priority: 0.8 },
   { path: "/sample-trip", lastModified: APRIL_REFRESH, changeFrequency: "monthly", priority: 0.7 },
