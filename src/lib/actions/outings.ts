@@ -1866,6 +1866,8 @@ export async function regenerateOutingInventoryAction(outingId: string) {
 
   revalidatePath(`/outings/${outingId}`);
   revalidatePath(`/outings/${outingId}/compare`);
+  revalidatePath(`/outings/${outingId}/trip`);
+  redirect(`/outings/${outingId}?success=Options+and+hotel+rates+updated#lodging`);
 }
 
 export async function assignCourseScheduleAction(
