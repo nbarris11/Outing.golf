@@ -87,13 +87,13 @@ export default async function DashboardPage({
 
         {/* Trip cards */}
         <div className="mt-6 grid gap-4">
-          {outings.map(({ outing, invites, insights, recommendation }) => {
+          {outings.map(({ outing, members, insights, recommendation }) => {
             const isOrganizer = outing.organizerId === profile.id;
             const progressTarget = insights.respondedCount + insights.pendingCount;
             const responsePercent = progressTarget
               ? Math.round((insights.respondedCount / progressTarget) * 100)
               : 0;
-            const needsInvites = progressTarget === 0 && isOrganizer;
+            const needsInvites = isOrganizer && members.every((member) => member.profileId === outing.organizerId) && outing.status !== "booked" && outing.status !== "completed";
             const topDate = recommendation.bestDates[0];
 
             return (
@@ -136,7 +136,7 @@ export default async function DashboardPage({
                     <div className="mt-4">
                       {needsInvites ? (
                         <p className="text-sm text-charcoal/50">
-                          No responses yet — invite the group to get started.
+                          Your trip is ready. Share it with a friend to get the group started.
                         </p>
                       ) : (
                         <>
@@ -169,16 +169,16 @@ export default async function DashboardPage({
 
                   {/* Right — actions */}
                   <div className="flex shrink-0 flex-col gap-2 sm:items-stretch sm:min-w-[140px]">
-                    <Button href={`/outings/${outing.id}`} className="w-full justify-center">
-                      Open trip
+                    <Button href={`/outings/${outing.id}${needsInvites ? "#invite-group" : ""}`} className="w-full justify-center">
+                      {needsInvites ? "Invite your group" : "Open trip"}
                     </Button>
                     {needsInvites && (
                       <Button
-                        href={`/outings/${outing.id}#people`}
+                        href={`/outings/${outing.id}`}
                         variant="secondary"
                         className="w-full justify-center text-sm"
                       >
-                        Invite group
+                        Keep planning
                       </Button>
                     )}
                     {isOrganizer && !needsInvites && insights.respondedCount > 0 && (

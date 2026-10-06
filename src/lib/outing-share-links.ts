@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { isDemoMode, publicAppUrl } from "@/lib/env";
 import { logError } from "@/lib/logger";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const DEMO_PREFIX = "demo-share-";
 
@@ -74,20 +75,15 @@ export async function resolveOutingIdFromShareToken(token: string) {
     return demoOutingId;
   }
 
-  const adminClient = createSupabaseAdminClient();
-
-  if (!adminClient) {
-    return null;
-  }
-
   try {
-    const { data } = await adminClient
-      .from("outing_share_links")
-      .select("outing_id")
-      .eq("token", token)
-      .maybeSingle();
+    const client = await createSupabaseServerClient();
+    if (!client) return null;
 
-    return (data?.outing_id as string | undefined) ?? null;
+    const { data, error } = await client.rpc("resolve_outing_share_token", { share_token: token });
+
+    if (error) throw error;
+
+    return (data as string | null) ?? null;
   } catch (error) {
     logError("Failed to resolve outing share token", error, { token });
     return null;

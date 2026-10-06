@@ -6,6 +6,8 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const next = String(formData.get("next") ?? "");
+  const destination = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 
   if (!fullName || !email) {
     return new NextResponse(null, {
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
   const response = new NextResponse(null, {
     status: 303,
     headers: {
-      Location: "/dashboard"
+    Location: destination
     }
   });
 

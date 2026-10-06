@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { FunnelEvents } from "@/components/outings/funnel-events";
+import { getFunnelContext } from "@/lib/analytics/funnel-context";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageShell } from "@/components/layout/page-shell";
@@ -8,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { joinOutingFromShareLinkAction } from "@/lib/actions/outings";
 import { getCurrentProfile } from "@/lib/auth";
+import { getDemoState } from "@/lib/demo/store";
+import { isDemoMode } from "@/lib/env";
 import { resolveOutingIdFromShareToken } from "@/lib/outing-share-links";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -23,19 +27,20 @@ export async function generateMetadata({
     return { title: "Join Outing · Outing.golf" };
   }
 
-  const adminClient = createSupabaseAdminClient();
-  if (!adminClient) return { title: "Join Outing · Outing.golf" };
-
-  const { data: outing } = await adminClient
-    .from("outings")
-    .select("name,destination_label")
-    .eq("id", outingId)
-    .maybeSingle();
+  const outing = isDemoMode
+    ? (await getDemoState()).outings.find((item) => item.id === outingId)
+    : await (async () => {
+        const adminClient = createSupabaseAdminClient();
+        if (!adminClient) return null;
+        const { data } = await adminClient.from("outings").select("name,destination_label").eq("id", outingId).maybeSingle();
+        return data;
+      })();
 
   if (!outing) return { title: "Join Outing · Outing.golf" };
 
   const title = `${outing.name} · Outing.golf`;
-  const description = `Join this golf trip${outing.destination_label ? ` to ${outing.destination_label}` : ""}. Fill out your dates and budget so the group can lock in a plan.`;
+  const destination = "destinationLabel" in outing ? outing.destinationLabel : outing.destination_label;
+  const description = `Join this golf trip${destination ? ` to ${destination}` : ""}. Fill out your dates and budget so the group can lock in a plan.`;
   const pageUrl = `https://www.outing.golf/join/${token}`;
 
   return {
@@ -83,9 +88,9 @@ export default async function JoinOutingPage({
     );
   }
 
-  const adminClient = createSupabaseAdminClient();
+  const adminClient = isDemoMode ? null : createSupabaseAdminClient();
 
-  if (!adminClient) {
+  if (!isDemoMode && !adminClient) {
     return (
       <PageShell>
         <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
@@ -98,14 +103,26 @@ export default async function JoinOutingPage({
     );
   }
 
-  const [{ data: outingRow }, profile] = await Promise.all([
-    adminClient
-      .from("outings")
-      .select("id,name,destination_label,status,organizer_id,budget_target,number_of_players,preferred_date_windows")
-      .eq("id", outingId)
-      .maybeSingle(),
+  const [demoState, profile] = await Promise.all([
+    isDemoMode ? getDemoState() : Promise.resolve(null),
     getCurrentProfile()
   ]);
+  const demoOuting = demoState?.outings.find((item) => item.id === outingId);
+  const outingRow = demoState
+    ? demoOuting && {
+        id: demoOuting.id,
+        name: demoOuting.name,
+        destination_label: demoOuting.destinationLabel,
+        status: demoOuting.status,
+        organizer_id: demoOuting.organizerId,
+        budget_target: demoOuting.budgetTarget,
+        number_of_players: demoOuting.numberOfPlayers,
+        preferred_date_windows: demoOuting.preferredDateWindows
+      }
+    : (await adminClient!.from("outings")
+        .select("id,name,destination_label,status,organizer_id,budget_target,number_of_players,preferred_date_windows")
+        .eq("id", outingId)
+        .maybeSingle()).data;
 
   if (!outingRow) {
     return (
@@ -121,27 +138,32 @@ export default async function JoinOutingPage({
     );
   }
 
-  const existingMember = profile
-    ? await adminClient
-        .from("outing_members")
+  const alreadyJoined = profile ? demoState
+    ? demoState.outingMembers.some((member) => member.outingId === outingId && member.profileId === profile.id)
+    : Boolean((await adminClient!.from("outing_members")
         .select("id")
         .eq("outing_id", outingId)
         .eq("profile_id", profile.id)
-        .maybeSingle()
-    : null;
-
-  const alreadyJoined = Boolean(existingMember?.data?.id);
+        .maybeSingle()).data?.id)
+    : false;
   const next = `/join/${token}`;
 
   // Fetch organizer name for personalization
-  const { data: organizerProfile } = await adminClient
-    .from("profiles")
-    .select("full_name,email")
-    .eq("id", outingRow.organizer_id)
-    .maybeSingle();
+  const organizerProfile = demoState
+    ? (() => {
+        const person = demoState.profiles.find((item) => item.id === outingRow.organizer_id);
+        return person && { id: person.id, full_name: person.fullName, email: person.email, app_role: person.appRole };
+      })()
+    : (await adminClient!.from("profiles")
+        .select("id,full_name,email,app_role")
+        .eq("id", outingRow.organizer_id)
+        .maybeSingle()).data;
 
   const organizerFirstName = (organizerProfile?.full_name ?? organizerProfile?.email ?? "")
     .split(/[\s@]/)[0] || "Your organizer";
+  const analytics = getFunnelContext(outingId, organizerProfile ? {
+    id: organizerProfile.id, email: organizerProfile.email, appRole: organizerProfile.app_role
+  } : undefined, profile);
 
   // Extract first date window for the trip detail strip
   const dateWindows = Array.isArray(outingRow.preferred_date_windows) ? outingRow.preferred_date_windows : [];
@@ -152,6 +174,9 @@ export default async function JoinOutingPage({
 
   return (
     <PageShell>
+      {!alreadyJoined && profile?.id !== outingRow.organizer_id && (
+        <FunnelEvents context={analytics} events={["outing_invite_opened"]} placement="share_link" />
+      )}
       <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
         <Card className="text-center">
           {/* Organizer inviter card */}

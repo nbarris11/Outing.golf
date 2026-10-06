@@ -5,6 +5,8 @@ import { getDemoProfileByEmail } from "@/lib/demo/store";
 export async function POST(request: Request) {
   const formData = await request.formData();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const next = String(formData.get("next") ?? "");
+  const destination = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 
   const profile = await getDemoProfileByEmail(email);
 
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
   const response = new NextResponse(null, {
     status: 303,
     headers: {
-      Location: "/dashboard"
+    Location: destination
     }
   });
   response.cookies.set("outing_demo_session", profile.id, {

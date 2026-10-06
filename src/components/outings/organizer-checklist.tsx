@@ -6,7 +6,7 @@
 interface OrganizerChecklistProps {
   memberCount: number;    // includes organizer
   inviteCount: number;    // pending + accepted invites
-  respondedCount: number; // members who submitted preferences
+  respondedCount: number; // excludes the organizer's automatically seeded preferences
   votingEverOpened: boolean; // true once a vote has been opened
   votingOpen: boolean;
   hasVotes: boolean;      // at least one group vote cast
@@ -31,8 +31,8 @@ export function OrganizerChecklist({
   golfOnly = false
 }: OrganizerChecklistProps) {
   const nonOrganizerMembers = Math.max(0, memberCount - 1);
-  const groupJoined = nonOrganizerMembers > 0 || inviteCount > 0;
-  const prefsIn = respondedCount >= 1;
+  const groupJoined = nonOrganizerMembers > 0;
+  const prefsIn = nonOrganizerMembers > 0 && respondedCount >= nonOrganizerMembers;
   const voteOpened = votingEverOpened || votingOpen || hasVotes;
   const voteClosed = !votingOpen && hasVotes;
 
@@ -47,11 +47,11 @@ export function OrganizerChecklist({
       done: true
     },
     {
-      label: "Invite the group",
+      label: "Get the first golfer to join",
       detail: nonOrganizerMembers > 0
         ? `${nonOrganizerMembers} member${nonOrganizerMembers !== 1 ? "s" : ""} joined`
         : inviteCount > 0
-          ? `${inviteCount} invite${inviteCount !== 1 ? "s" : ""} sent`
+          ? `${inviteCount} invite${inviteCount !== 1 ? "s" : ""} — waiting for someone to join`
           : "Send invites or share the link",
       done: groupJoined
     },

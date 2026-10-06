@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 
 import { BackButton } from "@/components/common/back-button";
 import { PostCreateBanner } from "@/components/outings/post-create-banner";
+import { FunnelEvents } from "@/components/outings/funnel-events";
+import { getSuccessMilestones } from "@/lib/analytics/funnel";
+import { getFunnelContext } from "@/lib/analytics/funnel-context";
 import { PinSeekerCard } from "@/components/PinSeekerCard";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { AddDestinationForm, AddGolfCourseForm, AddLodgingForm } from "@/components/outings/add-option-form";
@@ -159,6 +162,15 @@ export default async function OutingDetailPage({
   const isCoOrg = detail.members.some((m) => m.profileId === profile.id && m.role === "co_organizer");
   // isOrganizer covers both the primary organizer and any co-organizer
   const isOrganizer = isPrimaryOrganizer || isCoOrg;
+  const analytics = getFunnelContext(outingId, detail.profiles.find((person) => person.id === detail.outing.organizerId), profile);
+  const milestoneEvents = getSuccessMilestones({
+    isPrimaryOrganizer,
+    createdAt: detail.outing.createdAt,
+    joinedAt: detail.members.find((member) => member.profileId === profile.id)?.joinedAt,
+    preferenceUpdatedAt: detail.currentPreference?.updatedAt,
+    notices
+  });
+  const funnelEvents = <FunnelEvents context={analytics} events={milestoneEvents} />;
 
   // Destination split is needed in both early-return preference forms and the main page
   const visibleDestinations = detail.destinations.filter((d) => !d.hidden);
@@ -182,6 +194,7 @@ export default async function OutingDetailPage({
   if (!detail.currentPreference && !isOrganizer) {
     return (
       <PageShell>
+        {funnelEvents}
         <ScrollToTop />
         <section className="mx-auto max-w-xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="mb-8">
@@ -380,6 +393,7 @@ export default async function OutingDetailPage({
       <PageShell>
         <ScrollToTop />
         <section id="confirmed-top" className="mx-auto max-w-xl px-4 py-12 sm:px-6 lg:px-8">
+          {funnelEvents}
           <div className="mb-8 text-center">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-forest-900/10 text-2xl">
               ⛳
@@ -485,6 +499,9 @@ export default async function OutingDetailPage({
   const shareLink = isOrganizer
     ? notices.shareLink ?? (await getOutingShareLink(detail.outing.id, detail.outing.organizerId)) ?? null
     : null;
+  const showShareBanner = Boolean(isOrganizer && shareLink &&
+    detail.members.every((member) => member.profileId === detail.outing.organizerId) &&
+    detail.outing.status !== "booked" && detail.outing.status !== "completed");
 
   const responsePercent = progressTarget
     ? Math.round((detail.insights.respondedCount / progressTarget) * 100)
@@ -620,8 +637,25 @@ export default async function OutingDetailPage({
   return (
     <PersonsPerRoomProvider>
     <PageShell>
+      {funnelEvents}
       <ScrollToTop />
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        {showShareBanner && shareLink && (
+          <PostCreateBanner
+            shareLink={shareLink}
+            outingName={detail.outing.name}
+            destination={detail.outing.destinationLabel}
+            analytics={analytics}
+            newlyCreated={notices.created === "1"}
+            pendingInviteCount={detail.invites.filter((invite) => invite.status === "pending").length}
+            canInviteByEmail={isPrimaryOrganizer}
+            notice={notices.error
+              ? { message: notices.error, type: "error" }
+              : notices.success && (notices.created !== "1" || notices.inviteEmail)
+                ? { message: notices.success, type: "success" }
+                : undefined}
+          />
+        )}
 
         {/* ── Breadcrumb ── */}
         <div className="mb-5">
@@ -837,19 +871,17 @@ export default async function OutingDetailPage({
         )}
 
         {/* ── Notices ── */}
-        {notices.created === "1" && isOrganizer && shareLink ? (
-          <PostCreateBanner shareLink={shareLink} outingName={detail.outing.name} />
-        ) : notices.created === "1" ? (
+        {!showShareBanner && notices.created === "1" && !shareLink ? (
           <div className="mt-5 rounded-[22px] border border-emerald-200 bg-[linear-gradient(135deg,#ecfdf3,#f7f4ee)] px-5 py-4">
             <h2 className="font-semibold text-charcoal">Trip created — invite the group</h2>
             <p className="mt-1 text-sm text-charcoal/68">
               {notices.inviteEmail ? `First invite sent to ${notices.inviteEmail}.` : "Share the link or invite by email below."}
             </p>
           </div>
-        ) : notices.success ? (
+        ) : !showShareBanner && notices.success ? (
           <p className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notices.success}</p>
         ) : null}
-        {notices.error ? (
+        {!showShareBanner && notices.error ? (
           <p className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{notices.error}</p>
         ) : null}
 
@@ -1103,7 +1135,7 @@ export default async function OutingDetailPage({
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
 
           {/* ── Left column: options + chat ── */}
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
 
             {/* Golf courses */}
             <Card id="courses" className="scroll-mt-20">
@@ -1527,7 +1559,7 @@ export default async function OutingDetailPage({
           </div>
 
           {/* ── Right column ── */}
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
 
             {/* ── Trip plan (visible to everyone) ── */}
             {(selectedCourses.length > 0 || selectedLodgingOption || isOrganizer) && (
@@ -1582,7 +1614,7 @@ export default async function OutingDetailPage({
               <OrganizerChecklist
                 memberCount={detail.members.length}
                 inviteCount={detail.invites.length}
-                respondedCount={detail.insights.respondedCount}
+                respondedCount={detail.preferences.filter((preference) => preference.profileId !== detail.outing.organizerId).length}
                 votingEverOpened={votingOpen || allVotes.length > 0}
                 votingOpen={votingOpen}
                 hasVotes={allVotes.length > 0}
@@ -1601,7 +1633,9 @@ export default async function OutingDetailPage({
                 <div>
                   <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">The group</h2>
                   <p className="mt-1 text-sm text-charcoal/55">
-                    {detail.insights.respondedCount === progressTarget && progressTarget > 0
+                    {detail.members.every((member) => member.profileId === detail.outing.organizerId)
+                      ? "Waiting for your first golfer to join"
+                      : detail.insights.respondedCount === progressTarget && progressTarget > 0
                       ? `Everyone's responded ✓`
                       : `${detail.insights.respondedCount} of ${progressTarget || "—"} responded`}
                   </p>
@@ -1709,7 +1743,7 @@ export default async function OutingDetailPage({
                   {shareLink ? (
                     <div className="mt-4 border-t border-white/10 pt-4">
                       <p className="mb-2 text-xs text-cream/50">Or share a link directly</p>
-                      <CopyLinkButton link={shareLink} label="Copy share link" copiedLabel="Copied!" />
+                      <CopyLinkButton link={shareLink} analytics={analytics} label="Copy share link" copiedLabel="Copied!" />
                     </div>
                   ) : null}
                 </form>

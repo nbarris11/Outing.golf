@@ -1,4 +1,6 @@
 import { EmptyState } from "@/components/common/empty-state";
+import { FunnelEvents } from "@/components/outings/funnel-events";
+import { getFunnelContext } from "@/lib/analytics/funnel-context";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,9 +55,19 @@ export default async function InvitePage({
     );
   }
 
+  const { data: outing } = await adminClient.from("outings").select("organizer_id").eq("id", invite.outing_id).maybeSingle();
+  const { data: organizer } = outing ? await adminClient.from("profiles").select("id,email,app_role").eq("id", outing.organizer_id).maybeSingle() : { data: null };
+  const analytics = getFunnelContext(invite.outing_id, organizer ? {
+    id: organizer.id, email: organizer.email, appRole: organizer.app_role
+  } : undefined, profile);
+  const inviteOpen = invite.status === "pending" && profile?.id !== organizer?.id ? (
+    <FunnelEvents context={analytics} events={["outing_invite_opened"]} placement="email_invite" />
+  ) : null;
+
   if (!profile) {
     return (
       <PageShell>
+        {inviteOpen}
         <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
           <Card className="text-center">
             <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Outing invite</p>
@@ -100,6 +112,7 @@ export default async function InvitePage({
 
   return (
     <PageShell>
+      {inviteOpen}
       <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
         <Card className="text-center">
           <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Outing invite</p>
