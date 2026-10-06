@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Input, Select } from "@/components/ui/field";
+import { Input, Select, Textarea } from "@/components/ui/field";
 
 // ─── Destination ─────────────────────────────────────────────────────────────
 
@@ -120,6 +120,10 @@ export function AddGolfCourseForm({ outingId, destinationOptionId, addAction }: 
       <div>
         <label className="mb-1 block text-xs font-medium text-charcoal/70">Greens fee per round (approx. $)</label>
         <Input name="averageGreensFee" type="number" min="0" max="1000" placeholder="150" />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-charcoal/70">Course description (optional)</label>
+        <Textarea name="summary" maxLength={600} placeholder="What should the group know about this course?" className="min-h-20" />
       </div>
       <div className="flex items-center justify-end gap-2">
         <button

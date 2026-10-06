@@ -13,6 +13,7 @@ import { TeeTimeManager } from "@/components/outings/tee-time-manager";
 import { CopyLinkButton } from "@/components/outings/copy-link-button";
 import { MarkAsBookedButton } from "@/components/outings/mark-as-booked-button";
 import { CourseScheduleSelector } from "@/components/outings/course-schedule-selector";
+import { CourseDetails } from "@/components/outings/course-details";
 import { DateAvailabilityPicker } from "@/components/outings/date-availability-picker";
 import { FavoriteButton } from "@/components/outings/favorite-button";
 import { CoursePriceDisplay } from "@/components/outings/course-price-display";
@@ -1034,6 +1035,7 @@ export default async function OutingDetailPage({
                               isMyPick={isMyPick}
                             />
                           </div>
+                          <CourseDetails course={course} inverted={isMyPick} />
                           {tally > 0 && (
                             <div className="mt-3">
                               <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -1214,6 +1216,7 @@ export default async function OutingDetailPage({
                               )}
                             </div>
                           </div>
+                          <CourseDetails course={course} />
                           {/* Bottom row — info left, actions right; scheduling controls only appear once the course is in the trip */}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2 text-xs text-charcoal/55 min-w-0">

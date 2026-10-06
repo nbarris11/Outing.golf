@@ -2081,6 +2081,7 @@ export async function addCustomGolfCourseAction(formData: FormData) {
   const name = formData.get("name")?.toString().trim() ?? "";
   const locationLabel = formData.get("locationLabel")?.toString().trim() ?? "";
   const averageGreensFee = Math.max(0, Number(formData.get("averageGreensFee") ?? 0));
+  const summary = formData.get("summary")?.toString().trim().slice(0, 600) ?? "";
   const destinationOptionId = formData.get("destinationOptionId")?.toString() ?? "";
 
   if (!outingId || !name) return;
@@ -2096,7 +2097,7 @@ export async function addCustomGolfCourseAction(formData: FormData) {
     qualityScore: 70,
     rideFriendly: true,
     walkingFriendly: true,
-    summary: `${name} — added by organizer`,
+    summary,
     tags: ["custom"],
     featured: false,
     hidden: false,
@@ -2335,4 +2336,3 @@ export async function deleteTeeTimeAction(outingId: string, bookingId: string) {
   revalidatePath(`/outings/${outingId}`);
   revalidatePath(`/outings/${outingId}/trip`);
 }
-
