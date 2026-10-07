@@ -52,7 +52,7 @@ export default async function OgImage({
         }}
       >
         <div style={{ display: "flex", padding: "16px 20px", background: "#f7f4ee", borderRadius: 12, marginBottom: "auto", alignSelf: "flex-start" }}>
-          <img src={logo} alt="Outing.golf" width={280} height={55} />
+          <img src={logo} alt="Outing.golf" width={280} height={63} />
         </div>
 
         {/* Trip name */}
