@@ -1,19 +1,21 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+import { getBrandLogoDataUrl } from "@/lib/brand-image";
+
+export const runtime = "nodejs";
 export const alt = "Outing.golf — golf trip planner for groups";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OgImage() {
+export default async function OgImage() {
+  const logo = await getBrandLogoDataUrl();
   return new ImageResponse(
     (
       <div
         style={{
           width: 1200,
           height: 630,
-          background:
-            "radial-gradient(900px 500px at 12% 0%, rgba(217,200,167,0.42), transparent 55%), radial-gradient(800px 600px at 95% 100%, rgba(20,58,44,0.18), transparent 60%), #f7f4ee",
+          backgroundColor: "#f7f4ee",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
@@ -23,29 +25,7 @@ export default function OgImage() {
           color: "#212423"
         }}
       >
-        {/* Wordmark with hole + flag mark */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 40 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 14,
-              background: "#143a2c",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-          >
-            <svg width="36" height="36" viewBox="0 0 44 44">
-              <ellipse cx="22" cy="30" rx="11" ry="3.2" fill="#0a1812" />
-              <rect x="21" y="10" width="2" height="20" rx="1" fill="#F7F4EE" />
-              <path d="M23 11 L34 14 L23 17 Z" fill="#C8932E" />
-            </svg>
-          </div>
-          <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: "-0.03em", color: "#212423", fontFamily: "system-ui, sans-serif" }}>
-            Outing<span style={{ color: "#C8932E" }}>.</span>golf
-          </div>
-        </div>
+        <img src={logo} alt="Outing.golf" width={340} height={71} style={{ marginBottom: 40 }} />
 
         {/* H1 */}
         <div

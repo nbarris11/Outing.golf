@@ -3,6 +3,10 @@ import path from "node:path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingIncludes: {
+    "/join/**": ["./public/brand/outing-logo.png"],
+    "/opengraph-image": ["./public/brand/outing-logo.png"]
+  },
   poweredByHeader: false,
   async headers() {
     return [

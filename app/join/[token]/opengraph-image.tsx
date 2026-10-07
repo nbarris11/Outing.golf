@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 
+import { getBrandLogoDataUrl } from "@/lib/brand-image";
 import { resolveOutingIdFromShareToken } from "@/lib/outing-share-links";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -12,6 +13,7 @@ export default async function OgImage({
 }: {
   params: Promise<{ token: string }>;
 }) {
+  const logo = await getBrandLogoDataUrl();
   const { token } = await params;
   const outingId = await resolveOutingIdFromShareToken(token);
 
@@ -49,41 +51,8 @@ export default async function OgImage({
           fontFamily: "Georgia, serif"
         }}
       >
-        {/* Wordmark */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "auto"
-          }}
-        >
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              background: "#f7f4ee",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#143a2c",
-              fontSize: "18px",
-              fontWeight: "700"
-            }}
-          >
-            O
-          </div>
-          <span
-            style={{
-              color: "#f7f4ee",
-              fontSize: "22px",
-              fontWeight: "600",
-              letterSpacing: "-0.02em"
-            }}
-          >
-            Outing.golf
-          </span>
+        <div style={{ display: "flex", padding: "16px 20px", background: "#f7f4ee", borderRadius: 12, marginBottom: "auto", alignSelf: "flex-start" }}>
+          <img src={logo} alt="Outing.golf" width={280} height={59} />
         </div>
 
         {/* Trip name */}
@@ -152,18 +121,6 @@ export default async function OgImage({
           </div>
         </div>
 
-        {/* Golf flag SVG — bottom right */}
-        <svg
-          style={{ position: "absolute", bottom: "48px", right: "72px", opacity: 0.2 }}
-          width="120"
-          height="160"
-          viewBox="0 0 120 160"
-          fill="none"
-        >
-          <rect x="18" y="20" width="4" height="130" fill="#f7f4ee" rx="2" />
-          <path d="M22 20 L90 42 L22 64 Z" fill="#f7f4ee" />
-          <ellipse cx="20" cy="152" rx="28" ry="6" fill="#f7f4ee" />
-        </svg>
       </div>
     ),
     { ...size }

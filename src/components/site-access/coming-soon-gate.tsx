@@ -1,3 +1,5 @@
+import { BrandLogo } from "@/components/branding/logo";
+
 export function ComingSoonGate({
   hasError = false,
   title,
@@ -10,7 +12,7 @@ export function ComingSoonGate({
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(119,143,113,0.18),transparent_32%),linear-gradient(180deg,#f7f4ee_0%,#f4f1ea_100%)] px-4 text-charcoal">
       <div className="w-full max-w-xl rounded-[32px] border border-charcoal/10 bg-white/95 p-8 shadow-[0_24px_80px_rgba(33,36,35,0.10)] backdrop-blur">
-        <p className="text-sm uppercase tracking-[0.24em] text-charcoal/45">Outing.golf</p>
+        <BrandLogo />
         <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
           {title ?? "Website coming soon"}
         </h1>
