@@ -1,6 +1,6 @@
 export function buildOutingInviteCopy(outingName: string, destination: string | undefined, shareLink: string) {
   const location = destination?.trim();
-  const message = `You're invited to ${outingName}${location ? ` — ${location}` : ""}. Add your dates and budget so we can get this trip booked.`;
+  const message = `You're invited to ${outingName}${location ? ` — ${location}` : ""}. Take a look at the courses, dates, and cost, then let us know if you can make it.`;
   return {
     title: `Join ${outingName}`,
     message,

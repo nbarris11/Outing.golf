@@ -599,3 +599,21 @@ export async function editDemoTripPlan(outingId: string, actor: string, edit: (o
   edit(outing, state.golfCourseOptions.filter(c => c.outingId === outingId));
   await writeState(state);
 }
+
+export async function toggleDemoVote(outingId: string, profileId: string, entityType: "golf_course" | "lodging", entityId: string) {
+  const state = await readState();
+  const existing = state.votes.find(v => v.outingId === outingId && v.profileId === profileId && v.entityType === entityType && v.entityId === entityId);
+  if (existing) state.votes = state.votes.filter(v => v.id !== existing.id);
+  else state.votes.push({ id: generateId("vote"), outingId, profileId, entityType, entityId, weight: 5 });
+  await writeState(state);
+}
+
+export async function acceptDemoInvite(token: string, profileId: string, email: string) {
+  const state = await readState();
+  const invite = state.invites.find(i=>i.token===token && i.email.toLowerCase()===email.toLowerCase() && i.status!=="declined");
+  if (!invite) return null;
+  if (!state.outingMembers.some(m=>m.outingId===invite.outingId && m.profileId===profileId)) state.outingMembers.push({id:generateId("member"),outingId:invite.outingId,profileId,role:"participant",joinedAt:new Date().toISOString()});
+  invite.status="accepted";
+  await writeState(state);
+  return invite.outingId;
+}

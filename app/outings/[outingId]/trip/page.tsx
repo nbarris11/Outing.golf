@@ -1,3 +1,12 @@
+import { FunnelEvents } from "@/components/outings/funnel-events";
+import { getFunnelContext } from "@/lib/analytics/funnel-context";
+import { getSuccessMilestones } from "@/lib/analytics/funnel";
+import { GuestResponse } from "@/components/trip/guest-response";
+import { GuestVote } from "@/components/trip/guest-vote";
+import { ChatPanel } from "@/components/chat/chat-panel";
+import { sendChatMessageInlineAction } from "@/lib/actions/outings";
+import { responseLabel } from "@/lib/guest-response";
+import { datesAreConfirmed } from "@/lib/trip-plan";
 import { Fragment } from "react";
 import { TripPricesPanel } from "@/components/outings/trip-prices-panel";
 import { tripReadiness } from "@/lib/trip-plan";
@@ -24,10 +33,12 @@ import { seedPersonalPackingItems, seedGroupPackingItems } from "@/lib/actions/t
 import { getOutingDetail, getTripPackingItems } from "@/modules/outings/service";
 
 export default async function TripHqPage({
-  params
+  params, searchParams
 }: {
   params: Promise<{ outingId: string }>;
+  searchParams: Promise<{error?:string;success?:string}>;
 }) {
+  const notices = await searchParams;
   const profile = await requireProfile();
   const { outingId } = await params;
   const detail = await getOutingDetail(outingId, profile.id);
@@ -35,7 +46,10 @@ export default async function TripHqPage({
   if (!detail) redirect("/dashboard");
 
 
-  const isOrganizer = detail.outing.organizerId === profile.id;
+  const isOrganizer = detail.outing.organizerId === profile.id || detail.members.some(m=>m.profileId===profile.id && m.role==="co_organizer");
+  const organizerName = detail.profiles.find(p=>p.id===detail.outing.organizerId)?.fullName.split(" ")[0] ?? "Your organizer";
+  const votingCourses = detail.recommendation.golfScores.slice(0,3).flatMap(s=>detail.golfCourses.filter(c=>c.id===s.id && !c.hidden));
+  const votingLodging = detail.outing.golfOnly ? [] : detail.recommendation.lodgingScores.slice(0,3).flatMap(s=>detail.lodging.filter(l=>l.id===s.id && !l.hidden));
 
   // Seed packing items on first visit (personal per-user, group per-outing)
   await Promise.all([
@@ -67,7 +81,8 @@ export default async function TripHqPage({
       name: p?.fullName ?? p?.email ?? "Member",
       email: p?.email ?? "",
       role: m.role,
-      homeCity: pref?.homeCity ?? null
+      homeCity: pref?.homeCity ?? null,
+      response: m.role === "organizer" ? "Organizer" : responseLabel(pref)
     };
   });
 
@@ -86,17 +101,18 @@ export default async function TripHqPage({
 
   return (
     <div className="min-h-screen bg-forest-900">
+      {!isOrganizer && <FunnelEvents context={getFunnelContext(outingId, detail.profiles.find(p=>p.id===detail.outing.organizerId), profile)} events={getSuccessMilestones({isPrimaryOrganizer:false,createdAt:detail.outing.createdAt,joinedAt:detail.members.find(m=>m.profileId===profile.id)?.joinedAt,preferenceUpdatedAt:detail.currentPreference?.updatedAt,notices})}/>}
       {/* Breadcrumb */}
       <div className="px-4 pt-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <Link
-            href={`/outings/${outingId}`}
+            href={isOrganizer ? `/outings/${outingId}` : "/dashboard"}
             className="inline-flex items-center gap-1.5 text-sm text-cream/50 transition hover:text-cream/80"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            Back to outing
+            {isOrganizer ? "Back to outing" : "Back to dashboard"}
           </Link>
         </div>
       </div>
@@ -122,7 +138,7 @@ export default async function TripHqPage({
           {detail.outing.destinationLabel && (
             <p className="mt-3 text-lg text-cream/65">{detail.outing.destinationLabel}</p>
           )}
-          {tripStart && <TripCountdown targetDate={tripStart} />}
+          {tripStart && datesAreConfirmed(detail.outing) ? <TripCountdown targetDate={tripStart} /> : <p className="mt-5 text-sm text-cream/70">Dates are proposed · help the group find a weekend</p>}
         </div>
       </section>
 
@@ -130,6 +146,11 @@ export default async function TripHqPage({
       <div className="rounded-t-[40px] bg-cream min-h-screen">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
 
+          {notices.error && <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{notices.error}</p>}
+          {notices.success && <p role="status" className="mb-5 rounded-xl bg-emerald-50 p-4 text-sm">{notices.success}</p>}
+          {!isOrganizer && <GuestResponse outing={detail.outing} preference={detail.currentPreference} organizerName={organizerName}/>}
+          {detail.outing.votingOpen && detail.currentPreference?.responseStatus !== "declined" && <GuestVote outingId={outingId} profileId={profile.id} courses={votingCourses} lodging={votingLodging} votes={detail.votes} nights={Math.max(0,tripDayCount(tripStart,tripEnd)-1)} players={detail.outing.numberOfPlayers} occupancy={detail.outing.personsPerRoom ?? 2}/>}
+          <nav aria-label="Your trip" className="my-5 flex flex-wrap gap-3 text-sm"><a className="rounded-full border px-4 py-2" href="#itinerary">Itinerary</a><a className="rounded-full border px-4 py-2" href="#trip-cost">Cost</a><a className="rounded-full border px-4 py-2" href="#group-chat">Group chat</a><a className="rounded-full border px-4 py-2" href="#lineup">Who's coming</a></nav>
           {/* Boarding pass */}
           <TripBoardingPass
             statusLabel={readiness.label}
@@ -146,9 +167,10 @@ export default async function TripHqPage({
 
           <TripPricesPanel outingId={outingId} courses={selectedCourses} lodging={detail.outing.golfOnly ? null : topLodging} editable={false} start={tripStart ?? undefined} end={tripEnd ?? undefined} />
           <TripShareTools />
-          <PlanningStatus outing={detail.outing} courses={selectedCourses} lodging={topLodging} />
+          <p className="mt-5 rounded-xl bg-white p-4 text-sm">{organizerName} is coordinating tee times and the stay. Check with them before making a separate reservation.</p>
+          <details className="mt-3"><summary className="cursor-pointer text-sm font-medium">Reservation status</summary><PlanningStatus outing={detail.outing} courses={selectedCourses} lodging={topLodging} /></details>
           <TripOverviewMap courses={selectedCourses} lodging={detail.outing.golfOnly ? null : topLodging} />
-          <PersonsPerRoomProvider initialValue={detail.outing.personsPerRoom ?? 2}>
+          <div id="trip-cost" className="scroll-mt-6"><PersonsPerRoomProvider initialValue={detail.outing.personsPerRoom ?? 2}>
             <TripCostEstimate
               golfPerPerson={tripCosts(selectedCourses, null, 0, detail.outing.numberOfPlayers, 2, true).golf}
               lodgingNightlyRate={topLodging?.nightlyRate ?? 0}
@@ -160,7 +182,7 @@ export default async function TripHqPage({
               missingPrices={tripCosts(selectedCourses, null, 0, detail.outing.numberOfPlayers, 2, true).missingPrices}
               hasCourses={selectedCourses.length > 0}
             />
-          </PersonsPerRoomProvider>
+          </PersonsPerRoomProvider></div>
           <TripItineraryPanel readOnly outingId={outingId} isOrganizer={false} nights={Math.max(0, tripDayCount(tripStart, tripEnd) - 1)} dayCount={tripDayCount(tripStart, tripEnd)} tripStart={tripStart} selectedCourses={selectedCourses} courses={selectedCourses} selectedLodging={topLodging} golfOnly={detail.outing.golfOnly} noGolfDays={detail.outing.noGolfDays} bookings={detail.outing.teeTimeBookings ?? []} players={detail.outing.numberOfPlayers} toggleNoGolfDayAction={toggleNoGolfDayAction}/>
           <div className="my-6"><PinSeekerCard outingId={outingId} placement="trip_hq" /></div>
           {/* Two-column grid */}
@@ -296,6 +318,7 @@ export default async function TripHqPage({
             </div>
           </div>
 
+          <section id="group-chat" className="mt-6 scroll-mt-6"><ChatPanel messages={detail.messages} profiles={detail.profiles} outingId={outingId} currentProfileId={profile.id} sendAction={sendChatMessageInlineAction}/></section>
           {/* Organizer link */}
           {isOrganizer && (
             <div className="mt-10 text-center">

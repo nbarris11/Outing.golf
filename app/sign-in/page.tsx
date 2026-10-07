@@ -1,3 +1,4 @@
+import { invitationAuthContext } from "@/lib/invitation";
 import { AuthCard } from "@/components/auth/auth-card";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { RecaptchaForm } from "@/components/auth/recaptcha-form";
@@ -24,6 +25,8 @@ export default async function SignInPage({
     });
   }
 
+  const invitation = await invitationAuthContext(next);
+
   const formContents = (
     <>
       <input type="hidden" name="next" value={next} />
@@ -32,7 +35,7 @@ export default async function SignInPage({
       ) : null}
       <div>
         <FieldLabel htmlFor="email">Email</FieldLabel>
-        <Input id="email" name="email" type="email" placeholder="host@outing.golf" required />
+        <Input id="email" name="email" type="email" defaultValue={invitation?.email ?? ""} placeholder="host@outing.golf" required />
       </div>
       <div>
         <FieldLabel htmlFor="password">Password</FieldLabel>
@@ -54,8 +57,8 @@ export default async function SignInPage({
   return (
     <PageShell>
       <AuthCard
-        title="Sign in"
-        subtitle="Jump back into the outing, check votes, and keep the group moving."
+        title={invitation ? `Sign in for ${invitation.name}` : "Sign in"}
+        subtitle={invitation ? "Your invitation will be waiting after you sign in." : "Jump back into the outing, check votes, and keep the group moving."}
         helper={{ text: "Need an account?", label: "Create one", href: `/sign-up?next=${encodeURIComponent(next)}` }}
       >
         {!isDemoMode ? (

@@ -79,7 +79,10 @@ export interface Invite {
   createdAt: string;
 }
 
+export type RsvpStatus = "in" | "maybe" | "declined";
+
 export interface PreferenceSubmission {
+  responseStatus?: RsvpStatus | null;
   id: string;
   outingId: string;
   profileId: string;

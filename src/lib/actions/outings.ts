@@ -1,4 +1,5 @@
 "use server";
+import { getOutingDetail } from "@/modules/outings/service";
 import { tripReadiness } from "@/lib/trip-plan";
 
 import { randomUUID } from "node:crypto";
@@ -1075,7 +1076,7 @@ export async function joinOutingFromShareLinkAction(formData: FormData) {
       profile_id: profile.id,
       role: "participant"
     },
-    { onConflict: "outing_id,profile_id" }
+    { onConflict: "outing_id,profile_id", ignoreDuplicates: true }
   );
 
   if (error) {
@@ -1257,6 +1258,10 @@ export async function sendChatMessageInlineAction(
     };
   }
 
+  if (!(await getOutingDetail(parsed.data.outingId, profile.id))) {
+    return { status: "error", error: "You don't have access to this trip." };
+  }
+
   const createdMessage: ChatMessage = {
     id: randomUUID(),
     outingId: parsed.data.outingId,
@@ -1327,6 +1332,13 @@ export async function acceptInviteAction(formData: FormData) {
     redirect("/dashboard?error=Invite%20token%20is%20missing");
   }
 
+  if (isDemoMode) {
+    const { acceptDemoInvite } = await import("@/lib/demo/store");
+    const outingId = await acceptDemoInvite(parsed.data.token, profile.id, profile.email);
+    if (!outingId) redirect(`/invite/${parsed.data.token}?error=Unable%20to%20join%20with%20this%20account`);
+    redirect(`/outings/${outingId}/trip`);
+  }
+
   const adminClient = createSupabaseAdminClient();
 
   if (!adminClient) {
@@ -1347,17 +1359,20 @@ export async function acceptInviteAction(formData: FormData) {
     redirect(`/invite/${parsed.data.token}?error=Sign%20in%20with%20${encodeURIComponent(invite.email)}`);
   }
 
-  await adminClient!.from("outing_members").upsert(
+  if (invite.status === "declined") redirect(`/invite/${parsed.data.token}?error=This%20invitation%20is%20no%20longer%20available`);
+
+  const { error: joinError } = await adminClient!.from("outing_members").upsert(
     {
-      id: randomUUID(),
       outing_id: invite.outing_id,
       profile_id: profile.id,
       role: "participant"
     },
-    { onConflict: "outing_id,profile_id" }
+    { onConflict: "outing_id,profile_id", ignoreDuplicates: true }
   );
 
-  await adminClient!.from("invites").update({ status: "accepted" }).eq("id", invite.id);
+  if (joinError) redirect(`/invite/${parsed.data.token}?error=Unable%20to%20join.%20Please%20try%20again.`);
+  const { error: inviteError } = await adminClient!.from("invites").update({ status: "accepted" }).eq("id", invite.id);
+  if (inviteError) redirect(`/invite/${parsed.data.token}?error=Unable%20to%20confirm%20the%20invitation.%20Please%20try%20again.`);
 
   redirect(`/outings/${invite.outing_id}?success=You%20joined%20the%20outing`);
 }
@@ -1774,33 +1789,25 @@ export async function castGroupVoteAction(formData: FormData) {
   const entityId = String(formData.get("entityId") ?? "").trim();
   const entityType = String(formData.get("entityType") ?? "").trim() as "golf_course" | "lodging";
 
-  if (!outingId || !entityId || !entityType) {
-    redirect(`/dashboard?error=Invalid+vote`);
-  }
-
+  if (!outingId || !entityId || !["golf_course", "lodging"].includes(entityType)) return { error: "Invalid vote." };
+  const detail = await getOutingDetail(outingId, profile.id);
+  if (!detail) return { error: "You don't have access to this trip." };
+  if (!detail.outing.votingOpen) return { error: "Voting has closed. Refresh to see the latest plan." };
+  const options = entityType === "golf_course" ? detail.golfCourses : detail.lodging;
+  if (!options.some(o => o.id === entityId && !o.hidden)) return { error: "This option is no longer available." };
   if (isDemoMode) {
+    const { toggleDemoVote } = await import("@/lib/demo/store");
+    await toggleDemoVote(outingId, profile.id, entityType, entityId);
     revalidatePath(`/outings/${outingId}`);
-    redirect(`/outings/${outingId}`);
+    revalidatePath(`/outings/${outingId}/trip`);
+    return;
   }
-
   const client = createSupabaseAdminClient() ?? (await createSupabaseServerClient());
-  if (!client) redirect(`/outings/${outingId}?error=Not+configured`);
-
-  // Verify member belongs to this outing
-  const { data: membership } = await client
-    .from("outing_members")
-    .select("id")
-    .eq("outing_id", outingId)
-    .eq("profile_id", profile.id)
-    .maybeSingle();
-
-  if (!membership) {
-    redirect(`/outings/${outingId}?error=Not+a+member`);
-  }
+  if (!client) return { error: "Voting is unavailable. Please try again." };
 
   // Approval voting: each person can vote for multiple options.
   // Tapping a voted option toggles it off; tapping an un-voted option adds a new vote.
-  const { data: existingVote } = await client
+  const { data: existingVote, error: lookupError } = await client
     .from("votes")
     .select("id")
     .eq("outing_id", outingId)
@@ -1809,21 +1816,25 @@ export async function castGroupVoteAction(formData: FormData) {
     .eq("entity_id", entityId)
     .maybeSingle();
 
+  if (lookupError) return { error: "We could not check your vote. Please try again." };
   if (existingVote) {
     // Toggle off — remove this specific vote
-    await client.from("votes").delete().eq("id", existingVote.id);
+    const { error } = await client.from("votes").delete().eq("id", existingVote.id);
+    if (error) return { error: "Your vote was not removed. Please try again." };
   } else {
     // Toggle on — add a new vote for this option
-    await client.from("votes").insert({
+    const { error } = await client.from("votes").insert({
       outing_id: outingId,
       profile_id: profile.id,
       entity_type: entityType,
       entity_id: entityId,
       weight: 5
     });
+    if (error) return { error: "Your vote was not saved. Please try again." };
   }
 
   revalidatePath(`/outings/${outingId}`);
+  revalidatePath(`/outings/${outingId}/trip`);
 }
 
 export async function regenerateOutingInventoryAction(outingId: string) {

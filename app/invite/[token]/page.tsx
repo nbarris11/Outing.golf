@@ -1,148 +1,18 @@
-import { EmptyState } from "@/components/common/empty-state";
-import { FunnelEvents } from "@/components/outings/funnel-events";
-import { getFunnelContext } from "@/lib/analytics/funnel-context";
-import { PageShell } from "@/components/layout/page-shell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { SubmitButton } from "@/components/ui/submit-button";
-import { acceptInviteAction } from "@/lib/actions/outings";
-import { getCurrentProfile } from "@/lib/auth";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-
+export const metadata = { robots: { index: false, follow: false } };
+import { InvitationPage } from "@/components/outings/invitation-page";
 export default async function InvitePage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
   const { token } = await params;
-  const notices = await searchParams;
-  const profile = await getCurrentProfile();
-  const adminClient = createSupabaseAdminClient();
-
-  if (!adminClient) {
-    return (
-      <PageShell>
-        <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-          <EmptyState
-            title="Invite acceptance is not configured"
-            body="The server-side invite helper is missing. Add the service role key and try again."
-          />
-        </section>
-      </PageShell>
-    );
-  }
-
-  const { data: invite } = await adminClient
-    .from("invites")
-    .select("id,email,status,outing_id,token")
-    .eq("token", token)
-    .maybeSingle();
-
-  if (!invite) {
-    return (
-      <PageShell>
-        <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-          <EmptyState
-            title="This invite link is no longer valid"
-            body="The link may be wrong, expired, or already removed. Ask the organizer to send a fresh invite."
-            cta={{ href: "/", label: "Return home" }}
-          />
-        </section>
-      </PageShell>
-    );
-  }
-
-  const { data: outing } = await adminClient.from("outings").select("organizer_id").eq("id", invite.outing_id).maybeSingle();
-  const { data: organizer } = outing ? await adminClient.from("profiles").select("id,email,app_role").eq("id", outing.organizer_id).maybeSingle() : { data: null };
-  const analytics = getFunnelContext(invite.outing_id, organizer ? {
-    id: organizer.id, email: organizer.email, appRole: organizer.app_role
-  } : undefined, profile);
-  const inviteOpen = invite.status === "pending" && profile?.id !== organizer?.id ? (
-    <FunnelEvents context={analytics} events={["outing_invite_opened"]} placement="email_invite" />
-  ) : null;
-
-  if (!profile) {
-    return (
-      <PageShell>
-        {inviteOpen}
-        <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-          <Card className="text-center">
-            <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Outing invite</p>
-            <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
-              You were invited at {invite.email}
-            </h1>
-            <p className="mt-5 text-base leading-7 text-charcoal/68">
-              Create an account with that email address or sign in first. Then you’ll come right back here to accept the invite.
-            </p>
-            <div className="mt-8 flex justify-center gap-3">
-              <Button href={`/sign-up?next=${encodeURIComponent(`/invite/${token}`)}`}>Create account</Button>
-              <Button href={`/sign-in?next=${encodeURIComponent(`/invite/${token}`)}`} variant="secondary">
-                Sign in
-              </Button>
-            </div>
-          </Card>
-        </section>
-      </PageShell>
-    );
-  }
-
-  if (profile.email.toLowerCase() !== invite.email.toLowerCase()) {
-    return (
-      <PageShell>
-        <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-          <Card className="text-center">
-            <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Invite email mismatch</p>
-            <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
-              Sign in with {invite.email}
-            </h1>
-            <p className="mt-5 text-base leading-7 text-charcoal/68">
-              This invite was sent to a different email address. Switch accounts, then open this invite again.
-            </p>
-            <div className="mt-8 flex justify-center">
-              <Button href="/settings" variant="secondary">Check account</Button>
-            </div>
-          </Card>
-        </section>
-      </PageShell>
-    );
-  }
-
   return (
-    <PageShell>
-      {inviteOpen}
-      <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-        <Card className="text-center">
-          <p className="text-sm uppercase tracking-[0.25em] text-charcoal/45">Outing invite</p>
-          <h1 className="mt-4 font-serif text-5xl font-semibold tracking-[-0.05em]">
-            {invite.status === "accepted" ? "You already joined this outing" : "You’ve been invited to an outing"}
-          </h1>
-          <p className="mt-5 text-base leading-7 text-charcoal/68">
-            Signed in as <strong>{profile.email}</strong>. {invite.status === "accepted"
-              ? "You can open the outing directly."
-              : "Accept below and you’ll be added to the group right away."}
-          </p>
-          {notices.error ? (
-            <p className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{notices.error}</p>
-          ) : null}
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <Badge>{invite.status}</Badge>
-            <Badge>{invite.email}</Badge>
-          </div>
-          <div className="mt-8 flex justify-center gap-3">
-            {invite.status === "accepted" ? (
-              <Button href={`/outings/${invite.outing_id}`}>Open outing</Button>
-            ) : (
-              <form action={acceptInviteAction}>
-                <input type="hidden" name="token" value={token} />
-                <SubmitButton label="Accept invite" pendingLabel="Joining..." />
-              </form>
-            )}
-          </div>
-        </Card>
-      </section>
-    </PageShell>
+    <InvitationPage
+      token={token}
+      kind="invite"
+      error={(await searchParams).error}
+    />
   );
 }

@@ -122,7 +122,8 @@ export function buildRecommendations(input: {
   lodging: LodgingOption[];
   votes: Vote[];
 }): OutingRecommendations {
-  const { outing, preferences, destinations, golfCourses, lodging, votes } = input;
+  const { outing, destinations, golfCourses, lodging, votes } = input;
+  const preferences = input.preferences.filter(p => p.responseStatus !== "declined");
   const bestDates = dateFit(preferences);
 
   // ── Group budget consensus ──────────────────────────────────────────────

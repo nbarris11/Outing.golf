@@ -2,6 +2,7 @@ interface Member {
   name: string;
   email: string;
   role: string;
+  response?: string;
   homeCity?: string | null;
 }
 
@@ -11,9 +12,9 @@ interface Props {
 
 export function TripLineup({ members }: Props) {
   return (
-    <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-charcoal/6">
+    <div id="lineup" className="scroll-mt-6 rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-charcoal/6">
       <h3 className="font-serif text-xl font-semibold text-forest-900">The lineup</h3>
-      <p className="mt-1 text-sm text-charcoal/50">{members.length} players</p>
+      <p className="mt-1 text-sm text-charcoal/50">{members.length} joined</p>
 
       <ul className="mt-4 grid grid-cols-1 gap-3">
         {members.map((member, index) => {
@@ -40,6 +41,7 @@ export function TripLineup({ members }: Props) {
                   <p className="font-semibold text-sm text-charcoal truncate">{member.name}</p>
                   {isOrganizer && <span title="Organizer">👑</span>}
                 </div>
+                {member.response && <p className="mt-1 text-xs font-medium text-forest-900">{member.response}</p>}
                 <p className="text-xs text-charcoal/45 truncate">
                   {member.homeCity ?? member.email}
                 </p>

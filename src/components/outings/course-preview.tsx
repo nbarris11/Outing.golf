@@ -15,9 +15,11 @@ type Preview = {
 export function CoursePreview({
   outingId,
   course,
+  previewUrl,
 }: {
   outingId: string;
   course: GolfCourseOption;
+  previewUrl?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<Preview>({});
@@ -27,7 +29,7 @@ export function CoursePreview({
     const observer = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
       observer.disconnect();
-      fetch(`/api/outings/${outingId}/courses/${course.id}/preview`, {
+      fetch(previewUrl ?? `/api/outings/${outingId}/courses/${course.id}/preview`, {
         signal: controller.signal,
       })
         .then((r) => (r.ok ? r.json() : {}))
@@ -40,7 +42,7 @@ export function CoursePreview({
       observer.disconnect();
       controller.abort();
     };
-  }, [outingId, course.id]);
+  }, [outingId, course.id, previewUrl]);
   const query = encodeURIComponent(`${course.name} ${course.locationLabel}`);
   return (
     <div

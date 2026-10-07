@@ -8,7 +8,7 @@ import { PersonsPerRoomProvider } from "@/components/outings/persons-per-room-co
 import { TripCostEstimate } from "@/components/outings/trip-cost-estimate";
 import { tripDayCount, tripCosts, courseRoundDays, tripDayLabel } from "@/lib/trip-plan";
 import { toggleNoGolfDayAction } from "@/lib/actions/outings";
-import { notFound } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 
 import { BackButton } from "@/components/common/back-button";
@@ -76,7 +76,8 @@ export default async function ComparePage({
   const pickedLodging = dedupedLodging.find((l) => l.featured && !l.hidden) ?? null;
   const picksCount = pickedCourses.length + (pickedLodging ? 1 : 0);
 
-  const isOrganizer = detail.outing.organizerId === profile.id || isAdmin(profile);
+  const isOrganizer = detail.outing.organizerId === profile.id || detail.members.some(m=>m.profileId===profile.id && m.role==="co_organizer") || isAdmin(profile);
+  if (!isOrganizer) redirect(`/outings/${outingId}/trip`);
   const isBooked = detail.outing.status === "booked" || detail.outing.status === "completed";
 
   return (

@@ -15,7 +15,7 @@ describe("invitation sharing", () => {
   beforeEach(() => { vi.stubGlobal("React", React); trackFunnel.mockReset(); });
   afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
   it("includes trip, destination, clear ask, and exactly one link", () => {
-    expect(copy.withLink).toBe(`You're invited to Fall golf — Pinehurst, NC. Add your dates and budget so we can get this trip booked.\n\n${link}`);
+    expect(copy.withLink).toBe(`You're invited to Fall golf — Pinehurst, NC. Take a look at the courses, dates, and cost, then let us know if you can make it.\n\n${link}`);
     expect(buildOutingInviteCopy("Golf", " ", link).message).not.toContain("—");
   });
   it("copies the whole message separately from the bare link", async () => {

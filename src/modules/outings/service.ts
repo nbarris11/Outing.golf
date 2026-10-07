@@ -25,7 +25,8 @@ function confidenceScore(responseRate: number, votesCount: number) {
   return Math.min(92, Math.round(responseRate * 65 + Math.min(votesCount * 6, 27)));
 }
 
-function averageGroupBudget(preferences: Array<{ budgetMin: number; budgetMax: number }>, fallback: number) {
+function averageGroupBudget(preferences: Array<{ budgetMin: number; budgetMax: number; responseStatus?: string | null }>, fallback: number) {
+  preferences = preferences.filter(p => p.responseStatus !== "declined");
   if (!preferences.length) {
     return fallback;
   }
@@ -55,7 +56,7 @@ function eligibleProgressMembers(
   });
 }
 
-function mapOutingRow(row: Record<string, any>): Outing {
+export function mapOutingRow(row: Record<string, any>): Outing {
   return {
     id: row.id,
     name: row.name,
@@ -110,6 +111,7 @@ function mapPreferenceRow(row: Record<string, any>): PreferenceSubmission {
     id: row.id,
     outingId: row.outing_id,
     profileId: row.profile_id,
+    responseStatus: row.response_status ?? null,
     budgetMin: row.budget_min,
     budgetMax: row.budget_max,
     availableDates: row.available_dates ?? [],
@@ -142,7 +144,7 @@ function mapDestinationRow(row: Record<string, any>): DestinationOption {
   };
 }
 
-function mapGolfRow(row: Record<string, any>): GolfCourseOption {
+export function mapGolfRow(row: Record<string, any>): GolfCourseOption {
   return {
     id: row.id,
     outingId: row.outing_id,
@@ -165,7 +167,7 @@ function mapGolfRow(row: Record<string, any>): GolfCourseOption {
   };
 }
 
-function mapLodgingRow(row: Record<string, any>): LodgingOption {
+export function mapLodgingRow(row: Record<string, any>): LodgingOption {
   return {
     id: row.id,
     outingId: row.outing_id,
@@ -299,7 +301,7 @@ async function getLiveOutings(profileId: string) {
       ] = await Promise.all([
         supabase.from("outing_members").select("id,outing_id,profile_id,role,joined_at").eq("outing_id", outing.id),
         supabase.from("invites").select("id,outing_id,email,invited_by,status,token,created_at").eq("outing_id", outing.id),
-        supabase.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,preferred_rounds,home_city,updated_at").eq("outing_id", outing.id),
+        supabase.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,preferred_rounds,home_city,response_status,updated_at").eq("outing_id", outing.id),
         supabase.from("destination_options").select("id,outing_id,provider_key,name,region,drive_hours,flight_hours,average_nightly_rate,average_round_cost,tags,summary,featured,hidden").eq("outing_id", outing.id),
         supabase.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden,schedule_day,schedule_rounds,round_days,day_label").eq("outing_id", outing.id),
         supabase.from("lodging_options").select(lodgingSelectFields).eq("outing_id", outing.id),
@@ -536,7 +538,7 @@ async function getOutingDetailInternal(outingId: string, profileId: string, admi
       messagesResult
     ] = await Promise.all([
       queryClient.from("invites").select("id,outing_id,email,invited_by,status,token,created_at").eq("outing_id", outingId),
-      queryClient.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,preferred_rounds,home_city,updated_at").eq("outing_id", outingId),
+      queryClient.from("preference_submissions").select("id,outing_id,profile_id,budget_min,budget_max,available_dates,destination_votes,lodging_preferences,course_quality_preference,walking_preference,comments,preferred_rounds,home_city,response_status,updated_at").eq("outing_id", outingId),
       queryClient.from("destination_options").select("id,outing_id,provider_key,name,region,drive_hours,flight_hours,average_nightly_rate,average_round_cost,tags,summary,featured,hidden").eq("outing_id", outingId),
       queryClient.from("golf_course_options").select("id,outing_id,destination_option_id,provider_key,name,location_label,average_greens_fee,quality_score,ride_friendly,walking_friendly,summary,tags,featured,hidden,schedule_day,schedule_rounds,round_days,day_label").eq("outing_id", outingId),
       queryClient.from("lodging_options").select(lodgingSelectFields).eq("outing_id", outingId),

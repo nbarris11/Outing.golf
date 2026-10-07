@@ -89,7 +89,7 @@ export function PlanningStatus({
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="rounded-xl bg-cream p-4">
           <h3 className="font-semibold">
-            {confirmed ? "✓ Dates confirmed" : "1. Confirm your dates"}
+            {confirmed ? "✓ Dates confirmed" : editable ? "1. Confirm your dates" : "Dates proposed"}
           </h3>
           <p className="mt-2 text-sm">
             {confirmed
@@ -145,12 +145,12 @@ export function PlanningStatus({
           <h3 className="font-semibold">
             {progress.total > 0 && !progress.remaining
               ? "✓ Tee times entered"
-              : "2. Book your rounds"}
+              : editable ? "2. Book your rounds" : "Tee time reservations"}
           </h3>
           <p className="mt-2 text-sm">
             {progress.rounds
               ? `${progress.filled} of ${progress.total} golfer places entered across ${progress.rounds} rounds.`
-              : "Add your first round to start the schedule."}
+              : editable ? "Add your first round to start the schedule." : "The organizer is choosing the rounds."}
           </p>
           {progress.remaining > 0 && (
             <p className="mt-2 text-sm">
@@ -169,7 +169,7 @@ export function PlanningStatus({
             </p>
           )}
           <p className="mt-2 text-xs text-charcoal/60">
-            Enter reservations after booking directly with each course.
+            {editable ? "Enter reservations after booking directly with each course." : "The organizer will update these after booking with each course."}
           </p>
         </div>
         <div className="rounded-xl bg-cream p-4">
@@ -178,7 +178,7 @@ export function PlanningStatus({
               ? "Stay not needed"
               : progress.stayBooked
                 ? "✓ Stay booking recorded"
-                : "3. Confirm your stay"}
+                : editable ? "3. Confirm your stay" : "Lodging reservation"}
           </h3>
           {!outing.golfOnly && (
             <>

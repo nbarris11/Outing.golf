@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -207,4 +208,17 @@ export async function startGoogleSignInAction(formData: FormData) {
     logError("Google sign in failed", error, { destination });
     redirect("/sign-in?error=Unable%20to%20start%20Google%20sign-in");
   }
+}
+
+export async function switchInviteAccount(formData: FormData) {
+  const next = String(formData.get("next") ?? "");
+  if (!/^\/(join|invite)\/[^/?#]+$/.test(next)) redirect("/sign-in");
+  if (isDemoMode) await clearDemoSession();
+  else {
+    const client = await createSupabaseServerClient();
+    const result = await client?.auth.signOut();
+    if (result?.error) redirect(`${next}?error=Unable%20to%20switch%20accounts.%20Please%20try%20again.`);
+  }
+  revalidatePath("/", "layout");
+  redirect(`/sign-in?next=${encodeURIComponent(next)}`);
 }

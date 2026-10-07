@@ -44,7 +44,7 @@ export async function sendInviteEmail(input: {
       <p style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #6b726d;">Outing.golf invite</p>
       <h1 style="font-size: 28px; line-height: 1.15; margin: 12px 0 16px;">${input.organizerName} invited you to join ${input.outingName}</h1>
       <p style="font-size: 16px; color: #45504b;">
-        Open the invite below to join the outing, share your preferences, and keep the planning in one place.
+        Preview the trip, see the courses and dates, then let the group know if you can make it.
       </p>
       <p style="margin: 28px 0;">
         <a href="${previewLink}" style="display: inline-block; background: #143a2c; color: #f7f4ee; text-decoration: none; padding: 14px 22px; border-radius: 999px; font-weight: 600;">
@@ -52,7 +52,7 @@ export async function sendInviteEmail(input: {
         </a>
       </p>
       <p style="font-size: 14px; color: #5f6964;">
-        If you do not have an account yet, create one with <strong>${input.inviteeEmail}</strong> and then open the invite link again.
+        If you do not have an account yet, create one with <strong>${input.inviteeEmail}</strong> and we’ll bring you back to your invitation.
       </p>
       <p style="font-size: 13px; color: #7a837e; margin-top: 24px;">
         If the button does not work, copy and paste this link into your browser:<br />

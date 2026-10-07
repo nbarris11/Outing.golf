@@ -1,6 +1,7 @@
+import { responseLabel } from "@/lib/guest-response";
 import { LodgingRateNote } from "@/components/outings/lodging-rate-note";
 import { TripPricesPanel } from "@/components/outings/trip-prices-panel";
-import { tripReadiness } from "@/lib/trip-plan";
+import { lodgingCost, tripReadiness } from "@/lib/trip-plan";
 import { CourseAccessLabel } from "@/components/outings/course-access-label";
 import { courseAccessPriority, discoverableCourse } from "@/lib/course-access";
 import { datesAreConfirmed } from "@/lib/trip-plan";
@@ -106,12 +107,14 @@ function MemberRow({
   person,
   responded,
   role,
-  homeCity
+  homeCity,
+  responseStatus
 }: {
   person: Profile | undefined;
   responded: boolean;
   role: string;
   homeCity?: string | null;
+  responseStatus?: PreferenceSubmission["responseStatus"];
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-3 border-b border-charcoal/6 last:border-0">
@@ -124,7 +127,7 @@ function MemberRow({
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <Badge className={responded ? "bg-emerald-100 text-emerald-800" : "bg-sand text-charcoal/70"}>
-          {responded ? "Responded ✓" : "Waiting"}
+          {responseStatus ? responseLabel({responseStatus}) : responded ? "Preferences saved" : "Waiting"}
         </Badge>
         <span className="hidden sm:inline text-xs text-charcoal/35">{role}</span>
       </div>
@@ -183,10 +186,11 @@ export default async function OutingDetailPage({
   const visibleDestinations = detail.destinations.filter((d) => !d.hidden);
   const hiddenDestinations = isOrganizer ? detail.destinations.filter((d) => d.hidden) : [];
 
-  // Redirect members (non-organizers) to Trip HQ when outing is booked.
-  // Organizer stays on this page so they can manage settings even after booking.
-  if (!isOrganizer && (detail.outing.status === "booked" || detail.outing.status === "completed")) {
-    redirect(`/outings/${outingId}/trip`);
+  if (!isOrganizer) {
+    const query = new URLSearchParams();
+    if (notices.error) query.set("error", notices.error);
+    if (notices.success) query.set("success", notices.success);
+    redirect(`/outings/${outingId}/trip${query.size ? `?${query}` : ""}`);
   }
 
   const profiles = detail.profiles;
@@ -194,312 +198,6 @@ export default async function OutingDetailPage({
   const defaults = preferenceDefaults(detail.currentPreference, detail.outing.budgetTarget);
   const progressTarget = Math.max(detail.outing.numberOfPlayers, detail.insights.respondedCount + detail.insights.pendingCount);
   const preferenceSaved = Boolean(detail.currentPreference);
-
-  // ── New member welcome screen (Step 2) ──────────────────────────────────────
-  // Show for any member who hasn't submitted preferences yet — not just ?newMember=1
-  // This catches people who signed in via Google, direct nav, email invite, etc.
-  if (!detail.currentPreference && !isOrganizer && detail.outing.planningMode !== "organizer") {
-    return (
-      <PageShell>
-        {funnelEvents}
-        <ScrollToTop />
-        <section className="mx-auto max-w-xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <Badge className="bg-forest-900/10 text-forest-900">You&apos;re in</Badge>
-            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-[-0.05em] text-charcoal">
-              {detail.outing.name}
-            </h1>
-            <p className="mt-3 text-base leading-7 text-charcoal/66">
-              Fill in your preferences below — takes under 5 minutes. Once you submit, you&apos;ll see the full trip view with courses, lodging, and the group&apos;s picks.
-            </p>
-          </div>
-
-          {notices.error ? (
-            <p className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{notices.error}</p>
-          ) : null}
-
-          <Card>
-            <h2 className="text-xl font-semibold tracking-[-0.03em] text-charcoal">Your preferences</h2>
-            <p className="mt-2 text-sm text-charcoal/58">
-              Tell the group your budget, available dates, and what you care about most.
-            </p>
-
-            <form action={submitPreferencesAction} className="mt-5 space-y-4">
-              <input type="hidden" name="outingId" value={detail.outing.id} />
-              <input type="hidden" name="fromNewMember" value="1" />
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <FieldLabel htmlFor="budgetMin">Budget min ($)</FieldLabel>
-                  <Input id="budgetMin" name="budgetMin" type="number" defaultValue={defaults.budgetMin} />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="budgetMax">Budget max ($)</FieldLabel>
-                  <Input id="budgetMax" name="budgetMax" type="number" defaultValue={defaults.budgetMax} />
-                  <p className="mt-1.5 text-xs text-charcoal/45">Trip target: {currency(detail.outing.budgetTarget)}</p>
-                </div>
-              </div>
-
-              {detail.outing.preferredDateWindows.length > 0 && (
-                <div className="rounded-[22px] bg-cream p-4">
-                  <FieldLabel>Which dates work for you?</FieldLabel>
-                  <div className="mt-2">
-                    <DateAvailabilityPicker
-                      windows={detail.outing.preferredDateWindows}
-                      defaultSelected={[]}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <FieldLabel htmlFor="courseQualityPreference">Course quality (1–10)</FieldLabel>
-                  <Input
-                    id="courseQualityPreference"
-                    name="courseQualityPreference"
-                    type="number"
-                    min="1"
-                    max="10"
-                    defaultValue={defaults.courseQualityPreference}
-                  />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="walkingPreference">Walking or riding?</FieldLabel>
-                  <Select id="walkingPreference" name="walkingPreference" defaultValue={defaults.walkingPreference}>
-                    <option value="either">Either is fine</option>
-                    <option value="walking">Prefer walking</option>
-                    <option value="riding">Prefer riding</option>
-                  </Select>
-                </div>
-              </div>
-
-              {visibleDestinations.length > 0 ? (
-                <div>
-                  <FieldLabel>Destination lean (optional)</FieldLabel>
-                  <div className="mt-2 space-y-2">
-                    {visibleDestinations.map((dest) => (
-                      <label
-                        key={dest.id}
-                        className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"
-                      >
-                        <input
-                          type="checkbox"
-                          name="destinationVotes"
-                          value={dest.name}
-                          defaultChecked={(defaults.destinationVotes as string[]).includes(dest.name)}
-                          className="h-4 w-4 accent-forest-900"
-                        />
-                        <span className="flex-1 font-medium">{dest.name}</span>
-                        {dest.driveHours != null && (
-                          <span className="shrink-0 text-xs text-charcoal/45">🚗 ~{Math.round(dest.driveHours * 60)} mi</span>
-                        )}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div>
-                <FieldLabel>Lodging style (optional)</FieldLabel>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {([
-                    ["hotel", "Hotel"],
-                    ["resort", "Resort"],
-                    ["house", "House / Rental"],
-                    ["mixed", "No preference"]
-                  ] as const).map(([value, label]) => (
-                    <label
-                      key={value}
-                      className="flex cursor-pointer items-center gap-2.5 rounded-[14px] bg-cream px-3 py-2.5 text-sm text-charcoal transition-colors hover:bg-charcoal/5"
-                    >
-                      <input
-                        type="checkbox"
-                        name="lodgingPreferences"
-                        value={value}
-                        defaultChecked={(defaults.lodgingPreferences as string[]).includes(value)}
-                        className="h-4 w-4 accent-forest-900"
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <FieldLabel htmlFor="preferredRounds">How many rounds do you want to play?</FieldLabel>
-                <Select id="preferredRounds" name="preferredRounds" defaultValue={defaults.preferredRounds ?? ""}>
-                  <option value="">No preference</option>
-                  <option value="1">1 round</option>
-                  <option value="2">2 rounds</option>
-                  <option value="3">3 rounds</option>
-                  <option value="4">4 rounds</option>
-                  <option value="5">5 rounds</option>
-                  <option value="6">6 rounds</option>
-                  <option value="7">7 rounds</option>
-                </Select>
-              </div>
-
-              <div>
-                <FieldLabel htmlFor="comments">Anything else?</FieldLabel>
-                <Textarea
-                  id="comments"
-                  name="comments"
-                  defaultValue={defaults.comments}
-                  placeholder="Notes for the organizer..."
-                />
-              </div>
-
-              <div>
-                <FieldLabel htmlFor="homeCity">Your home zip code</FieldLabel>
-                <Input
-                  id="homeCity"
-                  name="homeCity"
-                  defaultValue={defaults.homeCity ?? ""}
-                  placeholder="e.g. 49503"
-                />
-                <p className="mt-1.5 text-xs text-charcoal/45">
-                  Used to show driving and flight options tailored to you.
-                </p>
-              </div>
-
-              <SubmitButton label="Submit preferences →" pendingLabel="Saving..." className="w-full" />
-            </form>
-          </Card>
-        </section>
-      </PageShell>
-    );
-  }
-
-  // ── Step 3: Post-preferences confirmation for new members ────────────────────
-  if (notices.confirmed === "1") {
-    const topDestination = detail.destinations.find(
-      (d) => d.id === detail.recommendation.destinationScores[0]?.id
-    );
-    const topCourse = detail.golfCourses.find(
-      (c) => c.id === detail.recommendation.golfScores[0]?.id
-    );
-    const seenLodgingNamesStep3 = new Set<string>();
-    const dedupedLodgingStep3 = detail.lodging.filter((stay) => {
-      if (seenLodgingNamesStep3.has(stay.name)) return false;
-      seenLodgingNamesStep3.add(stay.name);
-      return true;
-    });
-    const topLodging = dedupedLodgingStep3.find(
-      (l) => l.id === detail.recommendation.lodgingScores[0]?.id
-    );
-    const tripWindowStep3 = detail.outing.preferredDateWindows[0];
-    const nightsStep3 = tripWindowStep3
-      ? Math.max(1, Math.round((new Date(tripWindowStep3.end).getTime() - new Date(tripWindowStep3.start).getTime()) / (1000 * 60 * 60 * 24)))
-      : 3;
-    const roundsStep3 = detail.recommendation.consensusRounds
-      ?? (detail.outing.golfIntensity === "light" ? 2 : detail.outing.golfIntensity === "golf_first" ? 4 : 3);
-    const playersStep3 = detail.outing.numberOfPlayers;
-
-    return (
-      <PageShell>
-        <ScrollToTop />
-        <section id="confirmed-top" className="mx-auto max-w-xl px-4 py-12 sm:px-6 lg:px-8">
-          {funnelEvents}
-          <div className="mb-8 text-center">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-forest-900/10 text-2xl">
-              ⛳
-            </div>
-            <h1 className="mt-5 font-serif text-4xl font-semibold tracking-[-0.05em] text-charcoal">
-              You&apos;re all set!
-            </h1>
-            <p className="mt-3 text-base leading-7 text-charcoal/66">
-              Based on your preferences and the rest of the group&apos;s, here&apos;s what&apos;s shaping up for{" "}
-              <span className="font-semibold text-charcoal">{detail.outing.name}</span>.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {topDestination ? (
-              <div className="rounded-[28px] bg-forest-950 p-6 text-cream">
-                <p className="text-xs uppercase tracking-[0.22em] text-cream/50">Top destination</p>
-                <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">{topDestination.name}</p>
-                <p className="mt-1 text-sm text-cream/60">{topDestination.region}</p>
-                {topDestination.summary ? (
-                  <p className="mt-3 text-sm leading-6 text-cream/70">{topDestination.summary}</p>
-                ) : null}
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-[18px] bg-white/8 px-4 py-3">
-                    <p className="text-xs text-cream/50">Avg. round</p>
-                    <p className="mt-1 text-sm font-semibold">{currency(topDestination.averageRoundCost)}</p>
-                  </div>
-                  <div className="rounded-[18px] bg-white/8 px-4 py-3">
-                    <p className="text-xs text-cream/50">Est. per person</p>
-                    <p className="mt-1 text-sm font-semibold">
-                      {currency(
-                        topDestination.averageRoundCost * roundsStep3 +
-                          Math.round((topDestination.averageNightlyRate * nightsStep3) / playersStep3)
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-[28px] bg-cream p-5 text-center text-sm text-charcoal/50">
-                Destination picks are being calculated — check back soon.
-              </div>
-            )}
-
-            {topCourse ? (
-              <div className="rounded-[28px] border border-charcoal/8 bg-white p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-charcoal/40">Top course</p>
-                <p className="mt-3 text-lg font-semibold tracking-[-0.03em] text-charcoal">{topCourse.name}</p>
-                <div className="mt-3 flex flex-wrap gap-3">
-                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
-                    <span className="text-charcoal/55">Greens fee </span>
-                    <span className="font-semibold text-charcoal">{topCourse.averageGreensFee > 0 ? currency(topCourse.averageGreensFee) : "Call for rate"}</span>
-                  </div>
-                  {topCourse.averageGreensFee > 0 && (
-                    <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
-                      <span className="text-charcoal/55">{roundsStep3} round{roundsStep3 !== 1 ? "s" : ""} · </span>
-                      <span className="font-semibold text-charcoal">{currency(topCourse.averageGreensFee * roundsStep3)} per person</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            {topLodging ? (
-              <div className="rounded-[28px] border border-charcoal/8 bg-white p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-charcoal/40">Top lodging</p>
-                <p className="mt-3 text-lg font-semibold tracking-[-0.03em] text-charcoal">{topLodging.name}</p>
-                <div className="mt-3 flex flex-wrap gap-3">
-                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
-                    <span className="text-charcoal/55">Nightly rate </span>
-                    <span className="font-semibold text-charcoal">{currency(topLodging.nightlyRate ?? 0)}</span>
-                  </div>
-                  <div className="rounded-[14px] bg-cream px-3 py-2 text-sm">
-                    <span className="text-charcoal/55">{nightsStep3} nights · </span>
-                    <span className="font-semibold text-charcoal">
-                      {currency(Math.round(((topLodging.nightlyRate ?? 0) * nightsStep3) / playersStep3))} per person
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="mt-8 flex flex-col gap-3">
-            <Button href={`/outings/${outingId}`} className="w-full text-center justify-center">
-              See the full outing →
-            </Button>
-            <Button href={`/outings/${outingId}/compare`} variant="secondary" className="w-full text-center justify-center">
-              Compare all options
-            </Button>
-          </div>
-
-          <p className="mt-6 text-center text-sm text-charcoal/40">
-            Results update as more members respond.
-          </p>
-        </section>
-      </PageShell>
-    );
-  }
 
   // ── Main outing page ─────────────────────────────────────────────────────────
 
@@ -1046,7 +744,7 @@ export default async function OutingDetailPage({
                             <div className="min-w-0">
                               <p className={["font-semibold", isMyPick ? "text-cream" : "text-charcoal"].join(" ")}>{stay.name}</p>
                               <p className={["text-sm", isMyPick ? "text-cream/60" : "text-charcoal/55"].join(" ")}>
-                                {currency(stay.nightlyRate)}/night · {currency(Math.round((stay.priceTotal ?? stay.nightlyRate * nights) / players))}/person
+                                {currency(stay.nightlyRate)}/night · {currency(Math.round(lodgingCost(stay.nightlyRate, nights, players, detail.outing.personsPerRoom ?? 2).perPerson))}/person
                               </p>
                             </div>
                             <VoteButton
@@ -1552,6 +1250,7 @@ export default async function OutingDetailPage({
                         responded={snapshot.responded}
                         role={isCoOrganizer ? "Co-organizer" : labelize(snapshot.member.role)}
                         homeCity={snapshot.preference?.homeCity}
+                        responseStatus={snapshot.preference?.responseStatus}
                       />
                       {/* Organizer controls: nudge + co-organizer assignment (primary organizer only for role changes) */}
                       {isOrganizer && !isCurrentUser && !isThisOrganizer && (

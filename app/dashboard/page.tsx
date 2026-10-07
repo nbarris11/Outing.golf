@@ -1,3 +1,4 @@
+import { responseLabel } from "@/lib/guest-response";
 import { Calendar, MapPin, Plus, Users } from "lucide-react";
 
 import { ReleaseNotice } from "@/components/updates/release-notice";
@@ -92,8 +93,11 @@ export default async function DashboardPage({
         {shown.length === 0 && outings.length > 0 && <p className="mt-6 text-sm text-charcoal/60">{pastView ? "No past trips yet." : "No upcoming trips. Ready to plan the next one?"}</p>}
         {/* Trip cards */}
         <div className="mt-6 grid gap-4">
-          {shown.map(({ outing, members, insights, recommendation, readiness }) => {
-            const isOrganizer = outing.organizerId === profile.id;
+          {shown.map(({ outing, members, insights, recommendation, readiness, preferences }) => {
+            const isOrganizer = outing.organizerId === profile.id || members.some(m=>m.profileId===profile.id && m.role==="co_organizer");
+            const response = preferences.find(p=>p.profileId===profile.id);
+            const needsResponse = !response?.responseStatus;
+            const guestAction = needsResponse ? "Respond to trip" : outing.votingOpen && response.responseStatus !== "declined" ? "Vote on options" : "View trip";
             const progressTarget = Math.max(outing.numberOfPlayers, insights.respondedCount + insights.pendingCount);
             const responsePercent = progressTarget
               ? Math.round((insights.respondedCount / progressTarget) * 100)
@@ -118,7 +122,7 @@ export default async function DashboardPage({
                         {readiness.label}
                       </Badge>
                       {!isOrganizer && (
-                        <Badge className="bg-charcoal/6 text-charcoal/55">Invited</Badge>
+                        <Badge className="bg-charcoal/6 text-charcoal/55">Joined</Badge>
                       )}
                     </div>
 
@@ -139,7 +143,7 @@ export default async function DashboardPage({
 
                     {/* Response progress */}
                     <div className="mt-4">
-                      {needsInvites ? (
+                      {!isOrganizer || outing.planningMode === "organizer" ? <p className="text-sm text-charcoal/60">{!isOrganizer ? `${responseLabel(response)} · ${outing.votingOpen && response?.responseStatus !== "declined" ? "Voting is open" : "Trip details and updates inside"}` : `${members.length} joined · Itinerary and reservations below`}</p> : needsInvites ? (
                         <p className="text-sm text-charcoal/50">
                           Your trip is ready. Share it with a friend to get the group started.
                         </p>
@@ -174,8 +178,8 @@ export default async function DashboardPage({
 
                   {/* Right — actions */}
                   <div className="flex shrink-0 flex-col gap-2 sm:items-stretch sm:min-w-[140px]">
-                    <Button href={`/outings/${outing.id}${readiness.itineraryReady || outing.status === "completed" ? "/trip" : ""}`} className="w-full justify-center">
-                      {readiness.itineraryReady || outing.status === "completed" ? "Open Trip HQ" : "Continue planning"}
+                    <Button href={!isOrganizer ? `/outings/${outing.id}/trip${needsResponse ? "#response" : outing.votingOpen && response?.responseStatus !== "declined" ? "#vote" : ""}` : `/outings/${outing.id}${readiness.itineraryReady || outing.status === "completed" ? "/trip" : ""}`} className="w-full justify-center">
+                      {!isOrganizer ? guestAction : readiness.itineraryReady || outing.status === "completed" ? "Open Trip HQ" : "Continue planning"}
                     </Button>
                     {isOrganizer && !needsInvites && insights.respondedCount > 0 && (
                       <Button

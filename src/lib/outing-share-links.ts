@@ -72,6 +72,7 @@ export async function resolveOutingIdFromShareToken(token: string) {
   const demoOutingId = parseDemoShareToken(token);
 
   if (demoOutingId) {
+    if (!isDemoMode) return null;
     return demoOutingId;
   }
 

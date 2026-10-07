@@ -116,7 +116,7 @@ export function TripItineraryPanel({
             Your days, your trip
           </p>
           <h2 className="mt-1 font-serif text-3xl">
-            {readOnly ? "The itinerary" : "Build your days"}
+            {!editable ? "The itinerary" : "Build your days"}
           </h2>
           <p className="mt-2 text-sm text-charcoal/65">
             {dayCount} days · {rounds.length} rounds · {bookedRounds} with tee
@@ -258,14 +258,14 @@ export function TripItineraryPanel({
                           </button>
                         </div>
                       )}
-                      <a
+                      {isOrganizer && <a
                         className="mt-2 inline-block text-xs font-medium underline"
                         href={`https://www.google.com/search?q=${encodeURIComponent(`${course.name} ${course.locationLabel} tee times ${date} ${players} players`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         Find tee times for {tripDayLabel(tripStart, day)} ↗
-                      </a>
+                      </a>}
                       {editable && (
                         <TeeTimeManager
                           outingId={outingId}
@@ -285,7 +285,7 @@ export function TripItineraryPanel({
                 <p className="my-4 text-sm text-charcoal/60">
                   {rest
                     ? "Leave room for travel, exploring, or a slow morning."
-                    : "Start with a course, or keep this day free."}
+                    : editable ? "Start with a course, or keep this day free." : "Free time — no golf scheduled."}
                 </p>
               )}
               {editable && (
@@ -319,7 +319,7 @@ export function TripItineraryPanel({
       {unscheduled.length > 0 && (
         <div className="mt-4 rounded-xl bg-amber-50 p-4">
           <h3 className="font-semibold">
-            Choose dates for {unscheduled.length} rounds
+            {editable ? "Choose dates for" : "Dates still to come for"} {unscheduled.length} rounds
           </h3>
           {unscheduled.map(({ course, index }) => (
             <div
@@ -357,7 +357,7 @@ export function TripItineraryPanel({
             Your stay · {nights} nights
           </p>
           <p className="mt-1 font-semibold">
-            {selectedLodging?.name ?? "Choose a home base for the group"}
+            {selectedLodging?.name ?? "Stay to be decided"}
           </p>
           {selectedLodging?.thumbnailUrl && (
             <img

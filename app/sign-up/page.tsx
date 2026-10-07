@@ -1,3 +1,4 @@
+import { invitationAuthContext } from "@/lib/invitation";
 import { AuthCard } from "@/components/auth/auth-card";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { RecaptchaForm } from "@/components/auth/recaptcha-form";
@@ -15,6 +16,8 @@ export default async function SignUpPage({
   const params = await searchParams;
   const next = params.next?.startsWith("/") ? params.next : "/dashboard";
 
+  const invitation = await invitationAuthContext(next);
+
   const formContents = (
     <>
       <input type="hidden" name="next" value={next} />
@@ -24,7 +27,7 @@ export default async function SignUpPage({
       </div>
       <div>
         <FieldLabel htmlFor="email">Email</FieldLabel>
-        <Input id="email" name="email" type="email" placeholder="taylor@example.com" required />
+        <Input id="email" name="email" type="email" defaultValue={invitation?.email ?? ""} placeholder="taylor@example.com" required />
       </div>
       <div>
         <FieldLabel htmlFor="password">Password</FieldLabel>
@@ -50,8 +53,8 @@ export default async function SignUpPage({
   return (
     <PageShell>
       <AuthCard
-        title="Create your account"
-        subtitle="Start an outing, invite the group, and get the plan out of your texts."
+        title={invitation ? `Join ${invitation.name}` : "Create your account"}
+        subtitle={invitation ? "Save your RSVP and keep the trip details in one place. You’ll return to your invitation after signup." : "Start an outing, invite the group, and get the plan out of your texts."}
         helper={{ text: "Already have an account?", label: "Sign in", href: `/sign-in?next=${encodeURIComponent(next)}` }}
       >
         {!isDemoMode ? (
