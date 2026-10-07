@@ -25,7 +25,7 @@ export default async function OgImage() {
           color: "#212423"
         }}
       >
-        <img src={logo} alt="Outing.golf" width={340} height={71} style={{ marginBottom: 40 }} />
+        <img src={logo} alt="Outing.golf" width={340} height={67} style={{ marginBottom: 40 }} />
 
         {/* H1 */}
         <div

@@ -19,11 +19,11 @@ export function BrandLogo({
       className={cn("inline-flex shrink-0 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-forest-900", className)}
     >
       <Image
-        src={compact ? "/brand/outing-icon.svg" : "/brand/outing-logo.webp"}
+        src={compact ? "/brand/outing-icon.svg?v=20261007" : "/brand/outing-logo.svg?v=20261007"}
         alt="Outing.golf"
-        width={compact ? 64 : 800}
-        height={compact ? 64 : 168}
-        className={compact ? "h-11 w-11" : "h-auto w-[108px] min-[375px]:w-[152px] sm:w-[190px]"}
+        width={compact ? 64 : 487}
+        height={compact ? 64 : 96}
+        className={compact ? "h-11 w-11" : "h-auto w-[108px] min-[375px]:w-[144px] sm:w-[180px]"}
         unoptimized
       />
     </Link>
